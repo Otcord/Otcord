@@ -3127,6 +3127,23 @@
         <p style="color:#80848e;font-size:13px;margin-top:6px;">Yavaş modu atlama yetkileri olmayan üyelerin mesaj gönderme ve alt başlık oluşturma sıklığı bu sürede bir tane ile kısıtlanır.</p>
       </div>
 
+      <div id="csMsgLimitSection" style="margin-bottom:20px;">
+        <label style="display:block;font-size:12px;font-weight:700;text-transform:uppercase;color:#b5bac1;letter-spacing:.05em;margin-bottom:8px;">Mesaj Limiti</label>
+        <div style="position:relative;border:1px solid #3f4147;border-radius:4px;transition:border-color .15s;" onfocusin="this.style.borderColor='#00a8fc'" onfocusout="this.style.borderColor='#3f4147'">
+          <select id="csMsgLimit" onchange="onCsChange()" style="width:100%;background:#1e1f22;border:none;border-radius:4px;outline:none;color:#f2f3f5;font-size:15px;padding:10px 12px;font-family:inherit;appearance:none;cursor:pointer;">
+            <option value="100">100 mesaj</option>
+            <option value="250">250 mesaj</option>
+            <option value="500">500 mesaj</option>
+            <option value="1000">1000 mesaj</option>
+            <option value="2000">2000 mesaj</option>
+            <option value="0">∞ Sınırsız</option>
+            <option value="0">∞ Sınırsız</option>
+          </select>
+          <svg style="position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none" width="18" height="18" viewBox="0 0 24 24" fill="#949ba4"><path d="M7 10l5 5 5-5z"/></svg>
+        </div>
+        <p style="color:#80848e;font-size:13px;margin-top:6px;">Kanalda yüklenecek maksimum mesaj sayısı. Yüksek değerler daha fazla geçmişe erişim sağlar.</p>
+      </div>
+
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;">
         <div>
           <div style="font-size:16px;font-weight:600;margin-bottom:4px;">Yaş Sınırlı Kanal</div>
@@ -4003,6 +4020,9 @@ function switchServer(el, serverId) {
   el.classList.add('active');
   currentServer = serverId;
   updateMembersForCurrentServer();
+  if (!['coding','gaming','dm'].includes(serverId) && db && currentUser) {
+    listenToServerMembers(serverId);
+  }
 
   if (serverId === 'dm') {
     openDmScreen();
@@ -4042,6 +4062,10 @@ function renderMessages() {
     const color = getColor(msg.uid || msg.author);
     const replyAuthorColor = (rAuthor, rUid) => getColor(rUid || rAuthor);
     const initials = getInitials(msg.author);
+    // avatarUrl'yi allOnlineUsers'dan bul
+    const onlineUser = allOnlineUsers.find(u => u.uid === msg.uid || u.name === msg.author);
+    const avatarBg = (onlineUser && onlineUser.avatarUrl) ? `url(${onlineUser.avatarUrl}) center/cover no-repeat` : color;
+    const avatarText = (onlineUser && onlineUser.avatarUrl) ? '' : initials;
     const safeAuthor = msg.author.replace(/"/g, '&quot;');
     
     const msgBody = msg.poll
@@ -4078,7 +4102,7 @@ function renderMessages() {
     if (isFirst) {
       html += `<div class="msg-group first-in-group${msg.replyTo ? ' has-reply' : ''}" data-msgidx="${i}" data-ctx="1">
         ${replyHtml}
-        <div class="msg-avatar" style="background:${color};cursor:pointer;" data-profile="${safeAuthor}">${initials}</div>
+        <div class="msg-avatar" style="background:${avatarBg};cursor:pointer;" data-profile="${safeAuthor}">${avatarText}</div>
         <div class="msg-content">
           <div class="msg-header">
             <span class="msg-author" style="color:${color};cursor:pointer;" data-profile="${safeAuthor}">${msg.author}</span>
@@ -4288,12 +4312,14 @@ function renderMembers() {
 
 function renderMember(m) {
   const color = getColor(m.uid || m.name);
+  const avatarBg = m.avatarUrl ? `url(${m.avatarUrl}) center/cover no-repeat` : color;
+  const avatarText = m.avatarUrl ? '' : getInitials(m.name);
   const myUname = currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : '';
   const isMe = m.name === myUname;
   const kickBtn = isMe ? '' : `<div onclick="event.stopPropagation();showKickModal('${m.name.replace(/'/g,"\'")}')" style="margin-left:auto;padding:3px 8px;border-radius:4px;font-size:12px;font-weight:700;color:#f23f43;cursor:pointer;opacity:0;transition:opacity .1s;" class="member-kick-btn">At</div>`;
   return `<div class="member-item" onclick="openProfilePanel(event,'${m.name}')" oncontextmenu="event.preventDefault();${isMe ? '' : `showMemberCtxMenu(event,'${m.name.replace(/'/g,"\'")}')`}" onmouseenter="this.querySelector && this.querySelector('.member-kick-btn') && (this.querySelector('.member-kick-btn').style.opacity='1')" onmouseleave="this.querySelector && this.querySelector('.member-kick-btn') && (this.querySelector('.member-kick-btn').style.opacity='0')">
-    <div class="member-avatar" style="background:${color}">
-      ${getInitials(m.name)}
+    <div class="member-avatar" style="background:${avatarBg}">
+      ${avatarText}
       <div class="member-status status-${m.status}"></div>
     </div>
     <div class="member-info">
@@ -4347,10 +4373,16 @@ function openProfilePanel(e, memberName) {
   document.getElementById('profileBanner').style.background =
     `linear-gradient(135deg, ${color}cc, ${color}66)`;
 
-  // Avatar — innerHTML ile yaz (childNodes sorunu olmaz)
+  // Avatar — avatarUrl varsa fotoğraf, yoksa initials
   const av = document.getElementById('profileAvatar');
-  av.style.background = color;
-  av.innerHTML = `<span>${initials}</span><div id="profileAvatarStatus" style="position:absolute;bottom:2px;right:2px;width:16px;height:16px;border-radius:50%;border:3px solid #232428;"></div>`;
+  const avatarUrl = m.avatarUrl || (isMe ? (allOnlineUsers.find(u => u.uid === currentUser?.uid)?.avatarUrl || '') : '');
+  if (avatarUrl) {
+    av.style.background = `url(${avatarUrl}) center/cover no-repeat`;
+    av.innerHTML = `<div id="profileAvatarStatus" style="position:absolute;bottom:2px;right:2px;width:16px;height:16px;border-radius:50%;border:3px solid #232428;"></div>`;
+  } else {
+    av.style.background = color;
+    av.innerHTML = `<span>${initials}</span><div id="profileAvatarStatus" style="position:absolute;bottom:2px;right:2px;width:16px;height:16px;border-radius:50%;border:3px solid #232428;"></div>`;
+  }
 
   // Status
   const st = document.getElementById('profileAvatarStatus');
@@ -6065,7 +6097,17 @@ function openDmScreen() {
     const color = getColor(currentUser.uid);
     const tagStr = getTag(currentUser.uid);
     const av = document.getElementById('dmMyAvatar');
-    if (av) { av.textContent = getInitials(uname); av.style.background = color; }
+    if (av) {
+      const myOnline = allOnlineUsers.find(u => u.uid === currentUser.uid);
+      const avatarUrl = myOnline?.avatarUrl || '';
+      if (avatarUrl) {
+        av.style.background = `url(${avatarUrl}) center/cover no-repeat`;
+        av.textContent = '';
+      } else {
+        av.textContent = getInitials(uname);
+        av.style.background = color;
+      }
+    }
     const nameEl = document.getElementById('dmMyName');
     if (nameEl) nameEl.textContent = uname;
     const tagEl = document.getElementById('dmMyTag');
@@ -6343,6 +6385,7 @@ let csEditingChannelId = null;
 let csOriginalName = '';
 let csOriginalDesc = '';
 let csOriginalSlowMode = '0';
+let csOriginalMsgLimit = '500';
 let csOriginalAge = false;
 let csHasChanges = false;
 let csAgeRestricted = false;
@@ -6357,6 +6400,7 @@ function openChannelSettings(channelId) {
   csOriginalName = ch.name;
   csOriginalDesc = ch.topic || '';
   csOriginalSlowMode = ch.slowMode || '0';
+  csOriginalMsgLimit = ch.msgLimit || '500';
   csOriginalAge = ch.ageRestricted || false;
   csHasChanges = false;
   csAgeRestricted = ch.ageRestricted || false;
@@ -6365,6 +6409,7 @@ function openChannelSettings(channelId) {
   document.getElementById('csNameInput').value = ch.name;
   document.getElementById('csDescInput').value = ch.topic || '';
   document.getElementById('csSlowMode').value = ch.slowMode || '0';
+  document.getElementById('csMsgLimit').value = ch.msgLimit || '500';
   updateDescCount();
   updateAgeToggle();
 
@@ -6394,9 +6439,11 @@ function onCsChange() {
   const nameVal = document.getElementById('csNameInput').value.trim();
   const descVal = document.getElementById('csDescInput').value;
   const slowVal = document.getElementById('csSlowMode').value;
+  const limitVal = document.getElementById('csMsgLimit').value;
   const changed = nameVal !== csOriginalName
     || descVal !== csOriginalDesc
     || slowVal !== csOriginalSlowMode
+    || limitVal !== csOriginalMsgLimit
     || csAgeRestricted !== csOriginalAge;
   if (changed) {
     csHasChanges = true;
@@ -6449,15 +6496,18 @@ function saveCsChanges() {
   const newName = document.getElementById('csNameInput').value.trim() || csOriginalName;
   const newDesc = document.getElementById('csDescInput').value;
   const newSlowMode = document.getElementById('csSlowMode').value;
+  const newMsgLimit = document.getElementById('csMsgLimit').value;
 
   ch.name = newName;
   ch.topic = newDesc;
   ch.slowMode = newSlowMode;
+  ch.msgLimit = newMsgLimit;
   ch.ageRestricted = csAgeRestricted;
 
   csOriginalName = newName;
   csOriginalDesc = newDesc;
   csOriginalSlowMode = newSlowMode;
+  csOriginalMsgLimit = newMsgLimit;
   csOriginalAge = csAgeRestricted;
   csHasChanges = false;
 
@@ -6483,6 +6533,7 @@ function discardCsChanges() {
   document.getElementById('csNameInput').value = csOriginalName;
   document.getElementById('csDescInput').value = csOriginalDesc;
   document.getElementById('csSlowMode').value = csOriginalSlowMode;
+  document.getElementById('csMsgLimit').value = csOriginalMsgLimit;
   csAgeRestricted = csOriginalAge;
   updateAgeToggle();
   updateDescCount();
@@ -6618,7 +6669,8 @@ function saveChannelsToFirebase(serverId) {
     order: ch.order !== undefined ? ch.order : idx,
     _isPlaceholder: ch._isPlaceholder || false,
     slowMode: ch.slowMode || '0',
-    ageRestricted: ch.ageRestricted || false
+    ageRestricted: ch.ageRestricted || false,
+    msgLimit: ch.msgLimit || '500'
   }));
   db.collection('serverChannels').doc(serverId).set({
     channels: channelsData,
@@ -6659,7 +6711,8 @@ function listenToChannels(serverId, autoSelect) {
       id: ch.id, name: ch.name, type: ch.type,
       topic: ch.topic || '', category: ch.category || '',
       order: ch.order || 0, _isPlaceholder: ch._isPlaceholder || false,
-      slowMode: ch.slowMode || '0', ageRestricted: ch.ageRestricted || false
+      slowMode: ch.slowMode || '0', ageRestricted: ch.ageRestricted || false,
+      msgLimit: ch.msgLimit || '500'
     }));
     server.channels.sort((a, b) => (a.order || 0) - (b.order || 0));
 
@@ -6926,7 +6979,15 @@ function loadUserServers(uid) {
         const serverId = doc.id;
 
         if (change.type === 'added') {
-          if (document.querySelector('[data-serverid="' + serverId + '"]')) return;
+          const existingEl = document.querySelector('[data-serverid="' + serverId + '"]');
+          if (existingEl) {
+            // Element zaten var, iconUrl'yi güncelle
+            if (data.iconUrl) {
+              existingEl.style.background = 'url(' + data.iconUrl + ') center/cover no-repeat';
+              existingEl.textContent = '';
+            }
+            return;
+          }
           if (serverId === 'coding') {
             const div = document.createElement('div');
             div.className = 'server-icon';
@@ -6949,6 +7010,17 @@ function loadUserServers(uid) {
         if (change.type === 'removed') {
           const el = document.querySelector('[data-serverid="' + serverId + '"]');
           if (el) el.remove();
+          // Cache ve listener temizle
+          delete servers[serverId];
+          delete serverMembersCache[serverId];
+          if (serverMemberListeners[serverId]) {
+            serverMemberListeners[serverId]();
+            delete serverMemberListeners[serverId];
+          }
+          if (channelListenerUnsubs[serverId]) {
+            channelListenerUnsubs[serverId]();
+            delete channelListenerUnsubs[serverId];
+          }
           if (currentServer === serverId) {
             const firstIcon = document.querySelector('.server-icon:not(.home):not(.server-add)');
             if (firstIcon) firstIcon.click();
@@ -6960,16 +7032,16 @@ function loadUserServers(uid) {
           if (el) {
             el.setAttribute('data-tooltip', data.name);
             if (data.iconUrl) {
-              el.style.backgroundImage = 'url(' + data.iconUrl + ')';
-              el.style.backgroundSize = 'cover';
-              el.style.backgroundPosition = 'center';
+              el.style.background = 'url(' + data.iconUrl + ') center/cover no-repeat';
               el.textContent = '';
             } else {
-              el.style.backgroundImage = '';
               el.style.background = getColor(data.name);
               el.textContent = data.name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
             }
           }
+          // allServersList cache güncelle
+          const cached = allServersList.find(s => s.id === serverId);
+          if (cached) { cached.name = data.name; cached.iconUrl = data.iconUrl || ''; }
         }
       });
     }, e => console.error('Sunucular yüklenemedi:', e));
@@ -7135,30 +7207,30 @@ function _applyUsernameEverywhere(newName) {
   // onlineUsers Firestore kaydını güncelle (sayfa yenilenince doğru gelsin)
   db.collection('onlineUsers').doc(currentUser.uid).update({ username: newName }).catch(() => {});
 
+  // Kullanıcının sahip olduğu sunucularda ownerName'i güncelle
+  db.collection('servers').where('ownerId', '==', currentUser.uid).get().then(snap => {
+    snap.forEach(doc => {
+      doc.ref.update({ ownerName: newName }).catch(() => {});
+    });
+  }).catch(() => {});
+
   // Sol alt panel — sunucu görünümü
   const myNameEl = document.getElementById('myName');
   if (myNameEl) myNameEl.textContent = newName;
   const myTagEl = document.getElementById('myTag');
   if (myTagEl) myTagEl.textContent = statusMeta[myStatus].label;
-  const myAv = document.getElementById('myAvatar');
-  if (myAv) { myAv.textContent = initials; myAv.style.background = color; }
 
   // Sol alt panel — DM görünümü
   const dmMyName = document.getElementById('dmMyName');
   if (dmMyName) dmMyName.textContent = newName;
   const dmMyTag = document.getElementById('dmMyTag');
   if (dmMyTag) dmMyTag.textContent = statusMeta[myStatus].label;
-  const dmMyAvatar = document.getElementById('dmMyAvatar');
-  if (dmMyAvatar) { dmMyAvatar.textContent = initials; dmMyAvatar.style.background = color; }
 
   // İsme tıklayınca açılan popup menü
   const pmName = document.getElementById('pmName');
   if (pmName) pmName.textContent = newName;
   const pmTag = document.getElementById('pmTag');
   if (pmTag) pmTag.textContent = newName + tag;
-  const pmAvatar = document.getElementById('pmAvatar');
-  if (pmAvatar) { pmAvatar.textContent = initials; pmAvatar.style.background = color; }
-  // pmBanner banner rengini değiştirme
 
   // Kullanıcı ayarları ekranı
   const usProfileName = document.getElementById('usProfileName');
@@ -7177,6 +7249,10 @@ function _applyUsernameEverywhere(newName) {
   // Sağdaki üye listesi & mesaj listesi
   renderMessages();
   renderMembers();
+
+  // Mevcut avatarUrl'yi koru — isim değişince avatar kaybolmasın
+  const myOnlineUser = allOnlineUsers.find(u => u.uid === currentUser.uid);
+  if (myOnlineUser?.avatarUrl) _applyAvatarEverywhere(myOnlineUser.avatarUrl);
 }
 
 function saveDisplayName() {
@@ -7606,19 +7682,65 @@ function handleAvatarChange(e) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = ev => {
+    // Önizleme güncelle
     const av = document.getElementById('previewAvatar');
-    if (av) { av.style.backgroundImage = `url(${ev.target.result})`; av.style.backgroundSize = 'cover'; av.textContent = ''; }
-    showToast('✅ Avatar önizlemesi güncellendi!');
+    if (av) { av.style.background = `url(${ev.target.result}) center/cover no-repeat`; av.textContent = ''; }
+    const usAv = document.getElementById('usAvatar');
+    if (usAv) { usAv.style.background = `url(${ev.target.result}) center/cover no-repeat`; usAv.textContent = ''; }
   };
   reader.readAsDataURL(file);
+
+  // Cloudinary'e yükle ve her yere uygula
+  showToast('⬆️ Avatar yükleniyor...');
+  uploadToCloudinary(file).then(url => {
+    _applyAvatarEverywhere(url);
+    // Firestore'a kaydet
+    db.collection('users').doc(currentUser.uid).set({ avatarUrl: url }, { merge: true }).catch(() => {});
+    db.collection('onlineUsers').doc(currentUser.uid).update({ avatarUrl: url }).catch(() => {});
+    showToast('✅ Avatar güncellendi!');
+  }).catch(e => showToast('❌ Avatar yüklenemedi: ' + e.message));
 }
 
 function removeAvatar() {
   if (!currentUser) return;
   const uname = currentUser.displayName || currentUser.email.split('@')[0];
-  const av = document.getElementById('previewAvatar');
-  if (av) { av.style.backgroundImage = ''; av.style.background = getColor(uname); av.textContent = getInitials(uname); }
+  _applyAvatarEverywhere('');
+  db.collection('users').doc(currentUser.uid).set({ avatarUrl: '' }, { merge: true }).catch(() => {});
+  db.collection('onlineUsers').doc(currentUser.uid).update({ avatarUrl: '' }).catch(() => {});
   showToast('Avatar kaldırıldı.');
+}
+
+function _applyAvatarEverywhere(avatarUrl) {
+  if (!currentUser) return;
+  const uname = currentUser.displayName || currentUser.email.split('@')[0];
+  const color = getColor(currentUser.uid);
+  const initials = getInitials(uname);
+  const bgStyle = avatarUrl ? `url(${avatarUrl}) center/cover no-repeat` : color;
+  const txt = avatarUrl ? '' : initials;
+
+  // Sol alt panel
+  const myAv = document.getElementById('myAvatar');
+  if (myAv) { myAv.style.background = bgStyle; myAv.textContent = txt; }
+
+  // DM sol alt panel
+  const dmMyAv = document.getElementById('dmMyAvatar');
+  if (dmMyAv) { dmMyAv.style.background = bgStyle; dmMyAv.textContent = txt; }
+
+  // Popup menü avatarı
+  const pmAv = document.getElementById('pmAvatar');
+  if (pmAv) { pmAv.style.background = bgStyle; pmAv.textContent = txt; }
+
+  // Ayarlar avatarı
+  const usAv = document.getElementById('usAvatar');
+  if (usAv) { usAv.style.background = bgStyle; usAv.textContent = txt; }
+
+  // Profil önizlemesi
+  const previewAv = document.getElementById('previewAvatar');
+  if (previewAv) { previewAv.style.background = bgStyle; previewAv.textContent = txt; }
+
+  // Mesajlar ve üye listesi
+  renderMessages();
+  renderMembers();
 }
 
 function handleBannerChange(e) {
@@ -7768,6 +7890,7 @@ function createNewServer() {
 }
 
 function addServerToSidebar(serverId, name, inviteCode, iconUrl) {
+  console.log('[addServerToSidebar]', serverId, 'iconUrl:', iconUrl);
   // Global listeye ekle (emoji picker için)
   if (!allServersList.find(s => s.id === serverId)) {
     allServersList.push({ id: serverId, name, iconUrl: iconUrl || '' });
@@ -7786,10 +7909,8 @@ function addServerToSidebar(serverId, name, inviteCode, iconUrl) {
   div.setAttribute('data-invite', inviteCode);
 
   if (iconUrl) {
-    div.style.backgroundImage = 'url(' + iconUrl + ')';
-    div.style.backgroundSize = 'cover';
-    div.style.backgroundPosition = 'center';
-    div.style.background = '';
+    div.style.background = 'url(' + iconUrl + ') center/cover no-repeat';
+    div.textContent = '';
   } else {
     div.style.background = color;
     div.textContent = initials;
@@ -7835,8 +7956,13 @@ function joinServerByInvite() {
       db.collection('users').doc(currentUser.uid).set({ username: uname, uid: currentUser.uid }, { merge: true });
       document.getElementById('addServerModal').style.display = 'none';
       showToast('✅ "' + data.name + '" sunucusuna katıldın!');
-      const newIcon = addServerToSidebar(serverId, data.name, data.inviteCode, data.iconUrl || '');
-      if (newIcon) switchServer(newIcon, serverId);
+      // Sidebar'a eklemeyi loadUserServers snapshot'ına bırak (çift ikon olmasın)
+      // Snapshot gelince otomatik eklenecek, biz sadece geçiş için bekleyelim
+      const waitAndSwitch = setInterval(() => {
+        const newIcon = document.querySelector('[data-serverid="' + serverId + '"]');
+        if (newIcon) { clearInterval(waitAndSwitch); switchServer(newIcon, serverId); }
+      }, 100);
+      setTimeout(() => clearInterval(waitAndSwitch), 5000); // 5sn sonra vazgeç
     }).catch(e => showToast('❌ ' + e.message));
   }).catch(e => showToast('❌ ' + e.message));
 }
@@ -8059,18 +8185,16 @@ function saveSrvChanges() {
         icon.setAttribute('data-tooltip', name);
         if (iconUrl !== undefined) {
           if (iconUrl) {
-            icon.style.backgroundImage = 'url(' + iconUrl + ')';
-            icon.style.backgroundSize = 'cover';
-            icon.style.backgroundPosition = 'center';
+            icon.style.background = 'url(' + iconUrl + ') center/cover no-repeat';
             icon.textContent = '';
           } else {
-            icon.style.backgroundImage = '';
             icon.style.background = getColor(name);
             icon.textContent = name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
           }
         }
       }
       if (servers[currentServer]) servers[currentServer].name = name;
+      document.getElementById('serverName').textContent = name;
       document.getElementById('srvSettingsServerName').textContent = name.toUpperCase();
       _srvSettingsChanged = false;
       document.getElementById('srvConfirmBar').style.display = 'none';
@@ -8215,12 +8339,26 @@ auth.onAuthStateChanged(user => {
     const dmTag = document.getElementById('dmMyTag');
     if (dmTag) dmTag.textContent = statusMeta[myStatus].label;
 
-    // Firestore'a online durumu yaz
-    db.collection('onlineUsers').doc(uid).set({
-      username: uname,
-      uid: uid,
-      status: 'online',
-      lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+    // Firestore'dan avatarUrl yükle ve uygula
+    db.collection('users').doc(uid).get().then(udoc => {
+      const avatarUrl = udoc.exists ? (udoc.data().avatarUrl || '') : '';
+      if (avatarUrl) _applyAvatarEverywhere(avatarUrl);
+      // onlineUsers'a avatarUrl'yi de yaz (diğer kullanıcılar görsün)
+      db.collection('onlineUsers').doc(uid).set({
+        username: uname,
+        uid: uid,
+        status: 'online',
+        avatarUrl: avatarUrl,
+        lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }).catch(() => {
+      // avatarUrl alınamazsa yine de online yaz
+      db.collection('onlineUsers').doc(uid).set({
+        username: uname,
+        uid: uid,
+        status: 'online',
+        lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+      });
     });
 
     // Sayfa kapanınca offline yap
@@ -8315,9 +8453,25 @@ function listenToOnlineUsers(myUname) {
       allOnlineUsers = [];
       snapshot.forEach(doc => {
         const d = doc.data();
-        allOnlineUsers.push({ name: d.username, uid: d.uid, status: d.status || 'offline', activity: '' });
+        allOnlineUsers.push({ name: d.username, uid: d.uid, status: d.status || 'offline', activity: '', avatarUrl: d.avatarUrl || '' });
       });
       updateMembersForCurrentServer();
+    });
+}
+
+// Sunucu üye listesi cache — her sunucu için uid dizisi
+const serverMembersCache = {};
+// Sunucu üye listelerini realtime dinle
+const serverMemberListeners = {};
+
+function listenToServerMembers(serverId) {
+  if (serverMemberListeners[serverId]) return; // zaten dinleniyor
+  serverMemberListeners[serverId] = db.collection('servers').doc(serverId)
+    .onSnapshot(doc => {
+      if (!doc.exists) return;
+      serverMembersCache[serverId] = doc.data().members || [];
+      // Şu an bu sunucudaysak üye listesini güncelle
+      if (currentServer === serverId) updateMembersForCurrentServer();
     });
 }
 
@@ -8329,46 +8483,58 @@ function updateMembersForCurrentServer() {
     renderMembers();
     return;
   }
-  // Race condition korumasi: istek atildigindaki sunucu id'sini sakla
+
   const targetServer = currentServer;
-  db.collection('servers').doc(targetServer).get().then(doc => {
-    // Cevap geldiginde hala ayni sunucudaysak isle, degilse iptal et
-    if (currentServer !== targetServer) return;
-    if (!doc.exists) { members.length = 0; renderMembers(); return; }
-    const serverMembers = doc.data().members || [];
-    const newMembers = [];
-    allOnlineUsers.forEach(u => {
-      if (serverMembers.includes(u.uid)) newMembers.push(u);
-    });
-    const offlinePromises = [];
-    serverMembers.forEach(uid => {
-      if (!newMembers.find(m => m.uid === uid)) {
-        offlinePromises.push(
-          db.collection('users').doc(uid).get().then(udoc => {
-            if (udoc.exists) {
-              const uname = udoc.data().username || udoc.data().displayName || '';
-              if (uname && !newMembers.find(m => m.name === uname)) {
-                newMembers.push({ name: uname, uid, status: 'offline', activity: '' });
-              }
-            }
-          })
-        );
-      }
-    });
-    Promise.all(offlinePromises).then(() => {
-      // Son kontrol: hala ayni sunucudaysak render et
+  const serverMembers = serverMembersCache[targetServer];
+
+  // Cache yoksa bir kez çek ve cache'e al
+  if (!serverMembers) {
+    db.collection('servers').doc(targetServer).get().then(doc => {
       if (currentServer !== targetServer) return;
-      members.length = 0;
-      newMembers.forEach(u => members.push(u));
-      renderMembers();
+      if (!doc.exists) { members.length = 0; renderMembers(); return; }
+      serverMembersCache[targetServer] = doc.data().members || [];
+      listenToServerMembers(targetServer);
+      updateMembersForCurrentServer();
     });
+    return;
+  }
+
+  const newMembers = [];
+  allOnlineUsers.forEach(u => {
+    if (serverMembers.includes(u.uid)) newMembers.push(u);
+  });
+
+  const offlinePromises = [];
+  serverMembers.forEach(uid => {
+    if (!newMembers.find(m => m.uid === uid)) {
+      offlinePromises.push(
+        db.collection('users').doc(uid).get().then(udoc => {
+          if (udoc.exists) {
+            const uname = udoc.data().username || udoc.data().displayName || '';
+            if (uname && !newMembers.find(m => m.name === uname)) {
+              newMembers.push({ name: uname, uid, status: 'offline', activity: '', avatarUrl: udoc.data().avatarUrl || '' });
+            }
+          }
+        })
+      );
+    }
+  });
+
+  Promise.all(offlinePromises).then(() => {
+    if (currentServer !== targetServer) return;
+    members.length = 0;
+    newMembers.forEach(u => members.push(u));
+    renderMembers();
   });
 }
 
 function listenToMessages(channelId) {
   if (unsubscribeMessages) unsubscribeMessages();
-  unsubscribeMessages = db.collection('channels').doc(channelId)
-    .collection('messages').orderBy('timestamp').limit(100)
+  // Kanalın mesaj limitini al, yoksa 500 varsayılan
+  const ch = servers[currentServer]?.channels.find(c => c.id === channelId);
+  const msgLimit = parseInt(ch?.msgLimit || '500');
+  const query = db.collection('channels').doc(channelId).collection('messages').orderBy('timestamp');
+  unsubscribeMessages = (msgLimit === 0 ? query : query.limit(msgLimit))
     .onSnapshot(snapshot => {
       const msgs = [];
       snapshot.forEach(doc => {
@@ -8411,7 +8577,7 @@ function listenAllChannels() {
     let initialized = false;
 
     channelListeners[ch.id] = db.collection('channels').doc(ch.id)
-      .collection('messages').orderBy('timestamp').limit(100)
+      .collection('messages').orderBy('timestamp').limit(500)
       .onSnapshot(snapshot => {
         const newCount = snapshot.size;
 
