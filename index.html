@@ -44,8 +44,8 @@
     --text-secondary: #b5bac1;
     --text-muted: #80848e;
     --text-link: #00a8fc;
-    --accent: #5865f2;
-    --accent-hover: #4752c4;
+    --accent: #00a8fc;
+    --accent-hover: #0090d4;
     --green: #23a55a;
     --red: #f23f43;
     --yellow: #f0b232;
@@ -72,12 +72,12 @@
     color: #f2f3f5; font-size: 16px; padding: 10px 12px; margin-bottom: 16px;
     outline: none; box-sizing: border-box;
   }
-  .login-input:focus { border-color: #5865f2; }
+  .login-input:focus { border-color: #00a8fc; }
   .login-btn {
-    width: 100%; background: #5865f2; color: white; border: none; border-radius: 4px;
+    width: 100%; background: #00a8fc; color: white; border: none; border-radius: 4px;
     font-size: 16px; font-weight: 600; padding: 12px; cursor: pointer; margin-top: 4px;
   }
-  .login-btn:hover { background: #4752c4; }
+  .login-btn:hover { background: #0090d4; }
   .login-toggle { color: #00a8fc; font-size: 14px; text-align: center; margin-top: 10px; cursor: pointer; }
   .login-error { color: #f23f43; font-size: 13px; text-align: center; margin-bottom: 10px; min-height: 18px; }
   .login-logo { text-align: center; font-size: 40px; margin-bottom: 8px; }
@@ -450,8 +450,16 @@
   }
   .msg-group:hover { background: var(--bg-message-hover); }
   .msg-group.first-in-group { margin-top: 16px; }
+  .msg-reply-ref { order: -1; display:flex; align-items:center; gap:6px; font-size:13px; margin-bottom:2px; padding-left:52px; cursor:pointer; width:100%; box-sizing:border-box; color:#b5bac1; line-height:1.4; }
+  .msg-reply-ref:hover .reply-author { text-decoration: underline; }
   .msg-reply-ref:hover .reply-text { color: #f2f3f5 !important; }
-  .msg-reply-ref { order: -1; }
+  .msg-reply-avatar { width:16px; height:16px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:700; color:white; flex-shrink:0; }
+  .reply-author { font-weight:600; flex-shrink:0; }
+  .reply-text { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:460px; color:#b5bac1; }
+  .reply-curve { width:28px; height:12px; border-top:2px solid #4e5058; border-left:2px solid #4e5058; border-radius:6px 0 0 0; flex-shrink:0; margin-right:2px; }
+  /* Highlight animasyonu */
+  @keyframes msgHighlight { 0%{background:rgba(0,168,252,0.25)} 100%{background:transparent} }
+  .msg-highlighted { animation: msgHighlight 1.5s ease-out forwards; }
   .msg-group .msg-avatar, .msg-group .msg-content, .msg-group .msg-actions { order: 0; }
 
   .msg-avatar {
@@ -763,7 +771,7 @@
 
   /* Nitro button */
   .nitro-btn {
-    background: linear-gradient(135deg, #ff73fa, #5865f2);
+    background: linear-gradient(135deg, #ff73fa, #00a8fc);
     color: white;
     border-radius: 4px;
     padding: 4px 8px;
@@ -799,7 +807,7 @@
   .search-result-group-label { display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#80848e;margin-bottom:8px;margin-top:4px; }
   .search-result-msg { background:#2b2d31;border-radius:8px;padding:12px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;cursor:pointer;transition:background .1s; }
   .search-result-msg:hover { background:#35373c; }
-  .reaction.reacted { background: rgba(88,101,242,0.3); border-color: #5865f2; color: #f2f3f5; }
+  .reaction.reacted { background: rgba(88,101,242,0.3); border-color: #00a8fc; color: #f2f3f5; }
   .msg-edit-box { background:#40444b;border-radius:8px;padding:0;margin-top:4px;display:flex;flex-direction:column;overflow:hidden; }
   .msg-edit-input { background:transparent;border:none;outline:none;color:#f2f3f5;font-size:15px;font-family:inherit;padding:10px 12px;resize:none;width:100%;box-sizing:border-box;line-height:1.5; }
   .msg-edit-hint { font-size:12px;color:#80848e;padding:4px 12px 8px;display:flex;gap:6px; }
@@ -807,7 +815,7 @@
   .msg-edit-hint .hint-key { color:#00aff4; }
   .ep-tab { padding:8px 12px;font-size:14px;font-weight:500;color:#80848e;cursor:pointer;border-radius:6px 6px 0 0;border-bottom:2px solid transparent;transition:color .1s; }
   .ep-tab:hover { color:#f2f3f5; }
-  .ep-tab.active { color:#f2f3f5;border-bottom:2px solid #5865f2; }
+  .ep-tab.active { color:#f2f3f5;border-bottom:2px solid #00a8fc; }
   .ep-cat-btn { width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:6px;cursor:pointer;font-size:18px;transition:background .1s;color:#80848e; }
   .ep-cat-btn:hover, .ep-cat-btn.active { background:#3f4147;color:#f2f3f5; }
   .ep-section-title { font-size:11px;font-weight:700;text-transform:uppercase;color:#80848e;padding:6px 4px 4px;letter-spacing:.5px; }
@@ -831,17 +839,17 @@
   .iv-menu-item:hover { background:#3f4147; }
   .gif-cat-btn { padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;background:#2b2d31;color:#b5bac1;transition:background .1s,color .1s;flex-shrink:0; }
   .gif-cat-btn:hover { background:#404249;color:#f2f3f5; }
-  .gif-cat-btn.active { background:#5865f2;color:white; }
+  .gif-cat-btn.active { background:#00a8fc;color:white; }
   .gif-item { border-radius:8px;overflow:hidden;cursor:pointer;aspect-ratio:16/9;background:#2b2d31;transition:transform .1s,opacity .1s; }
   .gif-item:hover { transform:scale(1.03);opacity:.9; }
   .gif-item img { width:100%;height:100%;object-fit:cover;display:block; }
   .inbox-tab { padding:8px 12px;font-size:14px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;color:#80848e;margin-bottom:-1px;transition:color .1s; }
   .inbox-tab:hover { color:#f2f3f5; }
-  .inbox-tab.active { color:#f2f3f5;border-bottom:2px solid #5865f2; }
+  .inbox-tab.active { color:#f2f3f5;border-bottom:2px solid #00a8fc; }
   .sort-option { display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:6px;cursor:pointer;font-size:14px;font-weight:500;transition:background .1s; }
   .sort-option:hover { background:#1e1f22; }
   .sort-radio { width:18px;height:18px;border-radius:50%;border:2px solid #4e5058;flex-shrink:0;transition:all .1s; }
-  .sort-radio.active { background:#5865f2;border-color:#5865f2; }
+  .sort-radio.active { background:#00a8fc;border-color:#00a8fc; }
   .search-highlight { background:#854d0e;color:#fde68a;border-radius:2px;padding:0 2px; }
   .search-bar-active { background:#1e1f22 !important; }
   .search-count { font-size:13px;font-weight:600;color:#b5bac1;margin-bottom:12px; }
@@ -892,8 +900,8 @@
   }
   .dm-friend-tab:hover { background: #35373c; color: #f2f3f5; }
   .dm-friend-tab.dm-tab-active { background: #404249; color: #f2f3f5; }
-  .dm-friend-tab-add { background: #5865f2; color: white !important; }
-  .dm-friend-tab-add:hover { background: #4752c4 !important; }
+  .dm-friend-tab-add { background: #00a8fc; color: white !important; }
+  .dm-friend-tab-add:hover { background: #0090d4 !important; }
 
   .dm-friend-row {
     display: flex;
@@ -935,7 +943,7 @@
     gap: 6px;
     line-height: 1.3;
   }
-  .ch-ctx-item:hover { background: #5865f2; color: white; }
+  .ch-ctx-item:hover { background: #00a8fc; color: white; }
   .ch-ctx-item.danger { color: #f23f43; }
   .ch-ctx-item.danger:hover { background: #f23f43; color: white; }
   .ch-ctx-arrow span { color: #b5bac1; font-size: 16px; }
@@ -1061,11 +1069,11 @@
     </svg>
   </div>
   <div style="font-size:26px;font-weight:800;color:#f2f3f5;margin-bottom:6px;letter-spacing:-0.5px;">OtCord</div>
-  <div style="font-size:13px;color:#5865f2;font-weight:600;margin-bottom:24px;">v1.0.0</div>
+  <div style="font-size:13px;color:#00a8fc;font-weight:600;margin-bottom:24px;">v1.0.0</div>
   <div id="loadingTip" style="font-size:14px;color:#b5bac1;max-width:360px;text-align:center;line-height:1.6;min-height:44px;transition:opacity .4s;"></div>
   <div style="position:absolute;bottom:40px;display:flex;flex-direction:column;align-items:center;gap:10px;">
     <div style="width:200px;height:4px;background:#1e1f22;border-radius:4px;overflow:hidden;">
-      <div id="loadingBar" style="height:100%;background:#5865f2;border-radius:4px;width:0%;transition:width .3s ease;"></div>
+      <div id="loadingBar" style="height:100%;background:#00a8fc;border-radius:4px;width:0%;transition:width .3s ease;"></div>
     </div>
 
   </div>
@@ -1150,10 +1158,6 @@
       <line x1="45" y1="58" x2="45" y2="64" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
       <line x1="38" y1="64" x2="52" y2="64" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
     </svg>
-  </div>
-  <div class="server-separator"></div>
-  <div class="server-icon" data-tooltip="Kodlama Merkezi" onclick="switchServer(this, 'coding')" style="background:#5865f2">
-    <span>KM</span>
   </div>
   <div class="server-separator"></div>
   <div class="server-icon server-add" data-tooltip="Sunucu Ekle" onclick="showAddServerModal()">+</div>
@@ -1257,8 +1261,8 @@
       <!-- Yanıt Bar -->
       <div id="replyBar" style="display:none;background:#383a40;border-radius:8px 8px 0 0;margin:0 8px;padding:8px 12px;display:none;align-items:center;gap:8px;border-bottom:1px solid #1e1f22;">
         <div style="flex:1;font-size:13px;color:#b5bac1;">
-          <span style="color:#f2f3f5;font-weight:600;" id="replyBarName"></span>
-          <span style="color:#80848e;"> kişisine yanıt veriliyor</span>
+          <div style="margin-bottom:2px;">↩ <span style="color:#f2f3f5;font-weight:600;" id="replyBarName"></span><span style="color:#80848e;"> kişisine yanıt veriliyor</span></div>
+          <div id="replyBarPreview" style="color:#80848e;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:400px;"></div>
         </div>
         <button onclick="cancelReply()" style="background:none;border:none;color:#80848e;font-size:18px;cursor:pointer;line-height:1;padding:0 4px;" onmouseover="this.style.color='#f2f3f5'" onmouseout="this.style.color='#80848e'">✕</button>
       </div>
@@ -1491,7 +1495,7 @@
   </div>
   <div class="ctx-item" onclick="ctxAction('copyid')" style="display:flex;align-items:center;justify-content:space-between;">
     Mesaj ID'sini Kopyala
-    <span style="background:#5865f2;color:white;font-size:10px;font-weight:700;padding:2px 5px;border-radius:3px;margin-left:8px;">ID</span>
+    <span style="background:#00a8fc;color:white;font-size:10px;font-weight:700;padding:2px 5px;border-radius:3px;margin-left:8px;">ID</span>
   </div>
   <div class="ctx-sep" id="ctxReactSep"></div>
   <div class="ctx-item danger" id="ctxRemoveReactBtn" onmouseenter="showReactSubMenu(this)" style="display:flex;align-items:center;justify-content:space-between;position:relative;">
@@ -1530,7 +1534,7 @@
   <div class="ch-ctx-sep"></div>
   <div class="ch-ctx-item" onclick="chCtxAction('id')" style="display:flex;align-items:center;justify-content:space-between;">
     Kanal ID'sini Kopyala
-    <span style="background:#5865f2;color:white;font-size:10px;font-weight:700;padding:2px 5px;border-radius:3px;margin-left:6px;">ID</span>
+    <span style="background:#00a8fc;color:white;font-size:10px;font-weight:700;padding:2px 5px;border-radius:3px;margin-left:6px;">ID</span>
   </div>
 </div>
 
@@ -1569,7 +1573,7 @@
 
   <!-- Mesaj gönder butonu -->
   <div id="profileMsgBtnArea" style="padding:0 16px 8px;">
-    <button onclick="showToast('Mesaj gönderme yakında!')" style="width:100%;background:#5865f2;color:white;border:none;border-radius:4px;padding:9px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .1s;" onmouseover="this.style.background='#4752c4'" onmouseout="this.style.background='#5865f2'">Mesaj Gönder</button>
+    <button onclick="showToast('Mesaj gönderme yakında!')" style="width:100%;background:#00a8fc;color:white;border:none;border-radius:4px;padding:9px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .1s;" onmouseover="this.style.background='#0090d4'" onmouseout="this.style.background='#00a8fc'">Mesaj Gönder</button>
   </div>
   <!-- Kullanıcıyı At butonu -->
   <div id="profileKickBtnArea" style="padding:0 16px 16px;">
@@ -1676,7 +1680,7 @@
     <div class="us-menu-item" id="usMenu_dismissible" onclick="switchSettingsTab('dismissible')">Dismissible Contents</div>
 
     <div style="height:1px;background:#3f4147;margin:8px 4px;"></div>
-    <div class="us-menu-item danger" onclick="doLogout()">Çıkış Yap</div>
+    <div class="us-menu-item danger" onclick="showLogoutConfirm()">Çıkış Yap</div>
     <div style="height:1px;background:#3f4147;margin:8px 4px;"></div>
     <div style="padding:4px 10px;font-size:11px;color:#4e5058;">OtCord v1.0.0</div>
   </div>
@@ -1691,7 +1695,7 @@
 
       <!-- Profil kartı -->
       <div style="background:#1e1f22;border-radius:8px;overflow:hidden;margin-bottom:20px;">
-        <div id="usBanner" style="height:100px;background:linear-gradient(135deg,#5865f2cc,#5865f266);position:relative;"></div>
+        <div id="usBanner" style="height:100px;background:linear-gradient(135deg,#00a8fccc,#00a8fc66);position:relative;"></div>
         <div style="padding:0 16px 16px;position:relative;">
           <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-top:-32px;">
             <div id="usAvatar" style="width:72px;height:72px;border-radius:50%;border:6px solid #1e1f22;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:white;flex-shrink:0;"></div>
@@ -1727,14 +1731,14 @@
       <!-- Şifre & Güvenlik -->
       <h2 style="font-size:17px;font-weight:700;margin-bottom:12px;">Şifre ve Güvenlik</h2>
       <div style="background:#1e1f22;border-radius:8px;padding:16px;margin-bottom:20px;">
-        <button onclick="openChangePassword()" style="background:#5865f2;color:white;border:none;border-radius:4px;padding:9px 20px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#4752c4'" onmouseout="this.style.background='#5865f2'">Şifre Değiştir</button>
+        <button onclick="openChangePassword()" style="background:#00a8fc;color:white;border:none;border-radius:4px;padding:9px 20px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#0090d4'" onmouseout="this.style.background='#00a8fc'">Şifre Değiştir</button>
       </div>
 
       <!-- Hesabı sil -->
       <h2 style="font-size:17px;font-weight:700;margin-bottom:12px;color:#f23f43;">Hesabı Sil</h2>
       <div style="background:#1e1f22;border-radius:8px;padding:16px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:16px;">
         <div style="font-size:13px;color:#b5bac1;">Hesabını silersen tüm veriler kalıcı olarak silinir.</div>
-        <button onclick="showToast('Hesap silme yakında!')" style="background:#f23f43;color:white;border:none;border-radius:4px;padding:9px 16px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;" onmouseover="this.style.background='#c0393c'" onmouseout="this.style.background='#f23f43'">Hesabı Sil</button>
+        <button onclick="showDeleteAccountConfirm()" style="background:#f23f43;color:white;border:none;border-radius:4px;padding:9px 16px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;" onmouseover="this.style.background='#c0393c'" onmouseout="this.style.background='#f23f43'">Hesabı Sil</button>
       </div>
     </div>
 
@@ -1750,7 +1754,7 @@
           <!-- AVATAR -->
           <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#80848e;letter-spacing:.05em;margin-bottom:10px;">Avatar</div>
           <div style="display:flex;gap:10px;align-items:center;margin-bottom:24px;">
-            <button onclick="document.getElementById('avatarFileInput').click()" style="background:#5865f2;color:white;border:none;border-radius:4px;padding:9px 20px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#4752c4'" onmouseout="this.style.background='#5865f2'">Avatar Değiştir</button>
+            <button onclick="document.getElementById('avatarFileInput').click()" style="background:#00a8fc;color:white;border:none;border-radius:4px;padding:9px 20px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#0090d4'" onmouseout="this.style.background='#00a8fc'">Avatar Değiştir</button>
             <button onclick="removeAvatar()" style="background:transparent;color:#f2f3f5;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;padding:9px 12px;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Avatarı Kaldır</button>
             <input id="avatarFileInput" type="file" accept="image/*" style="display:none;" onchange="handleAvatarChange(event)">
           </div>
@@ -1758,10 +1762,10 @@
           <!-- PROFİL RENGİ -->
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
             <span style="font-size:11px;font-weight:700;text-transform:uppercase;color:#80848e;letter-spacing:.05em;">Profil Rengi</span>
-            <span style="background:#5865f2;color:white;font-size:10px;font-weight:700;padding:2px 6px;border-radius:3px;">BETA</span>
+            <span style="background:#00a8fc;color:white;font-size:10px;font-weight:700;padding:2px 6px;border-radius:3px;">BETA</span>
           </div>
           <div style="display:flex;gap:12px;margin-bottom:24px;">
-            <div onclick="setProfileColorMode('default')" id="profColorDefault" style="width:56px;height:56px;border-radius:6px;background:#5865f2;cursor:pointer;display:flex;align-items:center;justify-content:center;border:3px solid #f2f3f5;position:relative;" title="Varsayılan">
+            <div onclick="setProfileColorMode('default')" id="profColorDefault" style="width:56px;height:56px;border-radius:6px;background:#00a8fc;cursor:pointer;display:flex;align-items:center;justify-content:center;border:3px solid #f2f3f5;position:relative;" title="Varsayılan">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
               <div style="position:absolute;bottom:-18px;font-size:11px;color:#80848e;white-space:nowrap;">Varsayılan</div>
             </div>
@@ -1776,7 +1780,7 @@
           <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#80848e;letter-spacing:.05em;margin-bottom:6px;margin-top:12px;">Profil Banneri</div>
           <div style="font-size:13px;color:#80848e;margin-bottom:10px;">En az 600x240 piksel önerilir. PNG, JPG veya 10 MB altında animasyonlu GIF yükleyebilirsin.</div>
           <div style="display:flex;gap:10px;align-items:center;margin-bottom:24px;">
-            <button onclick="document.getElementById('bannerFileInput').click()" style="background:#5865f2;color:white;border:none;border-radius:4px;padding:9px 20px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#4752c4'" onmouseout="this.style.background='#5865f2'">Banner Değiştir</button>
+            <button onclick="document.getElementById('bannerFileInput').click()" style="background:#00a8fc;color:white;border:none;border-radius:4px;padding:9px 20px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#0090d4'" onmouseout="this.style.background='#00a8fc'">Banner Değiştir</button>
             <button onclick="removeBanner()" style="background:transparent;color:#f2f3f5;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;padding:9px 12px;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Banneri Kaldır</button>
             <input id="bannerFileInput" type="file" accept="image/*,image/gif" style="display:none;" onchange="handleBannerChange(event)">
           </div>
@@ -1785,7 +1789,7 @@
           <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#80848e;letter-spacing:.05em;margin-bottom:6px;">Hakkımda</div>
           <div style="font-size:13px;color:#80848e;margin-bottom:8px;">İstersen markdown ve bağlantı kullanabilirsin.</div>
           <div style="position:relative;">
-            <textarea id="aboutMeInput" maxlength="190" oninput="updateAboutMe()" placeholder="Kendinden bahset..." style="width:100%;background:#1e1f22;border:1px solid #1a1b1e;border-radius:4px;color:#f2f3f5;font-size:14px;padding:10px 12px;outline:none;box-sizing:border-box;font-family:inherit;resize:none;line-height:1.5;onfocus" rows="4" onfocus="this.style.borderColor='#5865f2'" onblur="this.style.borderColor='#1a1b1e'"></textarea>
+            <textarea id="aboutMeInput" maxlength="190" oninput="updateAboutMe()" placeholder="Kendinden bahset..." style="width:100%;background:#1e1f22;border:1px solid #1a1b1e;border-radius:4px;color:#f2f3f5;font-size:14px;padding:10px 12px;outline:none;box-sizing:border-box;font-family:inherit;resize:none;line-height:1.5;onfocus" rows="4" onfocus="this.style.borderColor='#00a8fc'" onblur="this.style.borderColor='#1a1b1e'"></textarea>
             <div id="aboutMeCount" style="text-align:right;font-size:11px;color:#80848e;margin-top:4px;">0 / 190</div>
           </div>
 
@@ -1796,7 +1800,7 @@
           <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#80848e;letter-spacing:.05em;margin-bottom:10px;">Önizleme</div>
           <div style="background:#232428;border-radius:10px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.4);">
             <!-- Banner -->
-            <div id="previewBanner" style="height:80px;background:#5865f2;background-size:cover;background-position:center;position:relative;">
+            <div id="previewBanner" style="height:80px;background:#00a8fc;background-size:cover;background-position:center;position:relative;">
               <div id="previewAvatar" style="position:absolute;bottom:-28px;left:12px;width:60px;height:60px;border-radius:50%;border:4px solid #232428;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:white;background-size:cover;background-position:center;"></div>
             </div>
             <!-- İsim alanı -->
@@ -1820,7 +1824,7 @@
       <div style="background:#1e1f22;border-radius:8px;padding:20px;margin-bottom:16px;">
         <div style="font-size:15px;font-weight:600;margin-bottom:12px;">Tema</div>
         <div style="display:flex;gap:12px;">
-          <div id="themeKoyu" onclick="setTheme('koyu')" style="flex:1;background:#313338;border:2px solid #5865f2;border-radius:8px;padding:14px;cursor:pointer;text-align:center;font-size:13px;font-weight:600;">🌙 Koyu</div>
+          <div id="themeKoyu" onclick="setTheme('koyu')" style="flex:1;background:#313338;border:2px solid #00a8fc;border-radius:8px;padding:14px;cursor:pointer;text-align:center;font-size:13px;font-weight:600;">🌙 Koyu</div>
           <div id="themeAcik" onclick="setTheme('acik')" style="flex:1;background:#f2f3f5;border:2px solid transparent;border-radius:8px;padding:14px;cursor:pointer;text-align:center;font-size:13px;font-weight:600;color:#313338;">☀️ Açık</div>
         </div>
       </div>
@@ -1999,10 +2003,10 @@
     <p style="font-size:13px;color:#b5bac1;margin-bottom:16px;">Yeni kullanıcı adını gir.</p>
     <div class="login-error" id="usernameChangeErr" style="margin-bottom:8px;"></div>
     <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:#b5bac1;display:block;margin-bottom:6px;">Yeni Kullanıcı Adı</label>
-    <input id="newUsernameInput" type="text" style="width:100%;background:#1e1f22;border:1px solid #1a1b1e;border-radius:4px;color:#f2f3f5;font-size:15px;padding:10px 12px;outline:none;box-sizing:border-box;margin-bottom:16px;font-family:inherit;" onfocus="this.style.borderColor='#5865f2'" onblur="this.style.borderColor='#1a1b1e'">
+    <input id="newUsernameInput" type="text" style="width:100%;background:#1e1f22;border:1px solid #1a1b1e;border-radius:4px;color:#f2f3f5;font-size:15px;padding:10px 12px;outline:none;box-sizing:border-box;margin-bottom:16px;font-family:inherit;" onfocus="this.style.borderColor='#00a8fc'" onblur="this.style.borderColor='#1a1b1e'">
     <div style="display:flex;gap:10px;justify-content:flex-end;">
       <button onclick="document.getElementById('changeUsernameModal').style.display='none'" style="background:#4e5058;color:#f2f3f5;border:none;border-radius:4px;padding:9px 20px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#6d6f78'" onmouseout="this.style.background='#4e5058'">İptal</button>
-      <button onclick="confirmChangeUsername()" style="background:#5865f2;color:white;border:none;border-radius:4px;padding:9px 20px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#4752c4'" onmouseout="this.style.background='#5865f2'">Kaydet</button>
+      <button onclick="confirmChangeUsername()" style="background:#00a8fc;color:white;border:none;border-radius:4px;padding:9px 20px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#0090d4'" onmouseout="this.style.background='#00a8fc'">Kaydet</button>
     </div>
   </div>
 </div>
@@ -2014,14 +2018,14 @@
     <p style="font-size:13px;color:#b5bac1;margin-bottom:16px;">Mevcut ve yeni şifreni gir.</p>
     <div class="login-error" id="passwordChangeErr" style="margin-bottom:8px;"></div>
     <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:#b5bac1;display:block;margin-bottom:6px;">Mevcut Şifre</label>
-    <input id="currentPasswordInput" type="password" style="width:100%;background:#1e1f22;border:1px solid #1a1b1e;border-radius:4px;color:#f2f3f5;font-size:15px;padding:10px 12px;outline:none;box-sizing:border-box;margin-bottom:12px;font-family:inherit;" onfocus="this.style.borderColor='#5865f2'" onblur="this.style.borderColor='#1a1b1e'">
+    <input id="currentPasswordInput" type="password" style="width:100%;background:#1e1f22;border:1px solid #1a1b1e;border-radius:4px;color:#f2f3f5;font-size:15px;padding:10px 12px;outline:none;box-sizing:border-box;margin-bottom:12px;font-family:inherit;" onfocus="this.style.borderColor='#00a8fc'" onblur="this.style.borderColor='#1a1b1e'">
     <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:#b5bac1;display:block;margin-bottom:6px;">Yeni Şifre</label>
-    <input id="newPasswordInput" type="password" style="width:100%;background:#1e1f22;border:1px solid #1a1b1e;border-radius:4px;color:#f2f3f5;font-size:15px;padding:10px 12px;outline:none;box-sizing:border-box;margin-bottom:12px;font-family:inherit;" onfocus="this.style.borderColor='#5865f2'" onblur="this.style.borderColor='#1a1b1e'">
+    <input id="newPasswordInput" type="password" style="width:100%;background:#1e1f22;border:1px solid #1a1b1e;border-radius:4px;color:#f2f3f5;font-size:15px;padding:10px 12px;outline:none;box-sizing:border-box;margin-bottom:12px;font-family:inherit;" onfocus="this.style.borderColor='#00a8fc'" onblur="this.style.borderColor='#1a1b1e'">
     <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:#b5bac1;display:block;margin-bottom:6px;">Yeni Şifre (Tekrar)</label>
-    <input id="confirmPasswordInput" type="password" style="width:100%;background:#1e1f22;border:1px solid #1a1b1e;border-radius:4px;color:#f2f3f5;font-size:15px;padding:10px 12px;outline:none;box-sizing:border-box;margin-bottom:16px;font-family:inherit;" onfocus="this.style.borderColor='#5865f2'" onblur="this.style.borderColor='#1a1b1e'">
+    <input id="confirmPasswordInput" type="password" style="width:100%;background:#1e1f22;border:1px solid #1a1b1e;border-radius:4px;color:#f2f3f5;font-size:15px;padding:10px 12px;outline:none;box-sizing:border-box;margin-bottom:16px;font-family:inherit;" onfocus="this.style.borderColor='#00a8fc'" onblur="this.style.borderColor='#1a1b1e'">
     <div style="display:flex;gap:10px;justify-content:flex-end;">
       <button onclick="document.getElementById('changePasswordModal').style.display='none'" style="background:#4e5058;color:#f2f3f5;border:none;border-radius:4px;padding:9px 20px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#6d6f78'" onmouseout="this.style.background='#4e5058'">İptal</button>
-      <button onclick="confirmChangePassword()" style="background:#5865f2;color:white;border:none;border-radius:4px;padding:9px 20px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#4752c4'" onmouseout="this.style.background='#5865f2'">Değiştir</button>
+      <button onclick="confirmChangePassword()" style="background:#00a8fc;color:white;border:none;border-radius:4px;padding:9px 20px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#0090d4'" onmouseout="this.style.background='#00a8fc'">Değiştir</button>
     </div>
   </div>
 </div>
@@ -2038,7 +2042,7 @@
     <div style="margin-bottom:20px;">
       <div style="font-size:13px;font-weight:700;text-transform:uppercase;color:#b5bac1;margin-bottom:8px;">Soru</div>
       <div style="position:relative;">
-        <textarea id="pollQuestion" maxlength="300" placeholder="Hangi soruyu sormak istiyorsun?" oninput="updatePollCharCount()" style="width:100%;background:#1e1f22;border:1px solid #1e1f22;border-radius:8px;padding:12px;color:#f2f3f5;font-size:14px;font-family:inherit;resize:none;box-sizing:border-box;outline:none;transition:border-color .15s;" rows="3" onfocus="this.style.borderColor='#5865f2'" onblur="this.style.borderColor='#1e1f22'"></textarea>
+        <textarea id="pollQuestion" maxlength="300" placeholder="Hangi soruyu sormak istiyorsun?" oninput="updatePollCharCount()" style="width:100%;background:#1e1f22;border:1px solid #1e1f22;border-radius:8px;padding:12px;color:#f2f3f5;font-size:14px;font-family:inherit;resize:none;box-sizing:border-box;outline:none;transition:border-color .15s;" rows="3" onfocus="this.style.borderColor='#00a8fc'" onblur="this.style.borderColor='#1e1f22'"></textarea>
         <div id="pollCharCount" style="text-align:right;font-size:12px;color:#80848e;margin-top:4px;">0 / 300</div>
       </div>
     </div>
@@ -2067,10 +2071,10 @@
     <!-- Birden Fazla Yanıt -->
     <div style="display:flex;align-items:center;justify-content:space-between;">
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;">
-        <input type="checkbox" id="pollMultiple" style="width:16px;height:16px;cursor:pointer;accent-color:#5865f2;">
+        <input type="checkbox" id="pollMultiple" style="width:16px;height:16px;cursor:pointer;accent-color:#00a8fc;">
         Birden Fazla Yanıta İzin Ver
       </label>
-      <button onclick="sendPoll()" style="background:#5865f2;color:white;border:none;font-size:14px;font-weight:600;padding:10px 24px;border-radius:4px;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#4752c4'" onmouseout="this.style.background='#5865f2'">Gönder</button>
+      <button onclick="sendPoll()" style="background:#00a8fc;color:white;border:none;font-size:14px;font-weight:600;padding:10px 24px;border-radius:4px;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#0090d4'" onmouseout="this.style.background='#00a8fc'">Gönder</button>
     </div>
   </div>
 </div>
@@ -2124,19 +2128,19 @@
     <div id="editFilePreview" style="margin-bottom:16px;border-radius:8px;overflow:hidden;"></div>
     <div style="margin-bottom:12px;">
       <div style="font-size:13px;font-weight:600;color:#b5bac1;margin-bottom:6px;">Dosya Adı</div>
-      <input id="editFileName" type="text" style="width:100%;background:#1e1f22;border:1px solid #3f4147;border-radius:6px;padding:10px 12px;color:#f2f3f5;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;" onfocus="this.style.borderColor='#5865f2'" onblur="this.style.borderColor='#3f4147'">
+      <input id="editFileName" type="text" style="width:100%;background:#1e1f22;border:1px solid #3f4147;border-radius:6px;padding:10px 12px;color:#f2f3f5;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;" onfocus="this.style.borderColor='#00a8fc'" onblur="this.style.borderColor='#3f4147'">
     </div>
     <div style="margin-bottom:16px;">
       <div style="font-size:13px;font-weight:600;color:#b5bac1;margin-bottom:6px;">Açıklama (Alt. metin)</div>
-      <input id="editFileDesc" type="text" placeholder="Bir açıklama ekle" style="width:100%;background:#1e1f22;border:1px solid #3f4147;border-radius:6px;padding:10px 12px;color:#f2f3f5;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;" onfocus="this.style.borderColor='#5865f2'" onblur="this.style.borderColor='#3f4147'">
+      <input id="editFileDesc" type="text" placeholder="Bir açıklama ekle" style="width:100%;background:#1e1f22;border:1px solid #3f4147;border-radius:6px;padding:10px 12px;color:#f2f3f5;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;" onfocus="this.style.borderColor='#00a8fc'" onblur="this.style.borderColor='#3f4147'">
     </div>
     <div style="margin-bottom:20px;display:flex;align-items:center;gap:10px;">
-      <input type="checkbox" id="editFileSpoiler" style="width:16px;height:16px;accent-color:#5865f2;cursor:pointer;">
+      <input type="checkbox" id="editFileSpoiler" style="width:16px;height:16px;accent-color:#00a8fc;cursor:pointer;">
       <label for="editFileSpoiler" style="font-size:14px;cursor:pointer;">Spoiler olarak işaretle</label>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end;">
       <button onclick="closeEditFileModal()" style="background:#4e5058;color:#f2f3f5;border:none;border-radius:4px;padding:10px 24px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#6d6f78'" onmouseout="this.style.background='#4e5058'">İptal</button>
-      <button onclick="saveEditFile()" style="background:#5865f2;color:white;border:none;border-radius:4px;padding:10px 24px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#4752c4'" onmouseout="this.style.background='#5865f2'">Kaydet</button>
+      <button onclick="saveEditFile()" style="background:#00a8fc;color:white;border:none;border-radius:4px;padding:10px 24px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#0090d4'" onmouseout="this.style.background='#00a8fc'">Kaydet</button>
     </div>
   </div>
 </div>
@@ -2175,7 +2179,7 @@
           <div class="iv-menu-item" onclick="ivCopyId()">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2zm0 14H4V8h16v10z"/></svg>
             Ek ID'sini Kopyala
-            <span style="background:#5865f2;color:white;font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;margin-left:auto;">ID</span>
+            <span style="background:#00a8fc;color:white;font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;margin-left:auto;">ID</span>
           </div>
         </div>
       </div>
@@ -2210,8 +2214,8 @@
       <button onclick="document.getElementById('addServerModal').style.display='none'" style="position:absolute;top:12px;right:12px;background:none;border:none;color:#80848e;font-size:22px;cursor:pointer;">✕</button>
       <h2 style="text-align:center;font-size:22px;font-weight:800;margin-bottom:8px;">Sunucu Oluştur veya Katıl</h2>
       <p style="text-align:center;color:#b5bac1;font-size:14px;margin-bottom:24px;">Yeni bir sunucu oluştur ya da davet linkiyle mevcut birine katıl.</p>
-      <div onclick="showCreateServerStep()" style="background:#2b2d31;border-radius:8px;padding:16px;margin-bottom:12px;cursor:pointer;display:flex;align-items:center;gap:14px;border:1px solid transparent;" onmouseover="this.style.borderColor='#5865f2'" onmouseout="this.style.borderColor='transparent'">
-        <div style="width:48px;height:48px;background:#5865f2;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🏠</div>
+      <div onclick="showCreateServerStep()" style="background:#2b2d31;border-radius:8px;padding:16px;margin-bottom:12px;cursor:pointer;display:flex;align-items:center;gap:14px;border:1px solid transparent;" onmouseover="this.style.borderColor='#00a8fc'" onmouseout="this.style.borderColor='transparent'">
+        <div style="width:48px;height:48px;background:#00a8fc;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🏠</div>
         <div>
           <div style="font-weight:700;font-size:15px;">Kendi Sunucunu Oluştur</div>
           <div style="font-size:13px;color:#80848e;">Yeni bir topluluk oluştur</div>
@@ -2234,11 +2238,11 @@
         <input type="file" id="serverIconInput" accept=".jpg,.jpeg,.png,.gif" style="display:none;" onchange="previewServerIcon(event)">
       </div>
       <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:#b5bac1;letter-spacing:.05em;">Sunucu Adı <span style="color:#f23f43;">*</span></label>
-      <input id="newServerName" type="text" placeholder="Benim Sunucum" style="width:100%;background:#1e1f22;border:1px solid #1a1b1e;border-radius:4px;color:#f2f3f5;font-size:15px;padding:10px 12px;margin-top:6px;margin-bottom:4px;outline:none;box-sizing:border-box;font-family:inherit;" onfocus="this.style.borderColor='#5865f2'" onblur="this.style.borderColor='#1a1b1e'">
+      <input id="newServerName" type="text" placeholder="Benim Sunucum" style="width:100%;background:#1e1f22;border:1px solid #1a1b1e;border-radius:4px;color:#f2f3f5;font-size:15px;padding:10px 12px;margin-top:6px;margin-bottom:4px;outline:none;box-sizing:border-box;font-family:inherit;" onfocus="this.style.borderColor='#00a8fc'" onblur="this.style.borderColor='#1a1b1e'">
       <p style="font-size:12px;color:#80848e;margin-bottom:20px;">Bir sunucu oluşturarak OtCord'un <span style="color:#00a8fc;cursor:pointer;">Topluluk İlkeleri</span>'ni kabul etmiş olursun.</p>
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <span onclick="document.getElementById('addServerStep2').style.display='none';document.getElementById('addServerStep1').style.display='block'" style="color:#f2f3f5;font-size:14px;font-weight:600;cursor:pointer;">Geri</span>
-        <button onclick="createNewServer()" style="background:#5865f2;color:white;border:none;border-radius:4px;padding:10px 24px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#4752c4'" onmouseout="this.style.background='#5865f2'">Oluştur</button>
+        <button onclick="createNewServer()" style="background:#00a8fc;color:white;border:none;border-radius:4px;padding:10px 24px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#0090d4'" onmouseout="this.style.background='#00a8fc'">Oluştur</button>
       </div>
     </div>
 
@@ -2249,10 +2253,10 @@
       <h2 style="text-align:center;font-size:22px;font-weight:800;margin-bottom:6px;">Bir Sunucuya Katıl</h2>
       <p style="text-align:center;color:#b5bac1;font-size:13px;margin-bottom:20px;">Davet bağlantısını girerek bir sunucuya katıl.</p>
       <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:#b5bac1;letter-spacing:.05em;">Davet Bağlantısı</label>
-      <input id="joinInviteCode" type="text" placeholder="otcord.gg/abc123" style="width:100%;background:#1e1f22;border:1px solid #1a1b1e;border-radius:4px;color:#f2f3f5;font-size:15px;padding:10px 12px;margin-top:6px;margin-bottom:20px;outline:none;box-sizing:border-box;font-family:inherit;" onfocus="this.style.borderColor='#5865f2'" onblur="this.style.borderColor='#1a1b1e'">
+      <input id="joinInviteCode" type="text" placeholder="otcord.gg/abc123" style="width:100%;background:#1e1f22;border:1px solid #1a1b1e;border-radius:4px;color:#f2f3f5;font-size:15px;padding:10px 12px;margin-top:6px;margin-bottom:20px;outline:none;box-sizing:border-box;font-family:inherit;" onfocus="this.style.borderColor='#00a8fc'" onblur="this.style.borderColor='#1a1b1e'">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <span onclick="document.getElementById('addServerStep3').style.display='none';document.getElementById('addServerStep1').style.display='block'" style="color:#f2f3f5;font-size:14px;font-weight:600;cursor:pointer;">Geri</span>
-        <button onclick="joinServerByInvite()" style="background:#5865f2;color:white;border:none;border-radius:4px;padding:10px 24px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#4752c4'" onmouseout="this.style.background='#5865f2'">Sunucuya Katıl</button>
+        <button onclick="joinServerByInvite()" style="background:#00a8fc;color:white;border:none;border-radius:4px;padding:10px 24px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#0090d4'" onmouseout="this.style.background='#00a8fc'">Sunucuya Katıl</button>
       </div>
     </div>
   </div>
@@ -2267,9 +2271,37 @@
     <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#80848e;letter-spacing:.05em;margin-bottom:8px;">Sunucu Davet Bağlantısı</div>
     <div style="display:flex;gap:8px;align-items:center;">
       <div id="inviteLinkBox" style="flex:1;background:#1e1f22;border-radius:4px;padding:12px 14px;font-size:14px;color:#b5bac1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:1px solid #3f4147;"></div>
-      <button onclick="copyInviteLink()" style="background:#5865f2;color:white;border:none;border-radius:4px;padding:12px 20px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;" onmouseover="this.style.background='#4752c4'" onmouseout="this.style.background='#5865f2'">Kopyala</button>
+      <button onclick="copyInviteLink()" style="background:#00a8fc;color:white;border:none;border-radius:4px;padding:12px 20px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;" onmouseover="this.style.background='#0090d4'" onmouseout="this.style.background='#00a8fc'">Kopyala</button>
     </div>
     <p style="font-size:12px;color:#80848e;margin-top:10px;">Davet bağlantısının süresi <span style="color:#f2f3f5;font-weight:600;">7 gün</span> içinde dolacak.</p>
+  </div>
+</div>
+
+
+<!-- ÇIKIŞ YAP ONAY MODALI -->
+<div id="logoutConfirmModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:99999;align-items:center;justify-content:center;">
+  <div style="background:#313338;border-radius:8px;width:440px;padding:24px;position:relative;box-shadow:0 8px 32px rgba(0,0,0,0.6);">
+    <button onclick="document.getElementById('logoutConfirmModal').style.display='none'" style="position:absolute;top:12px;right:12px;background:none;border:none;color:#80848e;font-size:20px;cursor:pointer;">✕</button>
+    <h2 style="font-size:20px;font-weight:700;margin-bottom:8px;">Çıkış Yap</h2>
+    <p style="color:#b5bac1;font-size:14px;margin-bottom:24px;">Çıkış yapmak istediğine emin misin?</p>
+    <div style="display:flex;justify-content:flex-end;gap:12px;">
+      <button onclick="document.getElementById('logoutConfirmModal').style.display='none'" style="background:none;color:#f2f3f5;border:none;font-size:14px;font-weight:600;cursor:pointer;padding:10px 20px;border-radius:4px;font-family:inherit;" onmouseover="this.style.background='#3f4147'" onmouseout="this.style.background='none'">İptal</button>
+      <button onclick="confirmLogout()" style="background:#f23f43;color:white;border:none;border-radius:4px;padding:10px 24px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#c0393c'" onmouseout="this.style.background='#f23f43'">Çıkış Yap</button>
+    </div>
+  </div>
+</div>
+
+<!-- HESABI SİL ONAY MODALI -->
+<div id="deleteAccountConfirmModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:99999;align-items:center;justify-content:center;">
+  <div style="background:#313338;border-radius:8px;width:440px;padding:24px;position:relative;box-shadow:0 8px 32px rgba(0,0,0,0.6);">
+    <button onclick="document.getElementById('deleteAccountConfirmModal').style.display='none'" style="position:absolute;top:12px;right:12px;background:none;border:none;color:#80848e;font-size:20px;cursor:pointer;">✕</button>
+    <h2 style="font-size:20px;font-weight:700;margin-bottom:8px;color:#f23f43;">Hesabı Sil</h2>
+    <p style="color:#b5bac1;font-size:14px;margin-bottom:6px;">Hesabını silmek istediğine <strong>kesinlikle</strong> emin misin?</p>
+    <p style="color:#80848e;font-size:13px;margin-bottom:24px;">Bu işlem geri alınamaz. Tüm mesajların ve verilen kalıcı olarak silinir.</p>
+    <div style="display:flex;justify-content:flex-end;gap:12px;">
+      <button onclick="document.getElementById('deleteAccountConfirmModal').style.display='none'" style="background:none;color:#f2f3f5;border:none;font-size:14px;font-weight:600;cursor:pointer;padding:10px 20px;border-radius:4px;font-family:inherit;" onmouseover="this.style.background='#3f4147'" onmouseout="this.style.background='none'">İptal</button>
+      <button onclick="confirmDeleteAccount()" style="background:#f23f43;color:white;border:none;border-radius:4px;padding:10px 24px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#c0393c'" onmouseout="this.style.background='#f23f43'">Hesabı Sil</button>
+    </div>
   </div>
 </div>
 
@@ -2381,7 +2413,7 @@
 
 <style>
   .srv-item { display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:4px;cursor:pointer;font-size:14px;color:#b5bac1;transition:background .1s; }
-  .srv-item:hover { background:#5865f2;color:#f2f3f5; }
+  .srv-item:hover { background:#00a8fc;color:#f2f3f5; }
   .srv-item:hover svg { opacity:1 !important; }
   .srv-sep { height:1px;background:#3f4147;margin:4px 2px; }
 </style>
@@ -2629,7 +2661,7 @@
   <div style="background:#313338;border-radius:8px;padding:24px;width:440px;max-width:95vw;box-shadow:0 8px 32px rgba(0,0,0,0.6);">
     <h2 style="font-size:20px;font-weight:700;margin-bottom:8px;">📌 Mesajı Sabitle</h2>
     <p style="color:#b5bac1;font-size:15px;margin-bottom:4px;">Bu mesajı <strong style="color:#f2f3f5;">#<span id="pinChannelName"></span></strong> kanalına sabitlemek istiyor musun?</p>
-    <div id="pinPreview" style="background:#2b2d31;border-radius:8px;padding:12px 16px;margin:16px 0;border-left:3px solid #5865f2;display:flex;align-items:flex-start;gap:12px;">
+    <div id="pinPreview" style="background:#2b2d31;border-radius:8px;padding:12px 16px;margin:16px 0;border-left:3px solid #00a8fc;display:flex;align-items:flex-start;gap:12px;">
       <div id="pinPreviewAvatar" style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:white;flex-shrink:0;"></div>
       <div>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
@@ -2641,7 +2673,7 @@
     </div>
     <div style="display:flex;justify-content:flex-end;gap:8px;">
       <button onclick="closePinModal()" style="background:none;border:none;color:#f2f3f5;font-size:14px;font-weight:500;padding:10px 20px;border-radius:4px;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='none'">Hayır</button>
-      <button onclick="confirmPin()" style="background:#5865f2;color:white;border:none;font-size:14px;font-weight:600;padding:10px 20px;border-radius:4px;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#4752c4'" onmouseout="this.style.background='#5865f2'">Evet, Sabitle</button>
+      <button onclick="confirmPin()" style="background:#00a8fc;color:white;border:none;font-size:14px;font-weight:600;padding:10px 20px;border-radius:4px;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#0090d4'" onmouseout="this.style.background='#00a8fc'">Evet, Sabitle</button>
     </div>
   </div>
 </div>
@@ -2783,7 +2815,7 @@
   <div class="ch-ctx-sep"></div>
   <div class="ch-ctx-item" onclick="catCtxAction('id')" style="display:flex;align-items:center;justify-content:space-between;">
     Kategori ID'sini Kopyala
-    <span style="background:#5865f2;color:white;font-size:10px;font-weight:700;padding:2px 5px;border-radius:3px;margin-left:6px;">ID</span>
+    <span style="background:#00a8fc;color:white;font-size:10px;font-weight:700;padding:2px 5px;border-radius:3px;margin-left:6px;">ID</span>
   </div>
 </div>
 
@@ -2811,7 +2843,7 @@
       <h2 style="font-size:20px;font-weight:700;margin-bottom:24px;">Genel Görünüm</h2>
       <div style="margin-bottom:20px;">
         <label style="display:block;font-size:12px;font-weight:700;text-transform:uppercase;color:#b5bac1;letter-spacing:.05em;margin-bottom:8px;">Kategori Adı</label>
-        <div style="border:1px solid #3f4147;border-radius:4px;transition:border-color .15s;" onfocusin="this.style.borderColor='#5865f2'" onfocusout="this.style.borderColor='#3f4147'">
+        <div style="border:1px solid #3f4147;border-radius:4px;transition:border-color .15s;" onfocusin="this.style.borderColor='#00a8fc'" onfocusout="this.style.borderColor='#3f4147'">
           <input id="catNameInput" type="text" maxlength="32"
             style="width:100%;background:#1e1f22;border:none;border-radius:4px;outline:none;color:#f2f3f5;font-size:15px;padding:10px 12px;font-family:inherit;box-sizing:border-box;"
             oninput="onCatChange()">
@@ -2862,7 +2894,6 @@
     <div style="height:1px;background:#3f4147;margin:8px 4px;"></div>
     <div class="us-cat-label">Topluluk</div>
     <div class="us-menu-item" id="srvMenu_topluluk" onclick="switchSrvTab('topluluk')">Genel Bakış</div>
-    <div class="us-menu-item" id="srvMenu_uye" onclick="switchSrvTab('uye')">Üye Ekleme</div>
     <div class="us-menu-item" id="srvMenu_kesfet" onclick="switchSrvTab('kesfet')">Sunucu Keşfet</div>
 
     <div style="height:1px;background:#3f4147;margin:8px 4px;"></div>
@@ -2902,7 +2933,7 @@
         <div style="display:flex;gap:32px;align-items:flex-start;margin-bottom:32px;">
           <!-- İkon -->
           <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
-            <div id="srvIconPreviewSettings" onclick="document.getElementById('srvIconInputSettings').click()" style="width:100px;height:100px;border-radius:50%;background:#5865f2;display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:700;color:white;cursor:pointer;overflow:hidden;background-size:cover;background-position:center;border:2px dashed #4e5058;"></div>
+            <div id="srvIconPreviewSettings" onclick="document.getElementById('srvIconInputSettings').click()" style="width:100px;height:100px;border-radius:50%;background:#00a8fc;display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:700;color:white;cursor:pointer;overflow:hidden;background-size:cover;background-position:center;border:2px dashed #4e5058;"></div>
             <input type="file" id="srvIconInputSettings" accept=".jpg,.jpeg,.png,.gif" style="display:none;" onchange="previewSrvIconSettings(event)">
             <button onclick="document.getElementById('srvIconInputSettings').click()" style="background:#4e5058;color:#f2f3f5;border:none;border-radius:4px;padding:6px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#6d6f78'" onmouseout="this.style.background='#4e5058'">Görseli Değiştir</button>
             <button onclick="removeSrvIcon()" style="background:none;color:#f23f43;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">Görseli Kaldır</button>
@@ -2913,13 +2944,13 @@
             <label style="display:block;font-size:12px;font-weight:700;text-transform:uppercase;color:#b5bac1;letter-spacing:.05em;margin-bottom:8px;">Sunucu Adı</label>
             <input id="srvNameInput" type="text" maxlength="100" oninput="onSrvChange()"
               style="width:100%;background:#1e1f22;border:1px solid #3f4147;border-radius:4px;color:#f2f3f5;font-size:15px;padding:10px 12px;font-family:inherit;outline:none;box-sizing:border-box;transition:border-color .15s;"
-              onfocus="this.style.borderColor='#5865f2'" onblur="this.style.borderColor='#3f4147'">
+              onfocus="this.style.borderColor='#00a8fc'" onblur="this.style.borderColor='#3f4147'">
 
             <label style="display:block;font-size:12px;font-weight:700;text-transform:uppercase;color:#b5bac1;letter-spacing:.05em;margin-top:20px;margin-bottom:8px;">Sunucu Açıklaması</label>
             <textarea id="srvDescInput" rows="3" maxlength="120" oninput="onSrvChange()"
               style="width:100%;background:#1e1f22;border:1px solid #3f4147;border-radius:4px;color:#f2f3f5;font-size:15px;padding:10px 12px;font-family:inherit;outline:none;box-sizing:border-box;resize:none;transition:border-color .15s;"
               placeholder="Sunucunu birkaç kelimeyle tanıt..."
-              onfocus="this.style.borderColor='#5865f2'" onblur="this.style.borderColor='#3f4147'"></textarea>
+              onfocus="this.style.borderColor='#00a8fc'" onblur="this.style.borderColor='#3f4147'"></textarea>
           </div>
         </div>
 
@@ -2991,7 +3022,7 @@
     <div style="padding:0 8px 8px;color:#949ba4;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;gap:6px;">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M5.88 2.15L4.5 9H3a1 1 0 000 2h1.17l-.67 3H2a1 1 0 000 2h1.17l-.92 4.6a1 1 0 001.96.4L5.17 17h4.65l-.92 4.6a1 1 0 101.96.4L11.82 17h1.35a1 1 0 000-2h-1.68l.67-3H13.5a1 1 0 000-2h-1.67l.67-3H14a1 1 0 000-2h-1.17l.67-3a1 1 0 10-1.96-.4V2.15zM6.35 11l-.67 3h4.64l.67-3H6.35z"/></svg>
       <span id="csChannelName">GENEL</span>
-      <span style="color:#5865f2;font-size:10px;">METİN KANALLARI</span>
+      <span style="color:#00a8fc;font-size:10px;">METİN KANALLARI</span>
     </div>
 
     <div id="csTabGenel" class="cs-tab cs-tab-active" onclick="switchCsTab('genel')">Genel Görünüm</div>
@@ -3016,7 +3047,7 @@
 
       <div style="margin-bottom:20px;">
         <label style="display:block;font-size:12px;font-weight:700;text-transform:uppercase;color:#b5bac1;letter-spacing:.05em;margin-bottom:8px;">Kanal Adı</label>
-        <div style="display:flex;align-items:center;background:#1e1f22;border-radius:4px;padding:0 12px;border:1px solid #3f4147;transition:border-color .15s;" onfocusin="this.style.borderColor='#5865f2'" onfocusout="this.style.borderColor='#3f4147'">
+        <div style="display:flex;align-items:center;background:#1e1f22;border-radius:4px;padding:0 12px;border:1px solid #3f4147;transition:border-color .15s;" onfocusin="this.style.borderColor='#00a8fc'" onfocusout="this.style.borderColor='#3f4147'">
           <span style="color:#949ba4;font-size:16px;margin-right:6px;">#</span>
           <input id="csNameInput" type="text" maxlength="32"
             style="flex:1;background:none;border:none;outline:none;color:#f2f3f5;font-size:16px;padding:10px 0;font-family:inherit;"
@@ -3026,7 +3057,7 @@
 
       <div style="margin-bottom:20px;">
         <label style="display:block;font-size:12px;font-weight:700;text-transform:uppercase;color:#b5bac1;letter-spacing:.05em;margin-bottom:8px;">Kanal Açıklaması</label>
-        <div style="position:relative;border:1px solid #3f4147;border-radius:4px;transition:border-color .15s;" onfocusin="this.style.borderColor='#5865f2'" onfocusout="this.style.borderColor='#3f4147'">
+        <div style="position:relative;border:1px solid #3f4147;border-radius:4px;transition:border-color .15s;" onfocusin="this.style.borderColor='#00a8fc'" onfocusout="this.style.borderColor='#3f4147'">
           <textarea id="csDescInput" maxlength="1024" rows="6"
             style="width:100%;background:#1e1f22;border:none;border-radius:4px;outline:none;color:#f2f3f5;font-size:15px;padding:12px;font-family:inherit;resize:none;box-sizing:border-box;"
             placeholder="Bu kanalın nasıl kullanılacağını anlat!"
@@ -3037,7 +3068,7 @@
 
       <div id="csSlowModeSection" style="margin-bottom:20px;">
         <label style="display:block;font-size:12px;font-weight:700;text-transform:uppercase;color:#b5bac1;letter-spacing:.05em;margin-bottom:8px;">Yavaş Mod</label>
-        <div style="position:relative;border:1px solid #3f4147;border-radius:4px;transition:border-color .15s;" onfocusin="this.style.borderColor='#5865f2'" onfocusout="this.style.borderColor='#3f4147'">
+        <div style="position:relative;border:1px solid #3f4147;border-radius:4px;transition:border-color .15s;" onfocusin="this.style.borderColor='#00a8fc'" onfocusout="this.style.borderColor='#3f4147'">
           <select id="csSlowMode" onchange="onCsChange()" style="width:100%;background:#1e1f22;border:none;border-radius:4px;outline:none;color:#f2f3f5;font-size:15px;padding:10px 12px;font-family:inherit;appearance:none;cursor:pointer;">
             <option value="0">Kapalı</option>
             <option value="5">5 saniye</option>
@@ -3095,7 +3126,7 @@
 </div>
 
 <script>
-const COLORS = ['#5865f2','#eb459e','#ed4245','#f0b232','#23a55a','#00a8fc','#9b59b6','#e67e22'];
+const COLORS = ['#00a8fc','#eb459e','#ed4245','#f0b232','#23a55a','#00a8fc','#9b59b6','#e67e22'];
 const getColor = (str) => COLORS[str.charCodeAt(0) % COLORS.length];
 const getInitials = (name) => name.slice(0,2).toUpperCase();
 // uid veya string'den deterministik 4 haneli sayısal tag üret (1000-9999)
@@ -3991,13 +4022,13 @@ function renderMessages() {
 
     // Reply gösterimi
     const replyHtml = msg.replyTo
-      ? '<div class="msg-reply-ref" data-jumpto="' + msg.replyTo.idx + '" style="width:100%;display:flex;align-items:center;gap:6px;font-size:13px;margin-bottom:2px;padding-left:16px;cursor:pointer;box-sizing:border-box;">'
-        + '<div style="width:28px;height:10px;border-top:2px solid #4e5058;border-left:2px solid #4e5058;border-radius:4px 0 0 0;flex-shrink:0;"></div>'
-        + '<div style="width:16px;height:16px;border-radius:50%;background:' + getColor(msg.replyTo.author) + ';display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:white;flex-shrink:0;">' + msg.replyTo.author.slice(0,2).toUpperCase() + '</div>'
-        + '<span style="color:' + getColor(msg.replyTo.author) + ';font-weight:700;font-size:13px;flex-shrink:0;">' + msg.replyTo.author + '</span>'
+      ? '<div class="msg-reply-ref" data-jumpto="' + msg.replyTo.idx + '">'
+        + '<div class="reply-curve"></div>'
+        + '<div class="msg-reply-avatar" style="background:' + getColor(msg.replyTo.author) + '">' + msg.replyTo.author.slice(0,2).toUpperCase() + '</div>'
+        + '<span class="reply-author" style="color:' + getColor(msg.replyTo.author) + '">' + msg.replyTo.author + '</span>'
         + (msg.replyTo.hasImage
-            ? '<span class="reply-text" style="color:#b5bac1;font-style:italic;display:flex;align-items:center;gap:4px;">Eki görmek için tıkla <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg></span>'
-            : '<span class="reply-text" style="color:#b5bac1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:400px;">' + (msg.replyTo.text||'').slice(0,80) + ((msg.replyTo.text||'').length>80?'…':'') + '</span>')
+            ? '<span class="reply-text" style="font-style:italic;display:flex;align-items:center;gap:3px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>Görsel</span>'
+            : '<span class="reply-text">' + (msg.replyTo.text||'(orijinal mesaj silindi)').slice(0,80) + ((msg.replyTo.text||'').length>80?'…':'') + '</span>')
         + '</div>'
       : '';
 
@@ -4038,9 +4069,10 @@ function renderMessages() {
       const targetEl = area.querySelector(`[data-msgidx="${targetIdx}"]`);
       if (targetEl) {
         targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        targetEl.style.transition = 'background .2s';
-        targetEl.style.background = 'rgba(88,101,242,0.2)';
-        setTimeout(() => { targetEl.style.background = ''; }, 1500);
+        targetEl.classList.remove('msg-highlighted');
+        void targetEl.offsetWidth; // reflow
+        targetEl.classList.add('msg-highlighted');
+        setTimeout(() => targetEl.classList.remove('msg-highlighted'), 1600);
       }
     });
   });
@@ -4114,10 +4146,10 @@ function renderPoll(p, msgIdx) {
   const answersHtml = p.answers.map((ans, ai) => {
     const isVoted = p.userVotes.includes(ai);
     const pct = total > 0 ? Math.round(p.votes[ai] / total * 100) : 0;
-    const border = isVoted ? 'border:1.5px solid #5865f2;' : 'border:1.5px solid #3f4147;';
-    const radioColor = isVoted ? '#5865f2' : '#80848e';
+    const border = isVoted ? 'border:1.5px solid #00a8fc;' : 'border:1.5px solid #3f4147;';
+    const radioColor = isVoted ? '#00a8fc' : '#80848e';
     const radioInner = isVoted
-      ? '<circle cx="10" cy="10" r="6" fill="#5865f2"/>'
+      ? '<circle cx="10" cy="10" r="6" fill="#00a8fc"/>'
       : '';
     return '<div data-poll-vote="' + msgIdx + '" data-answer-idx="' + ai + '" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:8px;margin-bottom:6px;cursor:pointer;background:#2b2d31;' + border + 'transition:border-color .15s;position:relative;overflow:hidden;">'
       + (total > 0 && p.userVotes.length > 0
@@ -4139,7 +4171,7 @@ function renderPoll(p, msgIdx) {
     + '<span style="font-size:13px;color:#80848e;">' + total + ' oy &nbsp;•&nbsp; ' + (hours >= 24 ? Math.floor(hours/24) + 'g' : hours + 'sa') + ' kaldı</span>'
     + '<div style="display:flex;gap:8px;align-items:center;">'
     + '<span data-poll-results="' + msgIdx + '" style="font-size:13px;color:#b5bac1;cursor:pointer;text-decoration:underline;text-underline-offset:2px;" onmouseover="this.style.color=\'#f2f3f5\'" onmouseout="this.style.color=\'#b5bac1\'">Sonuçları göster</span>'
-    + '<button data-poll-send="' + msgIdx + '" style="background:#5865f2;color:white;border:none;font-size:13px;font-weight:600;padding:6px 16px;border-radius:4px;cursor:pointer;font-family:inherit;" onmouseover="this.style.background=\'#4752c4\'" onmouseout="this.style.background=\'#5865f2\'">Oyla</button>'
+    + '<button data-poll-send="' + msgIdx + '" style="background:#00a8fc;color:white;border:none;font-size:13px;font-weight:600;padding:6px 16px;border-radius:4px;cursor:pointer;font-family:inherit;" onmouseover="this.style.background=\'#0090d4\'" onmouseout="this.style.background=\'#00a8fc\'">Oyla</button>'
     + '</div></div>'
     + '</div>';
 }
@@ -4333,26 +4365,35 @@ function closeKickModal() {
 
 function confirmKickUser() {
   if (!kickTargetName) return;
-  const reason = document.getElementById('kickReason').value.trim();
   const myUname = currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : '';
 
-  // kicked koleksiyonuna yaz — atılan kullanıcı dinleyince otomatik çıkış yapar
-  db.collection('kicked').doc(kickTargetName).set({
+  // Kick kaydını sunucu bazlı yaz: kicked/{serverId}/{username}
+  const kickDoc = db.collection('kicked').doc(currentServer + '_' + kickTargetName);
+  kickDoc.set({
     kickedBy: myUname,
-    kickReason: reason || 'Sebep belirtilmedi',
+    serverId: currentServer,
+    username: kickTargetName,
     kickedAt: firebase.firestore.FieldValue.serverTimestamp()
   })
   .then(() => {
-    return db.collection('onlineUsers').where('username', '==', kickTargetName).get()
-      .then(snap => {
-        const batch = db.batch();
-        snap.forEach(doc => batch.delete(doc.ref));
-        return batch.commit();
+    // Sunucu members listesinden çıkar (uid varsa)
+    if (!['coding','gaming'].includes(currentServer)) {
+      // uid'yi bul
+      db.collection('onlineUsers').where('username', '==', kickTargetName).get().then(snap => {
+        snap.forEach(doc => {
+          const uid = doc.data().uid;
+          if (uid) {
+            db.collection('servers').doc(currentServer).update({
+              members: firebase.firestore.FieldValue.arrayRemove(uid)
+            }).catch(() => {});
+          }
+        });
       });
-  })
-  .then(() => {
+    }
     closeKickModal();
     showToast('🚪 ' + kickTargetName + ' sunucudan atıldı!');
+    // Üye listesini güncelle
+    setTimeout(updateMembersForCurrentServer, 500);
   })
   .catch(() => {
     closeKickModal();
@@ -4576,6 +4617,13 @@ function replyTo(idx) {
   const bar = document.getElementById('replyBar');
   bar.style.display = 'flex';
   document.getElementById('replyBarName').textContent = msg.author;
+  // Yanıt önizleme metnini göster
+  const replyPreview = document.getElementById('replyBarPreview');
+  if (replyPreview) {
+    replyPreview.textContent = msg.text ? msg.text.slice(0, 80) : (msg.uploadedImage ? '📷 Görsel' : msg.uploadedFile ? '📎 Dosya' : '');
+  }
+  // Mavi çerçeve efekti
+  bar.style.borderLeft = '3px solid #00a8fc';
 
   // Input box köşelerini düzelt
   const inputBox = document.querySelector('.input-box');
@@ -4586,7 +4634,9 @@ function replyTo(idx) {
 
 function cancelReply() {
   replyingToIdx = -1;
-  document.getElementById('replyBar').style.display = 'none';
+  const bar = document.getElementById('replyBar');
+  bar.style.display = 'none';
+  bar.style.borderLeft = '';
   const inputBox = document.querySelector('.input-box');
   if (inputBox) inputBox.style.borderRadius = '';
 }
@@ -4752,7 +4802,8 @@ let editingMsgIdx = -1;
 
 function startEditMessage(idx) {
   const msg = getMessages(currentChannel)[idx];
-  if (!msg || msg.author !== 'AhmetYilmaz') return;
+  const myUname = currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : '';
+  if (!msg || msg.author !== myUname) return;
   editingMsgIdx = idx;
 
   // Find the msg-text div for this message
@@ -5283,7 +5334,7 @@ function addPollAnswer() {
     + '<input type="text" placeholder="Yanıtını yaz" maxlength="55" style="flex:1;background:none;border:none;outline:none;color:#f2f3f5;font-size:14px;font-family:inherit;">'
     + '<span onclick="removePollAnswer(this)" style="cursor:pointer;color:#80848e;font-size:16px;" onmouseover="this.style.color=\'#f23f43\'" onmouseout="this.style.color=\'#80848e\'">🗑</span>';
   const input = row.querySelector('input');
-  input.addEventListener('focus', () => row.style.borderColor = '#5865f2');
+  input.addEventListener('focus', () => row.style.borderColor = '#00a8fc');
   input.addEventListener('blur', () => row.style.borderColor = '#1e1f22');
   container.appendChild(row);
 }
@@ -5484,7 +5535,7 @@ function renderFilePreview() {
       return `<div class="file-preview-card" data-idx="${i}">
         <div class="fp-actions">
           <div class="fp-btn" title="Spoiler" data-spoilerbtn="${i}">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="${f.isSpoiler ? '#5865f2' : '#b5bac1'}"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="${f.isSpoiler ? '#00a8fc' : '#b5bac1'}"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
           </div>
           <div class="fp-btn" title="Düzenle" data-editfilebtn="${i}">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="#b5bac1"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
@@ -5598,22 +5649,34 @@ function sendMessage() {
 
     // Firebase'e kaydet (gerçek zamanlı)
     if (currentUser) {
-      db.collection('channels').doc(currentChannel).collection('messages').add({
+      const msgData = {
         author: uname,
         text: text,
         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
         uid: currentUser.uid
-      }).then(() => {
+      };
+      // Yanıt varsa ekle
+      if (replyingToIdx >= 0) {
+        const replyMsg = getMessages(currentChannel)[replyingToIdx];
+        if (replyMsg) {
+          msgData.replyTo = {
+            idx: replyingToIdx,
+            author: replyMsg.author,
+            text: replyMsg.text || '',
+            hasImage: !!replyMsg.uploadedImage
+          };
+        }
+      }
+      db.collection('channels').doc(currentChannel).collection('messages').add(msgData)
+      .then(() => {
         console.log('✅ Mesaj Firebase\'e yazıldı, kanal:', currentChannel);
       }).catch(e => {
         console.error('❌ Firebase yazma hatası:', e);
         showToast('⚠️ Mesaj gönderilemedi: ' + e.message);
-        // Fallback: lokal göster
         getMessages(currentChannel).push({ author: uname, text, time: timeStr });
         renderMessages();
       });
     } else {
-      // Giriş yapmamışsa local
       getMessages(currentChannel).push({ author: uname, text, time: timeStr });
       renderMessages();
     }
@@ -5637,10 +5700,7 @@ function uploadFileAndSend(f, uname, timeStr) {
 
   showToast('⬆️ Yükleniyor...');
 
-  const ref = storage.ref('uploads/' + channel + '/' + Date.now() + '_' + f.fileName);
-
-  ref.put(rawFile)
-    .then(snap => snap.ref.getDownloadURL())
+  uploadToCloudinary(rawFile)
     .then(url => {
       const msg = {
         author: uname,
@@ -5878,8 +5938,7 @@ function closeDmScreen() {
   // deselect home icon
   document.querySelectorAll('.server-icon').forEach(s => s.classList.remove('active'));
   // reselect coding server
-  document.querySelector('.server-icon[data-tooltip="Kodlama Merkezi"]')?.classList.add('active');
-  currentServer = 'coding';
+  currentServer = 'dm';
   renderChannels();
   renderMessages();
 }
@@ -5930,7 +5989,7 @@ function switchFriendTab(tab) {
         <p style="color:#b5bac1;font-size:14px;margin-bottom:16px;">Kullanıcı adıyla arkadaş ekleyebilirsin.</p>
         <div style="display:flex;gap:8px;background:#1e1f22;border-radius:8px;padding:12px 16px;border:1px solid #3f4147;">
           <input type="text" placeholder="Kullanıcı adı gir" style="flex:1;background:none;border:none;outline:none;color:#f2f3f5;font-size:15px;font-family:inherit;">
-          <button style="background:#5865f2;color:white;border:none;border-radius:4px;padding:8px 16px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" onclick="showToast('Arkadaş isteği gönderildi!')">Arkadaş İsteği Gönder</button>
+          <button style="background:#00a8fc;color:white;border:none;border-radius:4px;padding:8px 16px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" onclick="showToast('Arkadaş isteği gönderildi!')">Arkadaş İsteği Gönder</button>
         </div>
       </div>`;
   }
@@ -6211,7 +6270,7 @@ function updateAgeToggle() {
   const tog = document.getElementById('csAgeToggle');
   const knob = document.getElementById('csAgeKnob');
   if (csAgeRestricted) {
-    tog.style.background = '#5865f2';
+    tog.style.background = '#00a8fc';
     knob.style.left = '22px';
   } else {
     tog.style.background = '#80848e';
@@ -6569,9 +6628,13 @@ function checkEmailVerified() {
   // Token'ı yenile — Firebase cache'i bypass et
   user.reload().then(() => {
     if (auth.currentUser.emailVerified) {
-      // onAuthStateChanged otomatik tetiklenecek ve içeri alacak
       errEl.style.color = '#23a55a';
-      errEl.textContent = '✅ E-posta doğrulandı!';
+      errEl.textContent = '✅ E-posta doğrulandı! Yükleniyor...';
+      // onAuthStateChanged bazen tetiklenmiyor — manuel başlat
+      setTimeout(() => {
+        document.getElementById('loginScreen').style.display = 'none';
+        showLoadingScreen();
+      }, 800);
     } else {
       errEl.style.color = '#f23f43';
       errEl.textContent = 'Henüz doğrulanmamış. Linke tıkladıktan sonra tekrar dene.';
@@ -6659,8 +6722,24 @@ function loadUserServers(uid) {
         const serverId = doc.id;
         // Zaten sidebar'da varsa ekleme
         if (document.querySelector('[data-serverid="' + serverId + '"]')) return;
-        // Kodlama/Gaming gibi built-in sunucular zaten var
-        if (serverId === 'coding' || serverId === 'gaming') return;
+        if (serverId === 'coding') {
+          // Coding sunucusunu sidebar'a ekle (üye olanlara)
+          const div = document.createElement('div');
+          div.className = 'server-icon';
+          div.setAttribute('data-tooltip', 'Kodlama Merkezi');
+          div.setAttribute('data-serverid', 'coding');
+          div.style.background = '#00a8fc';
+          div.innerHTML = '<span>KM</span>';
+          div.onclick = function() { switchServer(this, 'coding'); };
+          const addBtn = document.querySelector('.server-add');
+          if (addBtn) addBtn.parentNode.insertBefore(div, addBtn);
+          // Separator ekle
+          const sep = document.createElement('div');
+          sep.className = 'server-separator';
+          if (addBtn) addBtn.parentNode.insertBefore(sep, addBtn);
+          return;
+        }
+        if (serverId === 'gaming') return;
         addServerToSidebar(serverId, data.name, data.inviteCode, data.iconUrl || '');
       });
     }).catch(e => console.error('Sunucular yüklenemedi:', e));
@@ -6779,17 +6858,42 @@ function confirmChangePassword() {
 }
 
 function setTheme(theme) {
-  document.getElementById('themeKoyu').style.borderColor = theme === 'koyu' ? '#5865f2' : 'transparent';
-  document.getElementById('themeAcik').style.borderColor = theme === 'acik' ? '#5865f2' : 'transparent';
+  document.getElementById('themeKoyu').style.borderColor = theme === 'koyu' ? '#00a8fc' : 'transparent';
+  document.getElementById('themeAcik').style.borderColor = theme === 'acik' ? '#00a8fc' : 'transparent';
   showToast(theme === 'acik' ? '☀️ Açık tema yakında!' : '🌙 Koyu tema aktif');
 }
 
-function doLogout() {
+function showLogoutConfirm() {
+  document.getElementById('logoutConfirmModal').style.display = 'flex';
+}
+
+function confirmLogout() {
+  document.getElementById('logoutConfirmModal').style.display = 'none';
   closeUserSettings();
   if (currentUser) {
     db.collection('onlineUsers').doc(currentUser.uid).set({ status: 'offline', lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
   }
   auth.signOut();
+}
+
+function showDeleteAccountConfirm() {
+  document.getElementById('deleteAccountConfirmModal').style.display = 'flex';
+}
+
+function confirmDeleteAccount() {
+  document.getElementById('deleteAccountConfirmModal').style.display = 'none';
+  if (!currentUser) return;
+  const uid = currentUser.uid;
+  db.collection('onlineUsers').doc(uid).delete().catch(() => {});
+  currentUser.delete().then(() => {
+    showToast('✅ Hesap silindi.');
+  }).catch(e => {
+    showToast('❌ ' + e.message);
+  });
+}
+
+function doLogout() {
+  showLogoutConfirm();
 }
 
 // ESC tuşuyla kapat
@@ -7247,8 +7351,7 @@ function createNewServer() {
   const rawFile = document.getElementById('serverIconInput').files[0];
   if (rawFile) {
     showToast('⬆️ İkon yükleniyor...');
-    const ref = storage.ref('serverIcons/' + serverId + '_' + rawFile.name);
-    ref.put(rawFile).then(snap => snap.ref.getDownloadURL()).then(url => {
+    uploadToCloudinary(rawFile).then(url => {
       doCreate(url);
     }).catch(e => { showToast('❌ İkon yüklenemedi: ' + e.message); doCreate(''); });
   } else {
@@ -7562,8 +7665,7 @@ function saveSrvChanges() {
 
   if (_srvNewIconFile) {
     showToast('⬆️ İkon yükleniyor...');
-    const ref = storage.ref('serverIcons/' + currentServer + '_' + Date.now() + '_' + _srvNewIconFile.name);
-    ref.put(_srvNewIconFile).then(s=>s.ref.getDownloadURL()).then(url => doSave(url)).catch(e => { showToast('❌ ' + e.message); });
+    uploadToCloudinary(_srvNewIconFile).then(url => doSave(url)).catch(e => { showToast('❌ ' + e.message); });
   } else if (_srvRemoveIcon) {
     doSave('');
   } else {
@@ -7594,6 +7696,31 @@ document.addEventListener('keydown', e => {
     closeServerSettings();
   }
 });
+
+
+// =============================================
+// CLOUDINARY UPLOAD
+// =============================================
+const CLOUDINARY_CLOUD = 'dtmxwjf6m';
+const CLOUDINARY_PRESET = 'Otcord';
+
+function uploadToCloudinary(file) {
+  return new Promise((resolve, reject) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', CLOUDINARY_PRESET);
+    fetch('https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD + '/auto/upload', {
+      method: 'POST',
+      body: fd
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.secure_url) resolve(data.secure_url);
+      else reject(new Error(data.error?.message || 'Yükleme başarısız'));
+    })
+    .catch(reject);
+  });
+}
 
 function translateError(code) {
   const map = {
@@ -7695,32 +7822,37 @@ let unsubscribeKick = null;
 
 function listenForKick(uname) {
   if (unsubscribeKick) unsubscribeKick();
-  unsubscribeKick = db.collection('kicked').doc(uname)
-    .onSnapshot(doc => {
-      if (!doc.exists) return;
-      const data = doc.data();
-      // Kicked kaydı varsa kullanıcıyı çıkart
-      const kickedBy = data.kickedBy || 'Bir yetkili';
-      const kickReason = data.kickReason || 'Sebep belirtilmedi';
-      showKickedScreen(kickedBy, kickReason);
+  // Tüm sunuculardaki kick kayıtlarını dinle
+  unsubscribeKick = db.collection('kicked')
+    .where('username', '==', uname)
+    .onSnapshot(snapshot => {
+      snapshot.docChanges().forEach(change => {
+        if (change.type === 'added') {
+          const data = change.doc.data();
+          const kickedServerId = data.serverId;
+          const kickedBy = data.kickedBy || 'Bir yetkili';
+          // Kick kaydını hemen sil
+          change.doc.ref.delete().catch(() => {});
+          // Eğer şu an o sunucudaysak DM'ye geç, değilse sadece üye listesini güncelle
+          // Sunucuyu sidebar'dan kaldır
+          const srvIcon = document.querySelector('[data-serverid="' + kickedServerId + '"]');
+          console.log('Kick alındı, sunucu:', kickedServerId, 'ikon:', srvIcon);
+          if (srvIcon) {
+            srvIcon.remove();
+          }
+          // Eğer şu an o sunucudaysak DM'ye geç
+          if (currentServer === kickedServerId) {
+            const dmBtn = document.querySelector('.server-icon.home');
+            if (dmBtn) switchServer(dmBtn, 'dm');
+            else openDmScreen();
+          }
+        }
+      });
     });
 }
 
 function showKickedScreen(kickedBy, reason) {
-  // Önce çıkış yap
-  if (currentUser) {
-    const uid = currentUser.uid;
-    db.collection('onlineUsers').doc(uid).delete().catch(() => {});
-  }
-  auth.signOut();
-  // Login ekranını göster, kicked kutusunu aç
-  document.getElementById('loginScreen').style.display = 'flex';
-  document.getElementById('loginFormBox').style.display = 'none';
-  document.getElementById('verifyEmailBox').style.display = 'none';
-  document.getElementById('forgotPwdBox').style.display = 'none';
-  document.getElementById('kickedBox').style.display = 'block';
-  document.getElementById('kickedByName').textContent = kickedBy;
-  document.getElementById('kickedReasonText').textContent = 'Sebep: ' + reason;
+  // Artık kullanılmıyor — listenForKick sunucu bazlı çalışıyor
 }
 
 function handleKickedLogout() {
@@ -7804,6 +7936,7 @@ function listenToMessages(channelId) {
           _firebaseId: doc.id,
           _channelId: channelId
         };
+        if (d.replyTo) msgObj.replyTo = d.replyTo;
         // Dosya alanlarını da al
         if (d.uploadedImage) { msgObj.uploadedImage = d.uploadedImage; msgObj.fileName = d.fileName; msgObj.isSpoiler = d.isSpoiler || false; }
         if (d.uploadedVideo) { msgObj.uploadedVideo = d.uploadedVideo; msgObj.fileName = d.fileName; }
