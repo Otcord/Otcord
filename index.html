@@ -1751,6 +1751,13 @@
         <!-- SOL: AYARLAR -->
         <div style="flex:1;min-width:0;">
 
+          <!-- GÖRÜNEN AD -->
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#80848e;letter-spacing:.05em;margin-bottom:8px;">Görünen Ad</div>
+          <div style="margin-bottom:24px;">
+            <input id="displayNameInput" type="text" maxlength="32" oninput="updateDisplayNamePreview()" placeholder="Görünen adın..." style="width:100%;background:#1e1f22;border:1px solid #3f4147;border-radius:4px;color:#f2f3f5;font-size:14px;padding:10px 12px;outline:none;box-sizing:border-box;font-family:inherit;" onfocus="this.style.borderColor='#00a8fc'" onblur="this.style.borderColor='#3f4147'">
+            <div style="font-size:12px;color:#80848e;margin-top:4px;">Bu isim sohbette, üye listesinde ve profilinde görünür.</div>
+          </div>
+
           <!-- AVATAR -->
           <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#80848e;letter-spacing:.05em;margin-bottom:10px;">Avatar</div>
           <div style="display:flex;gap:10px;align-items:center;margin-bottom:24px;">
@@ -1792,6 +1799,9 @@
             <textarea id="aboutMeInput" maxlength="190" oninput="updateAboutMe()" placeholder="Kendinden bahset..." style="width:100%;background:#1e1f22;border:1px solid #1a1b1e;border-radius:4px;color:#f2f3f5;font-size:14px;padding:10px 12px;outline:none;box-sizing:border-box;font-family:inherit;resize:none;line-height:1.5;onfocus" rows="4" onfocus="this.style.borderColor='#00a8fc'" onblur="this.style.borderColor='#1a1b1e'"></textarea>
             <div id="aboutMeCount" style="text-align:right;font-size:11px;color:#80848e;margin-top:4px;">0 / 190</div>
           </div>
+
+          <!-- KAYDET BUTONU -->
+
 
         </div>
 
@@ -1994,6 +2004,16 @@
     <div class="esc-circle" style="width:36px;height:36px;border-radius:50%;background:#3f4147;display:flex;align-items:center;justify-content:center;font-size:18px;color:#f2f3f5;transition:background .1s;">✕</div>
     <div style="font-size:11px;color:#80848e;font-weight:700;">ESC</div>
   </div>
+
+  <!-- PROFİL DEĞİŞİKLİK BARI - sabit alt çubuk -->
+  <div id="profileSaveBar" style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#111214;border-radius:8px;padding:12px 20px;align-items:center;gap:16px;box-shadow:0 4px 16px rgba(0,0,0,0.6);white-space:nowrap;border:1px solid #f0b232;min-width:480px;z-index:100000;">
+    <span style="color:#f0b232;font-size:18px;">⚠️</span>
+    <span style="color:#f2f3f5;font-size:14px;font-weight:500;">Dikkat — Kaydedilmemiş değişiklikleriniz var!</span>
+    <div style="margin-left:auto;display:flex;gap:8px;">
+      <button onclick="resetProfileChanges()" style="background:#4e5058;border:none;color:#f2f3f5;font-size:14px;font-weight:600;cursor:pointer;padding:8px 20px;border-radius:4px;font-family:inherit;" onmouseover="this.style.background='#6d6f78'" onmouseout="this.style.background='#4e5058'">Sıfırla</button>
+      <button onclick="saveDisplayName()" style="background:#23a55a;color:white;border:none;border-radius:4px;padding:8px 20px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#1a8a4a'" onmouseout="this.style.background='#23a55a'">Değişiklikleri Kaydet</button>
+    </div>
+  </div>
 </div>
 
 <!-- KULLANICI ADI DEĞİŞTİR MODAL -->
@@ -2080,39 +2100,35 @@
 </div>
 
 <!-- EMOJİ PİCKER -->
-<div id="emojiPicker" style="display:none;position:fixed;background:#1e1f22;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.7);z-index:8000;width:420px;height:440px;flex-direction:column;overflow:hidden;border:1px solid #3f4147;">
+<div id="emojiPicker" style="display:none;position:fixed;background:#1e1f22;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.7);z-index:8000;width:440px;height:460px;flex-direction:column;overflow:hidden;border:1px solid #3f4147;">
   <!-- Sekmeler -->
   <div style="display:flex;border-bottom:1px solid #3f4147;background:#1e1f22;padding:4px 8px 0;gap:2px;">
     <div class="ep-tab active" data-tab="gif" onclick="switchEmojiTab('gif')">GIF'ler</div>
     <div class="ep-tab" data-tab="sticker" onclick="switchEmojiTab('sticker')">Çıkartmalar</div>
     <div class="ep-tab" data-tab="emoji" onclick="switchEmojiTab('emoji')">Emoji</div>
   </div>
-  <!-- Arama + Emoji Ekle -->
+  <!-- Arama -->
   <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid #3f4147;">
     <div style="flex:1;display:flex;align-items:center;background:#111214;border-radius:6px;padding:6px 10px;gap:6px;">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="#80848e"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
       <input id="emojiSearch" type="text" placeholder="Ara" oninput="searchEmojis()" style="background:none;border:none;outline:none;color:#f2f3f5;font-size:13px;font-family:inherit;width:100%;">
     </div>
-    <div style="font-size:22px;cursor:pointer;padding:2px 4px;" title="Sık Kullanılanlar">👋</div>
-    <button onclick="showToast('Özel emoji ekleme yakında!')" style="background:#404249;color:#f2f3f5;border:none;border-radius:6px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;">Emoji Ekle</button>
   </div>
   <!-- İçerik alanı: sol kategori bar + emoji grid -->
   <div id="emojiTabEmoji" style="display:flex;flex:1;overflow:hidden;">
-    <!-- Kategori ikonları (sol) -->
-    <div id="emojiCatBar" style="width:40px;background:#161618;display:flex;flex-direction:column;align-items:center;padding:6px 0;gap:2px;overflow-y:auto;flex-shrink:0;">
+    <!-- Sol panel: sunucu ikonları + kategori ikonları -->
+    <div id="emojiCatBar" style="width:44px;background:#111214;display:flex;flex-direction:column;align-items:center;padding:6px 0;gap:3px;overflow-y:auto;flex-shrink:0;border-right:1px solid #3f4147;">
     </div>
     <!-- Emoji grid -->
-    <div id="emojiGrid" style="flex:1;overflow-y:auto;padding:8px;"></div>
+    <div id="emojiGrid" style="flex:1;overflow-y:auto;padding:8px 10px;"></div>
   </div>
   <div id="emojiTabGif" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
-    <!-- GIF Kategori Bar -->
     <div id="gifCatBar" style="display:flex;gap:6px;padding:8px 10px;border-bottom:1px solid #3f4147;overflow-x:auto;flex-shrink:0;">
       <div class="gif-cat-btn active" data-gifcat="komik" onclick="switchGifCat(this,'komik')">😂 Komik</div>
       <div class="gif-cat-btn" data-gifcat="kutlama" onclick="switchGifCat(this,'kutlama')">🎉 Kutlama</div>
       <div class="gif-cat-btn" data-gifcat="uzgun" onclick="switchGifCat(this,'uzgun')">😢 Üzgün</div>
       <div class="gif-cat-btn" data-gifcat="kizgin" onclick="switchGifCat(this,'kizgin')">😡 Sinirli</div>
     </div>
-    <!-- GIF Grid -->
     <div id="gifGrid" style="flex:1;overflow-y:auto;padding:8px;display:grid;grid-template-columns:1fr 1fr;gap:6px;align-content:start;"></div>
   </div>
   <div id="emojiTabSticker" style="display:none;flex:1;align-items:center;justify-content:center;color:#80848e;font-size:14px;">Çıkartma özelliği yakında!</div>
@@ -2287,6 +2303,21 @@
     <div style="display:flex;justify-content:flex-end;gap:12px;">
       <button onclick="document.getElementById('logoutConfirmModal').style.display='none'" style="background:none;color:#f2f3f5;border:none;font-size:14px;font-weight:600;cursor:pointer;padding:10px 20px;border-radius:4px;font-family:inherit;" onmouseover="this.style.background='#3f4147'" onmouseout="this.style.background='none'">İptal</button>
       <button onclick="confirmLogout()" style="background:#f23f43;color:white;border:none;border-radius:4px;padding:10px 24px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#c0393c'" onmouseout="this.style.background='#f23f43'">Çıkış Yap</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- SUNUCU SİL ONAY MODALI -->
+<div id="deleteServerConfirmModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:99999;align-items:center;justify-content:center;">
+  <div style="background:#313338;border-radius:8px;width:440px;padding:24px;position:relative;box-shadow:0 8px 32px rgba(0,0,0,0.6);">
+    <button onclick="document.getElementById('deleteServerConfirmModal').style.display='none'" style="position:absolute;top:12px;right:12px;background:none;border:none;color:#80848e;font-size:20px;cursor:pointer;">✕</button>
+    <h2 style="font-size:20px;font-weight:700;margin-bottom:8px;color:#f23f43;">Sunucuyu Sil</h2>
+    <p style="color:#b5bac1;font-size:14px;margin-bottom:6px;">Bu sunucuyu silmek istediğine <strong>kesinlikle</strong> emin misin?</p>
+    <p style="color:#80848e;font-size:13px;margin-bottom:24px;">Tüm kanallar, mesajlar ve veriler kalıcı olarak silinir. Bu işlem geri alınamaz.</p>
+    <div style="display:flex;justify-content:flex-end;gap:12px;">
+      <button onclick="document.getElementById('deleteServerConfirmModal').style.display='none'" style="background:none;color:#f2f3f5;border:none;font-size:14px;font-weight:600;cursor:pointer;padding:10px 20px;border-radius:4px;font-family:inherit;" onmouseover="this.style.background='#3f4147'" onmouseout="this.style.background='none'">İptal</button>
+      <button onclick="doDeleteServer()" style="background:#f23f43;color:white;border:none;border-radius:4px;padding:10px 24px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#c0393c'" onmouseout="this.style.background='#f23f43'">Sunucuyu Sil</button>
     </div>
   </div>
 </div>
@@ -2980,7 +3011,21 @@
 
       <!-- DİĞER SEKMELER — Yakında -->
       <div id="srvTab_roller" style="display:none;"><h2 style="font-size:20px;font-weight:700;margin-bottom:16px;">Roller</h2><p style="color:#80848e;">Rol yönetimi yakında eklenecek.</p></div>
-      <div id="srvTab_emoji" style="display:none;"><h2 style="font-size:20px;font-weight:700;margin-bottom:16px;">Emoji</h2><p style="color:#80848e;">Özel emoji yönetimi yakında eklenecek.</p></div>
+      <div id="srvTab_emoji" style="display:none;">
+  <h2 style="font-size:20px;font-weight:700;margin-bottom:4px;">Emoji</h2>
+  <p style="color:#80848e;font-size:14px;margin-bottom:20px;">Bu sunucuya özel emojiler ekle. Herkes kullanabilir.</p>
+  <div style="margin-bottom:20px;">
+    <label id="srvEmojiUploadBtn" style="display:inline-flex;align-items:center;gap:8px;background:#00a8fc;color:white;border:none;border-radius:4px;padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#0090d4'" onmouseout="this.style.background='#00a8fc'">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+      Emoji Yükle
+      <input type="file" id="srvEmojiFileInput" accept="image/*" style="display:none;" onchange="uploadServerEmoji(event)">
+    </label>
+  </div>
+  <div style="border-top:1px solid #3f4147;padding-top:16px;">
+    <div id="srvEmojiList" style="display:flex;flex-wrap:wrap;gap:12px;"></div>
+    <div id="srvEmojiEmpty" style="color:#80848e;font-size:14px;display:none;">Henüz emoji yok. Yukarıdan yükleyin!</div>
+  </div>
+</div>
       <div id="srvTab_sticker" style="display:none;"><h2 style="font-size:20px;font-weight:700;margin-bottom:16px;">Çıkartmalar</h2><p style="color:#80848e;">Çıkartma yönetimi yakında eklenecek.</p></div>
       <div id="srvTab_ses" style="display:none;"><h2 style="font-size:20px;font-weight:700;margin-bottom:16px;">Ses</h2><p style="color:#80848e;">Ses bölgesi ayarları yakında eklenecek.</p></div>
       <div id="srvTab_icerik" style="display:none;"><h2 style="font-size:20px;font-weight:700;margin-bottom:16px;">İçerik Moderasyonu</h2><p style="color:#80848e;">Moderasyon ayarları yakında eklenecek.</p></div>
@@ -3126,8 +3171,12 @@
 </div>
 
 <script>
-const COLORS = ['#00a8fc','#eb459e','#ed4245','#f0b232','#23a55a','#00a8fc','#9b59b6','#e67e22'];
-const getColor = (str) => COLORS[str.charCodeAt(0) % COLORS.length];
+const COLORS = ['#00a8fc','#eb459e','#ed4245','#f0b232','#23a55a','#9b59b6','#e67e22','#1abc9c'];
+const getColor = (str) => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+  return COLORS[hash % COLORS.length];
+};
 const getInitials = (name) => name.slice(0,2).toUpperCase();
 // uid veya string'den deterministik 4 haneli sayısal tag üret (1000-9999)
 const getTag = (str) => {
@@ -3187,6 +3236,8 @@ function getMessages(channelId) {
 }
 
 let currentServer = 'dm';
+let allServersList = []; // { id, name, iconUrl }
+let serverCustomEmojis = {}; // { serverId: [{name, url}] }
 let appReady = false; // loading bitmeden arayüz açılmasın
 let currentChannel = 'genel';
 let currentChannelType = 'text';
@@ -3336,9 +3387,18 @@ function deleteCategoryAction() {
   showDeleteConfirmModal(catToDelete, () => {
     const s = servers[currentServer];
     const hadCurrent = s.channels.find(c => c.category === catToDelete && c.id === currentChannel);
+    const catChannels = s.channels.filter(c => c.category === catToDelete);
     s.channels = s.channels.filter(c => c.category !== catToDelete);
-    // Firebase'e yaz — tüm kullanıcılara anlık yansısın
     saveChannelsToFirebase(currentServer);
+    // Kategorideki tüm kanalların mesajlarını Firestore'dan sil
+    catChannels.forEach(ch => {
+      db.collection('channels').doc(ch.id).collection('messages').get().then(snap => {
+        const batch = db.batch();
+        snap.forEach(doc => batch.delete(doc.ref));
+        batch.delete(db.collection('channels').doc(ch.id));
+        return batch.commit();
+      }).catch(e => console.warn('Kategori kanal temizleme hatası:', e));
+    });
     renderChannels();
     if (hadCurrent) {
       const first = s.channels.find(c => c.type === 'text' || c.type === 'announce');
@@ -3942,15 +4002,13 @@ function switchServer(el, serverId) {
   document.querySelectorAll('.server-icon').forEach(s => s.classList.remove('active'));
   el.classList.add('active');
   currentServer = serverId;
-  // Sunucu değişince üye listesini güncelle
-  setTimeout(updateMembersForCurrentServer, 100);
-  
+  updateMembersForCurrentServer();
+
   if (serverId === 'dm') {
     openDmScreen();
     return;
   }
 
-  // DM ekranı açıksa kapat
   document.getElementById('dmScreen').style.display = 'none';
 
   if (!servers[serverId]) {
@@ -3958,24 +4016,8 @@ function switchServer(el, serverId) {
     return;
   }
 
-  // Yeni sunucunun kanallarını Firebase'den dinle
-  if (db && currentUser) listenToChannels(serverId);
-  
-  const firstCh = servers[serverId].channels[0];
-  currentChannel = firstCh.id;
-  currentChannelType = firstCh.type;
-  renderChannels();
-  if (firstCh.type === 'voice') {
-    switchChannel(firstCh.id, firstCh.name, firstCh.topic || '', firstCh.type);
-  } else {
-    document.getElementById('voiceChannelView').style.display = 'none';
-    document.getElementById('textChannelView').style.display = 'flex';
-    renderMessages();
-    if (currentUser) {
-      listenToMessages(firstCh.id);
-      listenToTyping(firstCh.id);
-    }
-  }
+  // Kanal listesini Firebase'den cek (guncel), sonra ilk kanali sec
+  listenToChannels(serverId, true);
 }
 
 function renderMessages() {
@@ -3997,7 +4039,8 @@ function renderMessages() {
   messages.forEach((msg, i) => {
     const isFirst = msg.author !== lastAuthor;
     lastAuthor = msg.author;
-    const color = getColor(msg.author);
+    const color = getColor(msg.uid || msg.author);
+    const replyAuthorColor = (rAuthor, rUid) => getColor(rUid || rAuthor);
     const initials = getInitials(msg.author);
     const safeAuthor = msg.author.replace(/"/g, '&quot;');
     
@@ -4024,8 +4067,8 @@ function renderMessages() {
     const replyHtml = msg.replyTo
       ? '<div class="msg-reply-ref" data-jumpto="' + msg.replyTo.idx + '">'
         + '<div class="reply-curve"></div>'
-        + '<div class="msg-reply-avatar" style="background:' + getColor(msg.replyTo.author) + '">' + msg.replyTo.author.slice(0,2).toUpperCase() + '</div>'
-        + '<span class="reply-author" style="color:' + getColor(msg.replyTo.author) + '">' + msg.replyTo.author + '</span>'
+        + '<div class="msg-reply-avatar" style="background:' + replyAuthorColor(msg.replyTo.author, msg.replyTo.uid) + '">' + msg.replyTo.author.slice(0,2).toUpperCase() + '</div>'
+        + '<span class="reply-author" style="color:' + replyAuthorColor(msg.replyTo.author, msg.replyTo.uid) + '">' + msg.replyTo.author + '</span>'
         + (msg.replyTo.hasImage
             ? '<span class="reply-text" style="font-style:italic;display:flex;align-items:center;gap:3px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>Görsel</span>'
             : '<span class="reply-text">' + (msg.replyTo.text||'(orijinal mesaj silindi)').slice(0,80) + ((msg.replyTo.text||'').length>80?'…':'') + '</span>')
@@ -4204,11 +4247,31 @@ function renderMsgActions(idx, isSelf) {
 }
 
 function formatText(text) {
-  return text
+  // Önce custom emoji tag'lerini işaretle (placeholder ile)
+  const emojiMap = {};
+  let idx = 0;
+  let result = text.replace(/:([a-zA-Z0-9_]+):/g, (match, name) => {
+    for (const srvId in serverCustomEmojis) {
+      const found = serverCustomEmojis[srvId].find(e => e.name === name);
+      if (found) {
+        const key = '\x00emoji' + (idx++) + '\x00';
+        emojiMap[key] = `<img src='${found.url}' style='width:48px;height:48px;object-fit:contain;vertical-align:middle;display:inline-block;margin:0 2px;' title=':${name}:' draggable='false'>`;
+        return key;
+      }
+    }
+    return match;
+  });
+  // Diğer formatlamalar
+  result = result
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
     .replace(/`(.*?)`/g, '<code style="background:rgba(0,0,0,0.3);padding:2px 5px;border-radius:3px;font-family:monospace">$1</code>')
-    .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
+    .replace(/(https?:\/\/[^\s\x00]+)/g, '<a href="$1" target="_blank">$1</a>');
+  // Placeholder'ları gerçek img tag'leriyle değiştir
+  for (const key in emojiMap) {
+    result = result.replace(key, emojiMap[key]);
+  }
+  return result;
 }
 
 function renderMembers() {
@@ -4224,7 +4287,7 @@ function renderMembers() {
 }
 
 function renderMember(m) {
-  const color = getColor(m.name);
+  const color = getColor(m.uid || m.name);
   const myUname = currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : '';
   const isMe = m.name === myUname;
   const kickBtn = isMe ? '' : `<div onclick="event.stopPropagation();showKickModal('${m.name.replace(/'/g,"\'")}')" style="margin-left:auto;padding:3px 8px;border-radius:4px;font-size:12px;font-weight:700;color:#f23f43;cursor:pointer;opacity:0;transition:opacity .1s;" class="member-kick-btn">At</div>`;
@@ -4272,7 +4335,11 @@ function openProfilePanel(e, memberName) {
   let m = members.find(x => x.name === memberName);
   if (!m) m = { name: memberName, status: 'online', activity: '', role: '' };
 
-  const color = getColor(m.name);
+  const myUname = currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : 'AhmetYilmaz';
+  const isMe = m.name === myUname;
+  // uid varsa uid'den, yoksa isimden — tutarlı ve isim değişince renkler sabit kalır
+  const colorKey = m.uid || (isMe && currentUser ? currentUser.uid : m.name);
+  const color = getColor(colorKey);
   const initials = getInitials(m.name);
   const roleIcon = m.role === 'admin' ? '👑 Admin' : m.role === 'mod' ? '🛡️ Moderatör' : '';
 
@@ -4287,8 +4354,7 @@ function openProfilePanel(e, memberName) {
 
   // Status
   const st = document.getElementById('profileAvatarStatus');
-  const myUname = currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : 'AhmetYilmaz';
-  const effectiveStatus = (m.name === myUname) ? myStatus : (m.status || 'offline');
+  const effectiveStatus = isMe ? myStatus : (m.status || 'offline');
   st.style.background = statusColors[effectiveStatus] || '#80848e';
 
   // İsim
@@ -4709,26 +4775,99 @@ function switchEmojiTab(tab) {
 
 function renderEmojiCatBar() {
   const bar = document.getElementById('emojiCatBar');
-  bar.innerHTML = EMOJI_CATS.map(cat =>
-    '<div class="ep-cat-btn ' + (cat.id === currentEmojiCat ? 'active' : '') + '" title="' + cat.label + '" data-catid="' + cat.id + '">' + cat.icon + '</div>'
+  // Sunucu emojileri için ikonlar (üstte)
+  let serverHtml = '';
+  const serversWithEmojis = allServersList.filter(srv => (serverCustomEmojis[srv.id] || []).length > 0);
+  if (serversWithEmojis.length > 0) {
+    // Ayraç
+    serverHtml += '<div style="width:28px;height:1px;background:#3f4147;margin:2px 0;flex-shrink:0;"></div>';
+    serversWithEmojis.forEach(srv => {
+      const isSel = currentEmojiCat === 'srv_' + srv.id;
+      const ico = srv.iconUrl
+        ? '<img src="' + srv.iconUrl + '" style="width:26px;height:26px;border-radius:' + (isSel ? '8px' : '50%') + ';object-fit:cover;transition:border-radius .15s;">'
+        : '<div style="width:26px;height:26px;border-radius:' + (isSel ? '8px' : '50%') + ';background:' + getColor(srv.name) + ';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;transition:border-radius .15s;">' + srv.name.slice(0,2).toUpperCase() + '</div>';
+      serverHtml += '<div class="ep-cat-btn ' + (isSel ? 'active' : '') + '" title="' + srv.name + '" data-catid="srv_' + srv.id + '" style="padding:2px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:6px;cursor:pointer;">' + ico + '</div>';
+    });
+    serverHtml += '<div style="width:28px;height:1px;background:#3f4147;margin:2px 0;flex-shrink:0;"></div>';
+  }
+  // Standart kategori ikonları
+  const catHtml = EMOJI_CATS.map(cat =>
+    '<div class="ep-cat-btn ' + (cat.id === currentEmojiCat ? 'active' : '') + '" title="' + cat.label + '" data-catid="' + cat.id + '" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:6px;cursor:pointer;font-size:18px;">' + cat.icon + '</div>'
   ).join('');
+  bar.innerHTML = serverHtml + catHtml;
   bar.querySelectorAll('.ep-cat-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       currentEmojiCat = btn.dataset.catid;
       renderEmojiCatBar();
-      renderEmojiGrid(currentEmojiCat);
+      if (currentEmojiCat.startsWith('srv_')) {
+        renderServerEmojiGrid(currentEmojiCat.replace('srv_', ''));
+      } else {
+        renderEmojiGrid(currentEmojiCat);
+      }
       document.getElementById('emojiSearch').value = '';
     });
   });
+}
+
+function renderServerEmojiGrid(serverId) {
+  const grid = document.getElementById('emojiGrid');
+  const emojis = serverCustomEmojis[serverId] || [];
+  const srv = allServersList.find(s => s.id === serverId);
+  const srvName = srv ? srv.name : 'Sunucu';
+  // Sunucu başlığı
+  let html = '<div style="font-size:11px;font-weight:700;color:#80848e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;padding:2px 0;">' + srvName + '</div>';
+  if (emojis.length === 0) {
+    html += '<div style="color:#80848e;font-size:13px;padding:8px 0;">Bu sunucuda henüz emoji yok.</div>';
+  } else {
+    html += '<div style="display:grid;grid-template-columns:repeat(8,1fr);gap:2px;">';
+    emojis.forEach((em, i) => {
+      html += '<div class="ep-emoji ep-custom-emoji" data-customidx="' + i + '" data-srvid="' + serverId + '" title=":' + em.name + ':" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:4px;cursor:pointer;">'
+        + '<img src="' + em.url + '" style="width:28px;height:28px;object-fit:contain;" draggable="false">'
+        + '</div>';
+    });
+    html += '</div>';
+  }
+  grid.innerHTML = html;
+  grid.querySelectorAll('.ep-custom-emoji').forEach(el => {
+    el.addEventListener('click', () => pickCustomEmoji(el.dataset.srvid, parseInt(el.dataset.customidx)));
+  });
+  grid.scrollTop = 0;
+}
+
+
+
+function pickCustomEmoji(serverId, idx) {
+  const em = (serverCustomEmojis[serverId] || [])[idx];
+  if (!em) return;
+  const picker = document.getElementById('emojiPicker');
+  if (picker.dataset.reactMode === '1' && quickReactMsgIdx >= 0) {
+    picker.dataset.reactMode = '0';
+    const msgIdx = quickReactMsgIdx;
+    quickReactMsgIdx = -1;
+    picker.style.display = 'none';
+    emojiPickerOpen = false;
+    addReaction(msgIdx, em.url, true); // custom emoji reaction
+    return;
+  }
+  // Mesaj inputuna özel emoji tag ekle
+  const input = document.getElementById('messageInput');
+  const pos = input.selectionStart || input.value.length;
+  const tag = ':' + em.name + ':';
+  input.value = input.value.slice(0, pos) + tag + input.value.slice(pos);
+  input.focus();
+  input.setSelectionRange(pos + tag.length, pos + tag.length);
+  // Önizleme için pendingCustomEmojis'e ekle
+  if (!window.pendingCustomEmojis) window.pendingCustomEmojis = [];
+  window.pendingCustomEmojis.push({ name: em.name, url: em.url });
 }
 
 function renderEmojiGrid(catId) {
   const grid = document.getElementById('emojiGrid');
   const cat = EMOJI_CATS.find(c => c.id === catId);
   if (!cat) return;
-  let html = '<div class="ep-section-title">' + cat.label + '</div>';
-  html += '<div class="ep-grid">';
+  let html = '<div style="font-size:11px;font-weight:700;color:#80848e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;padding:2px 0;">' + cat.label + '</div>';
+  html += '<div style="display:grid;grid-template-columns:repeat(8,1fr);gap:2px;">';
   cat.emojis.forEach(em => {
     html += '<div class="ep-emoji" data-em="' + em + '">' + em + '</div>';
   });
@@ -5662,6 +5801,7 @@ function sendMessage() {
           msgData.replyTo = {
             idx: replyingToIdx,
             author: replyMsg.author,
+            uid: replyMsg.uid || '',
             text: replyMsg.text || '',
             hasImage: !!replyMsg.uploadedImage
           };
@@ -5922,14 +6062,14 @@ function openDmScreen() {
   // sync user panel with current user
   if (currentUser) {
     const uname = currentUser.displayName || currentUser.email.split('@')[0];
-    const color = getColor(uname);
+    const color = getColor(currentUser.uid);
     const tagStr = getTag(currentUser.uid);
     const av = document.getElementById('dmMyAvatar');
     if (av) { av.textContent = getInitials(uname); av.style.background = color; }
     const nameEl = document.getElementById('dmMyName');
     if (nameEl) nameEl.textContent = uname;
     const tagEl = document.getElementById('dmMyTag');
-    if (tagEl) tagEl.textContent = tagStr;
+    if (tagEl) tagEl.textContent = statusMeta[myStatus].label;
   }
 }
 
@@ -6094,6 +6234,12 @@ function updateMyStatus(status) {
   document.getElementById('pmStatusIcon').style.background = color;
   document.getElementById('pmStatusLabel').textContent = label;
   document.getElementById('pmStatusDot').style.background = color;
+
+  // Sol alt tag yazısını status olarak güncelle (sunucu + DM paneli)
+  const myTagEl = document.getElementById('myTag');
+  if (myTagEl) myTagEl.textContent = label;
+  const dmTagEl = document.getElementById('dmMyTag');
+  if (dmTagEl) dmTagEl.textContent = label;
 
   // Firebase'e yaz — diğer kullanıcılarda da görünsün
   if (currentUser) {
@@ -6376,6 +6522,14 @@ function deleteCurrentChannel() {
     // Firebase'e yaz — tüm kullanıcılara anlık yansısın
     saveChannelsToFirebase(currentServer);
 
+    // Kanal mesajlarını Firestore'dan toplu sil
+    db.collection('channels').doc(deletingId).collection('messages').get().then(snap => {
+      const batch = db.batch();
+      snap.forEach(doc => batch.delete(doc.ref));
+      batch.delete(db.collection('channels').doc(deletingId));
+      return batch.commit();
+    }).catch(e => console.warn('Mesaj temizleme hatası:', e));
+
     closeChannelSettings();
     renderChannels();
 
@@ -6475,48 +6629,93 @@ function saveChannelsToFirebase(serverId) {
 // Sunucu kanallarını Firestore'dan gerçek zamanlı dinle
 const channelListenerUnsubs = {};
 
-function listenToChannels(serverId) {
-  // Varsa önceki listener'ı iptal et
+function listenToChannels(serverId, autoSelect) {
+  // Varsa önceki listener iptal et
   if (channelListenerUnsubs[serverId]) {
     channelListenerUnsubs[serverId]();
+    delete channelListenerUnsubs[serverId];
   }
-  channelListenerUnsubs[serverId] = db.collection('serverChannels').doc(serverId)
-    .onSnapshot(doc => {
-      if (!doc.exists) {
-        // Firestore'da kayıt yok, mevcut lokal veriyi ilk kez yaz
-        saveChannelsToFirebase(serverId);
-        return;
-      }
-      const data = doc.data();
-      if (!data || !data.channels) return;
-      // Lokal serveri güncelle
-      const server = servers[serverId];
-      if (!server) return;
-      server.channels = data.channels.map(ch => ({
-        id: ch.id,
-        name: ch.name,
-        type: ch.type,
-        topic: ch.topic || '',
-        category: ch.category || '',
-        order: ch.order || 0,
-        _isPlaceholder: ch._isPlaceholder || false,
-        slowMode: ch.slowMode || '0',
-        ageRestricted: ch.ageRestricted || false
-      }));
-      // Sıralamayı koru
-      server.channels.sort((a, b) => (a.order || 0) - (b.order || 0));
 
-      // Eğer mevcut kanal hâlâ listede varsa sadece yeniden render et
-      const stillExists = server.channels.find(c => c.id === currentChannel);
-      if (serverId === currentServer) {
-        renderChannels();
-        // Aktif kanal silindiyse ilk metin kanalına geç
-        if (!stillExists) {
-          const first = server.channels.find(c => c.type === 'text' || c.type === 'announce');
-          if (first) switchChannel(first.id, first.name, first.topic || '', first.type);
+  function applyChannels(doc) {
+    if (!doc.exists) {
+      // Sadece built-in sunucularda lokal kanalları Firebase'e yaz
+      const builtIn = ['coding', 'gaming'];
+      if (builtIn.includes(serverId)) saveChannelsToFirebase(serverId);
+      if (autoSelect && serverId === currentServer) {
+        const server = servers[serverId];
+        if (server) {
+          const first = server.channels.find(c => c.type === 'text' || c.type === 'announce') || server.channels[0];
+          if (first) _selectChannel(serverId, first);
         }
+        autoSelect = false;
       }
-    }, e => console.error('Kanal dinleme hatası:', e));
+      return;
+    }
+    const data = doc.data();
+    if (!data || !data.channels) return;
+    const server = servers[serverId];
+    if (!server) return;
+    server.channels = data.channels.map(ch => ({
+      id: ch.id, name: ch.name, type: ch.type,
+      topic: ch.topic || '', category: ch.category || '',
+      order: ch.order || 0, _isPlaceholder: ch._isPlaceholder || false,
+      slowMode: ch.slowMode || '0', ageRestricted: ch.ageRestricted || false
+    }));
+    server.channels.sort((a, b) => (a.order || 0) - (b.order || 0));
+
+    if (serverId !== currentServer) return;
+
+    if (autoSelect) {
+      autoSelect = false;
+      const first = server.channels.find(c => c.type === 'text' || c.type === 'announce') || server.channels[0];
+      if (first) _selectChannel(serverId, first);
+      return;
+    }
+    renderChannels();
+    const stillExists = server.channels.find(c => c.id === currentChannel);
+    if (!stillExists) {
+      const first = server.channels.find(c => c.type === 'text' || c.type === 'announce');
+      if (first) switchChannel(first.id, first.name, first.topic || '', first.type);
+    }
+  }
+
+  if (autoSelect) {
+    // Sunucuya ilk geciste: once .get() ile cache'siz guncel veriyi al, sonra listener kur
+    db.collection('serverChannels').doc(serverId).get({ source: 'server' })
+      .then(doc => {
+        applyChannels(doc);
+        // Sonrasinda canli degisiklikleri dinle (autoSelect artik false)
+        channelListenerUnsubs[serverId] = db.collection('serverChannels').doc(serverId)
+          .onSnapshot(d => applyChannels(d), e => console.error('Kanal dinleme hatasi:', e));
+      })
+      .catch(() => {
+        // Sunucu erisimi yoksa cache'den dene
+        channelListenerUnsubs[serverId] = db.collection('serverChannels').doc(serverId)
+          .onSnapshot(d => applyChannels(d), e => console.error('Kanal dinleme hatasi:', e));
+      });
+  } else {
+    channelListenerUnsubs[serverId] = db.collection('serverChannels').doc(serverId)
+      .onSnapshot(d => applyChannels(d), e => console.error('Kanal dinleme hatasi:', e));
+  }
+}
+
+// Sunucuya ilk geçişte kanalı seç ve render et
+function _selectChannel(serverId, ch) {
+  if (currentServer !== serverId) return;
+  currentChannel = ch.id;
+  currentChannelType = ch.type;
+  renderChannels();
+  if (ch.type === 'voice') {
+    switchChannel(ch.id, ch.name, ch.topic || '', ch.type);
+  } else {
+    document.getElementById('voiceChannelView').style.display = 'none';
+    document.getElementById('textChannelView').style.display = 'flex';
+    renderMessages();
+    if (currentUser) {
+      listenToMessages(ch.id);
+      listenToTyping(ch.id);
+    }
+  }
 }
 
 // =============================================
@@ -6714,35 +6913,130 @@ function doLogin() {
 // =============================================
 // KULLANICI SUNUCULARINI YÜKLE
 // =============================================
+let unsubscribeUserServers = null;
+
 function loadUserServers(uid) {
-  db.collection('servers').where('members', 'array-contains', uid)
-    .get().then(snap => {
-      snap.forEach(doc => {
+  if (unsubscribeUserServers) { unsubscribeUserServers(); unsubscribeUserServers = null; }
+
+  unsubscribeUserServers = db.collection('servers').where('members', 'array-contains', uid)
+    .onSnapshot(snap => {
+      snap.docChanges().forEach(change => {
+        const doc = change.doc;
         const data = doc.data();
         const serverId = doc.id;
-        // Zaten sidebar'da varsa ekleme
-        if (document.querySelector('[data-serverid="' + serverId + '"]')) return;
-        if (serverId === 'coding') {
-          // Coding sunucusunu sidebar'a ekle (üye olanlara)
-          const div = document.createElement('div');
-          div.className = 'server-icon';
-          div.setAttribute('data-tooltip', 'Kodlama Merkezi');
-          div.setAttribute('data-serverid', 'coding');
-          div.style.background = '#00a8fc';
-          div.innerHTML = '<span>KM</span>';
-          div.onclick = function() { switchServer(this, 'coding'); };
-          const addBtn = document.querySelector('.server-add');
-          if (addBtn) addBtn.parentNode.insertBefore(div, addBtn);
-          // Separator ekle
-          const sep = document.createElement('div');
-          sep.className = 'server-separator';
-          if (addBtn) addBtn.parentNode.insertBefore(sep, addBtn);
-          return;
+
+        if (change.type === 'added') {
+          if (document.querySelector('[data-serverid="' + serverId + '"]')) return;
+          if (serverId === 'coding') {
+            const div = document.createElement('div');
+            div.className = 'server-icon';
+            div.setAttribute('data-tooltip', 'Kodlama Merkezi');
+            div.setAttribute('data-serverid', 'coding');
+            div.style.background = '#00a8fc';
+            div.innerHTML = '<span>KM</span>';
+            div.onclick = function() { switchServer(this, 'coding'); };
+            const addBtn = document.querySelector('.server-add');
+            if (addBtn) addBtn.parentNode.insertBefore(div, addBtn);
+            const sep = document.createElement('div');
+            sep.className = 'server-separator';
+            if (addBtn) addBtn.parentNode.insertBefore(sep, addBtn);
+            return;
+          }
+          if (serverId === 'gaming') return;
+          addServerToSidebar(serverId, data.name, data.inviteCode, data.iconUrl || '');
         }
-        if (serverId === 'gaming') return;
-        addServerToSidebar(serverId, data.name, data.inviteCode, data.iconUrl || '');
+
+        if (change.type === 'removed') {
+          const el = document.querySelector('[data-serverid="' + serverId + '"]');
+          if (el) el.remove();
+          if (currentServer === serverId) {
+            const firstIcon = document.querySelector('.server-icon:not(.home):not(.server-add)');
+            if (firstIcon) firstIcon.click();
+          }
+        }
+
+        if (change.type === 'modified') {
+          const el = document.querySelector('[data-serverid="' + serverId + '"]');
+          if (el) {
+            el.setAttribute('data-tooltip', data.name);
+            if (data.iconUrl) {
+              el.style.backgroundImage = 'url(' + data.iconUrl + ')';
+              el.style.backgroundSize = 'cover';
+              el.style.backgroundPosition = 'center';
+              el.textContent = '';
+            } else {
+              el.style.backgroundImage = '';
+              el.style.background = getColor(data.name);
+              el.textContent = data.name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+            }
+          }
+        }
       });
-    }).catch(e => console.error('Sunucular yüklenemedi:', e));
+    }, e => console.error('Sunucular yüklenemedi:', e));
+}
+
+
+// =============================================
+// SUNUCU ÖZEL EMOJİ SİSTEMİ
+// =============================================
+function loadServerEmojis(serverId) {
+  db.collection('serverEmojis').doc(serverId).get().then(doc => {
+    serverCustomEmojis[serverId] = doc.exists ? (doc.data().emojis || []) : [];
+    if (serverId === currentServer) renderMessages();
+  }).catch(() => { serverCustomEmojis[serverId] = []; });
+}
+
+function loadSrvEmojiTab() {
+  const list = document.getElementById('srvEmojiList');
+  const empty = document.getElementById('srvEmojiEmpty');
+  if (!list) return;
+  const emojis = serverCustomEmojis[currentServer] || [];
+  if (emojis.length === 0) {
+    list.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  list.innerHTML = emojis.map((em, i) => `
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;position:relative;background:#2b2d31;border-radius:8px;padding:8px;width:72px;">
+      <img src="${em.url}" style="width:48px;height:48px;object-fit:contain;">
+      <span style="font-size:11px;color:#b5bac1;text-align:center;word-break:break-all;max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${em.name}</span>
+      <button onclick="deleteSrvEmoji(${i})" style="position:absolute;top:2px;right:2px;background:rgba(242,63,67,0.2);color:#f23f43;border:none;border-radius:3px;width:16px;height:16px;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;" title="Sil">✕</button>
+    </div>`).join('');
+}
+
+function uploadServerEmoji(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (!currentServer || currentServer === 'dm') { showToast('Önce bir sunucu seç!'); return; }
+  // İsim al
+  const emojiName = prompt('Emoji adı girin (örn: otobot):', file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_]/g, '_'));
+  if (!emojiName) return;
+  showToast('⏳ Emoji yükleniyor...');
+  uploadToCloudinary(file).then(url => {
+    const newEmoji = { name: emojiName, url };
+    const existing = serverCustomEmojis[currentServer] || [];
+    existing.push(newEmoji);
+    serverCustomEmojis[currentServer] = existing;
+    return db.collection('serverEmojis').doc(currentServer).set({ emojis: existing });
+  }).then(() => {
+    showToast('✅ Emoji eklendi!');
+    loadSrvEmojiTab();
+    renderEmojiCatBar(); // picker'ı güncelle
+  }).catch(e => showToast('❌ ' + e.message));
+  event.target.value = '';
+}
+
+function deleteSrvEmoji(idx) {
+  if (!confirm('Bu emojiyi silmek istediğine emin misin?')) return;
+  const emojis = serverCustomEmojis[currentServer] || [];
+  emojis.splice(idx, 1);
+  serverCustomEmojis[currentServer] = emojis;
+  db.collection('serverEmojis').doc(currentServer).set({ emojis }).then(() => {
+    showToast('✅ Emoji silindi.');
+    loadSrvEmojiTab();
+    renderEmojiCatBar();
+  });
 }
 
 // =============================================
@@ -6753,7 +7047,7 @@ function openUserSettings() {
   const user = currentUser;
   if (!user) return;
   const uname = user.displayName || user.email.split('@')[0];
-  const color = getColor(uname);
+  const color = getColor(user.uid); // UID'den — sabit kalsın
   const initials = getInitials(uname);
   const tag = getTag(user.uid);
 
@@ -6785,8 +7079,133 @@ function switchSettingsTab(tab) {
     const mi = document.getElementById('usMenu_' + t);
     if (mi) mi.classList.toggle('active', t === tab);
   });
+  if (tab === 'profil') {
+    if (!currentUser) return;
+    const uname = currentUser.displayName || currentUser.email.split('@')[0];
+    const inp = document.getElementById('displayNameInput');
+    if (inp) inp.value = uname;
+    const bar = document.getElementById('profileSaveBar');
+    if (bar) bar.style.display = 'none';
+    const tag = getTag(currentUser.uid);
+    const color = getColor(currentUser.uid); // UID'den — sabit kalsın
+    const av = document.getElementById('previewAvatar');
+    if (av) { av.textContent = getInitials(uname); av.style.background = color; }
+    const nm = document.getElementById('previewName');
+    if (nm) nm.textContent = uname;
+    const tg = document.getElementById('previewTag');
+    if (tg) tg.textContent = uname + tag;
+  }
+  if (tab === 'treatment') {
+    if (typeof activeTreatmentIdx !== 'undefined') {
+      activeTreatmentIdx = null;
+      activeTreatmentKey = null;
+    }
+    const ts = document.getElementById('treatmentSearch');
+    if (ts) ts.value = '';
+    if (typeof renderTreatmentFull === 'function') renderTreatmentFull();
+  }
 }
 
+
+
+function updateDisplayNamePreview() {
+  const inp = document.getElementById('displayNameInput');
+  if (!inp || !currentUser) return;
+  const uname = currentUser.displayName || currentUser.email.split('@')[0];
+  const val = inp.value;
+  const displayName = val.trim(); // boş kalabilir, önizlemede de boş göster
+  const tag = getTag(currentUser.uid);
+  const nm = document.getElementById('previewName');
+  const tg = document.getElementById('previewTag');
+  if (nm) nm.textContent = displayName;
+  if (tg) tg.textContent = displayName + tag;
+  const bar = document.getElementById('profileSaveBar');
+  if (bar) {
+    // trim edilmiş değer orijinal isimden farklıysa BAR göster
+    bar.style.display = (val.trim() !== uname) ? 'flex' : 'none';
+  }
+}
+
+function _applyUsernameEverywhere(newName) {
+  // Rengi UID'den üret — isim değişince renk/banner değişmesin
+  const tag = getTag(currentUser.uid);
+  const color = getColor(currentUser.uid);
+  const initials = getInitials(newName);
+
+  // onlineUsers Firestore kaydını güncelle (sayfa yenilenince doğru gelsin)
+  db.collection('onlineUsers').doc(currentUser.uid).update({ username: newName }).catch(() => {});
+
+  // Sol alt panel — sunucu görünümü
+  const myNameEl = document.getElementById('myName');
+  if (myNameEl) myNameEl.textContent = newName;
+  const myTagEl = document.getElementById('myTag');
+  if (myTagEl) myTagEl.textContent = statusMeta[myStatus].label;
+  const myAv = document.getElementById('myAvatar');
+  if (myAv) { myAv.textContent = initials; myAv.style.background = color; }
+
+  // Sol alt panel — DM görünümü
+  const dmMyName = document.getElementById('dmMyName');
+  if (dmMyName) dmMyName.textContent = newName;
+  const dmMyTag = document.getElementById('dmMyTag');
+  if (dmMyTag) dmMyTag.textContent = statusMeta[myStatus].label;
+  const dmMyAvatar = document.getElementById('dmMyAvatar');
+  if (dmMyAvatar) { dmMyAvatar.textContent = initials; dmMyAvatar.style.background = color; }
+
+  // İsme tıklayınca açılan popup menü
+  const pmName = document.getElementById('pmName');
+  if (pmName) pmName.textContent = newName;
+  const pmTag = document.getElementById('pmTag');
+  if (pmTag) pmTag.textContent = newName + tag;
+  const pmAvatar = document.getElementById('pmAvatar');
+  if (pmAvatar) { pmAvatar.textContent = initials; pmAvatar.style.background = color; }
+  // pmBanner banner rengini değiştirme
+
+  // Kullanıcı ayarları ekranı
+  const usProfileName = document.getElementById('usProfileName');
+  if (usProfileName) usProfileName.textContent = newName;
+  const usProfileTag = document.getElementById('usProfileTag');
+  if (usProfileTag) usProfileTag.textContent = newName + tag;
+  const usUsername = document.getElementById('usUsername');
+  if (usUsername) usUsername.textContent = newName;
+
+  // Profil önizlemesi
+  const previewName = document.getElementById('previewName');
+  if (previewName) previewName.textContent = newName;
+  const previewTag = document.getElementById('previewTag');
+  if (previewTag) previewTag.textContent = newName + tag;
+
+  // Sağdaki üye listesi & mesaj listesi
+  renderMessages();
+  renderMembers();
+}
+
+function saveDisplayName() {
+  const inp = document.getElementById('displayNameInput');
+  if (!inp) return;
+  const newName = inp.value.trim();
+  if (!newName) { showToast('⚠️ İsim boş olamaz!'); return; }
+  if (newName.length < 2) { showToast('⚠️ En az 2 karakter olmalı!'); return; }
+  if (!currentUser) return;
+
+  currentUser.updateProfile({ displayName: newName })
+    .then(() => db.collection('users').doc(currentUser.uid).update({ username: newName }).catch(() => {}))
+    .then(() => {
+      _applyUsernameEverywhere(newName);
+      const saveBar = document.getElementById('profileSaveBar');
+      if (saveBar) saveBar.style.display = 'none';
+      showToast('✅ İsmin güncellendi!');
+    })
+    .catch(e => showToast('❌ ' + e.message));
+}
+
+function resetProfileChanges() {
+  const uname = currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : '';
+  const inp = document.getElementById('displayNameInput');
+  if (inp) inp.value = uname;
+  updateDisplayNamePreview();
+  const bar = document.getElementById('profileSaveBar');
+  if (bar) bar.style.display = 'none';
+}
 function openChangeUsername() {
   const uname = currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : '';
   document.getElementById('newUsernameInput').value = uname;
@@ -6805,16 +7224,7 @@ function confirmChangeUsername() {
     .then(() => db.collection('users').doc(currentUser.uid).update({ username: newName }))
     .then(() => {
       document.getElementById('changeUsernameModal').style.display = 'none';
-      // Ayarlar ekranını güncelle
-      const tag = getTag(currentUser.uid);
-      const color = getColor(newName);
-      document.getElementById('usProfileName').textContent = newName;
-      document.getElementById('usProfileTag').textContent = newName + tag;
-      document.getElementById('usUsername').textContent = newName;
-      // Sol alt paneli güncelle
-      document.getElementById('myName').textContent = newName;
-      document.getElementById('myAvatar').textContent = getInitials(newName);
-      document.getElementById('myAvatar').style.background = color;
+      _applyUsernameEverywhere(newName);
       showToast('✅ Kullanıcı adın güncellendi!');
     })
     .catch(e => { errEl.textContent = 'Hata: ' + e.message; });
@@ -6884,11 +7294,23 @@ function confirmDeleteAccount() {
   document.getElementById('deleteAccountConfirmModal').style.display = 'none';
   if (!currentUser) return;
   const uid = currentUser.uid;
-  db.collection('onlineUsers').doc(uid).delete().catch(() => {});
-  currentUser.delete().then(() => {
-    showToast('✅ Hesap silindi.');
+  const uname = currentUser.displayName || currentUser.email.split('@')[0];
+  showToast('⏳ Hesap siliniyor...');
+  // 1. onlineUsers, users profil kaydını sil
+  Promise.all([
+    db.collection('onlineUsers').doc(uid).delete().catch(() => {}),
+    db.collection('users').doc(uid).delete().catch(() => {}),
+  ]).then(() => {
+    // 2. Firebase Auth hesabını sil
+    return currentUser.delete();
+  }).then(() => {
+    showToast('✅ Hesap ve tüm veriler silindi.');
   }).catch(e => {
-    showToast('❌ ' + e.message);
+    if (e.code === 'auth/requires-recent-login') {
+      showToast('⚠️ Hesabı silmek için tekrar giriş yapman gerekiyor.');
+    } else {
+      showToast('❌ ' + e.message);
+    }
   });
 }
 
@@ -7094,17 +7516,7 @@ function resetTreatment() {
   renderTreatmentFull();
 }
 
-// Treatment tabı açılınca listeyi render et
-const _origSwitchSettingsTab = switchSettingsTab;
-switchSettingsTab = function(tab) {
-  _origSwitchSettingsTab(tab);
-  if (tab === 'treatment') {
-    activeTreatmentIdx = null;
-    activeTreatmentKey = null;
-    document.getElementById('treatmentSearch').value = '';
-    renderTreatmentFull();
-  }
-};
+// treatment tab yönetimi switchSettingsTab içine alındı
 
 // Dropdown dışına tıklayınca kapat
 document.addEventListener('click', e => {
@@ -7174,6 +7586,8 @@ function showLoadingScreen() {
 function initProfilePreview() {
   if (!currentUser) return;
   const uname = currentUser.displayName || currentUser.email.split('@')[0];
+  const inp = document.getElementById('displayNameInput');
+  const displayName = (inp && inp.value.trim()) ? inp.value.trim() : uname;
   const color = getColor(uname);
   const initials = getInitials(uname);
   const tag = getTag(currentUser.uid);
@@ -7182,9 +7596,9 @@ function initProfilePreview() {
   const bn = document.getElementById('previewBanner');
   if (bn) { bn.style.backgroundImage = ''; bn.style.background = color; }
   const nm = document.getElementById('previewName');
-  if (nm) nm.textContent = uname;
+  if (nm) nm.textContent = displayName;
   const tg = document.getElementById('previewTag');
-  if (tg) tg.textContent = uname + tag;
+  if (tg) tg.textContent = displayName + tag;
 }
 
 function handleAvatarChange(e) {
@@ -7264,13 +7678,7 @@ function updateAboutMe() {
 }
 
 // Profil sekmesi açılınca önizlemeyi init et
-const _origSwitchSettingsTab2 = switchSettingsTab;
-switchSettingsTab = function(tab) {
-  _origSwitchSettingsTab2(tab);
-  if (tab === 'profil') {
-    setTimeout(initProfilePreview, 50);
-  }
-};
+// profil preview override kaldırıldı - switchSettingsTab içinde yönetiliyor
 
 // =============================================
 // SUNUCU OLUŞTUR / KATIL / DAVET
@@ -7360,6 +7768,12 @@ function createNewServer() {
 }
 
 function addServerToSidebar(serverId, name, inviteCode, iconUrl) {
+  // Global listeye ekle (emoji picker için)
+  if (!allServersList.find(s => s.id === serverId)) {
+    allServersList.push({ id: serverId, name, iconUrl: iconUrl || '' });
+  }
+  // Sunucu emojilerini Firestore'dan yükle
+  loadServerEmojis(serverId);
   const initials = name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
   const color = getColor(name);
   const serverList = document.getElementById('serverList');
@@ -7534,6 +7948,7 @@ function switchSrvTab(tab) {
     if (menu) { menu.classList.toggle('active', t === tab); }
   });
   if (tab === 'uyeler') loadSrvMemberList();
+  if (tab === 'emoji') loadSrvEmojiTab();
 }
 
 function loadSrvMemberList() {
@@ -7674,19 +8089,41 @@ function saveSrvChanges() {
 }
 
 function confirmDeleteServer() {
-  if (!confirm('Bu sunucuyu silmek istediğine emin misin? Bu işlem geri alınamaz!')) return;
   if (['coding','gaming'].includes(currentServer)) { showToast('⚠️ Bu sunucu silinemez!'); return; }
-  db.collection('servers').doc(currentServer).delete().then(() => {
+  document.getElementById('deleteServerConfirmModal').style.display = 'flex';
+}
+
+function doDeleteServer() {
+  document.getElementById('deleteServerConfirmModal').style.display = 'none';
+  if (['coding','gaming'].includes(currentServer)) return;
+  const srvToDelete = currentServer;
+  // 1. Sunucunun tüm kanallarını al ve mesajlarıyla birlikte sil
+  db.collection('serverChannels').doc(srvToDelete).get().then(doc => {
+    const channels = doc.exists ? (doc.data().channels || []) : [];
+    const delPromises = channels.map(ch =>
+      db.collection('channels').doc(ch.id).collection('messages').get().then(snap => {
+        const batch = db.batch();
+        snap.forEach(d => batch.delete(d.ref));
+        batch.delete(db.collection('channels').doc(ch.id));
+        return batch.commit();
+      })
+    );
+    return Promise.all(delPromises);
+  }).then(() => {
+    // 2. serverChannels, serverEmojis, servers dökümanlarını sil
+    return Promise.all([
+      db.collection('serverChannels').doc(srvToDelete).delete(),
+      db.collection('serverEmojis').doc(srvToDelete).delete(),
+      db.collection('servers').doc(srvToDelete).delete()
+    ]);
+  }).then(() => {
     closeServerSettings();
     const icon = document.querySelector('.server-icon.active');
     if (icon) icon.remove();
-    // Coding sunucusuna dön
-    const firstIcon = document.querySelector('.server-icon:not(.server-add)');
-    if (firstIcon) {
-      const sid = firstIcon.getAttribute('data-serverid') || 'coding';
-      switchServer(firstIcon, sid);
-    }
-    showToast('🗑️ Sunucu silindi.');
+    // DM'ye git
+    const dmBtn = document.querySelector('.server-icon.home');
+    if (dmBtn) switchServer(dmBtn, 'dm');
+    showToast('🗑️ Sunucu ve tüm veriler silindi.');
   }).catch(e => showToast('❌ ' + e.message));
 }
 
@@ -7753,14 +8190,15 @@ auth.onAuthStateChanged(user => {
     const uname = user.displayName || user.email.split('@')[0];
     const uid = user.uid;
     const tag = getTag(uid);
-    const color = getColor(uname);
+    // Rengi her zaman UID'den üret — isim değişince renk/banner sabit kalsın
+    const color = getColor(uid);
     const initials = getInitials(uname);
 
     // Sol alt panel
     document.getElementById('myAvatar').textContent = initials;
     document.getElementById('myAvatar').style.background = color;
     document.getElementById('myName').textContent = uname;
-    document.getElementById('myTag').textContent = tag;
+    document.getElementById('myTag').textContent = statusMeta[myStatus].label;
 
     // Profil popup menüsü
     document.getElementById('pmAvatar').textContent = initials;
@@ -7775,7 +8213,7 @@ auth.onAuthStateChanged(user => {
     const dmName = document.getElementById('dmMyName');
     if (dmName) dmName.textContent = uname;
     const dmTag = document.getElementById('dmMyTag');
-    if (dmTag) dmTag.textContent = tag;
+    if (dmTag) dmTag.textContent = statusMeta[myStatus].label;
 
     // Firestore'a online durumu yaz
     db.collection('onlineUsers').doc(uid).set({
@@ -7884,7 +8322,6 @@ function listenToOnlineUsers(myUname) {
 }
 
 function updateMembersForCurrentServer() {
-  // Built-in sunucularda (coding/gaming) herkes görünür
   const builtIn = ['coding', 'gaming'];
   if (builtIn.includes(currentServer) || currentServer === 'dm') {
     members.length = 0;
@@ -7892,31 +8329,39 @@ function updateMembersForCurrentServer() {
     renderMembers();
     return;
   }
-
-  // Kullanıcı oluşturduğu/katıldığı sunucularda: Firestore'dan sunucu üyelerini al
-  db.collection('servers').doc(currentServer).get().then(doc => {
+  // Race condition korumasi: istek atildigindaki sunucu id'sini sakla
+  const targetServer = currentServer;
+  db.collection('servers').doc(targetServer).get().then(doc => {
+    // Cevap geldiginde hala ayni sunucudaysak isle, degilse iptal et
+    if (currentServer !== targetServer) return;
     if (!doc.exists) { members.length = 0; renderMembers(); return; }
-    const serverMembers = doc.data().members || []; // uid array
-    members.length = 0;
+    const serverMembers = doc.data().members || [];
+    const newMembers = [];
     allOnlineUsers.forEach(u => {
-      if (serverMembers.includes(u.uid)) members.push(u);
+      if (serverMembers.includes(u.uid)) newMembers.push(u);
     });
-    // Online olmayan ama sunucu üyesi olanları da offline olarak ekle
+    const offlinePromises = [];
     serverMembers.forEach(uid => {
-      if (!members.find(m => m.uid === uid)) {
-        // users koleksiyonundan ismini al
-        db.collection('users').doc(uid).get().then(udoc => {
-          if (udoc.exists) {
-            const uname = udoc.data().username || udoc.data().displayName || '';
-            if (uname && !members.find(m => m.name === uname)) {
-              members.push({ name: uname, uid, status: 'offline', activity: '' });
-              renderMembers();
+      if (!newMembers.find(m => m.uid === uid)) {
+        offlinePromises.push(
+          db.collection('users').doc(uid).get().then(udoc => {
+            if (udoc.exists) {
+              const uname = udoc.data().username || udoc.data().displayName || '';
+              if (uname && !newMembers.find(m => m.name === uname)) {
+                newMembers.push({ name: uname, uid, status: 'offline', activity: '' });
+              }
             }
-          }
-        });
+          })
+        );
       }
     });
-    renderMembers();
+    Promise.all(offlinePromises).then(() => {
+      // Son kontrol: hala ayni sunucudaysak render et
+      if (currentServer !== targetServer) return;
+      members.length = 0;
+      newMembers.forEach(u => members.push(u));
+      renderMembers();
+    });
   });
 }
 
