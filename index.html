@@ -9490,6 +9490,9 @@ async function showCallingScreen(name, type) {
   // Karşı taraf — Firebase'den await ile çek
   const remoteAv = document.getElementById('remoteAvatarImg');
   const remoteNm = document.getElementById('remoteAvatarName');
+  const remoteAvatarDiv = document.getElementById('remoteAvatar');
+  if (remoteAvatarDiv) remoteAvatarDiv.style.display = 'flex'; // Her zaman göster
+  document.getElementById('remoteVideo').style.display = 'none'; // Video gizle
   remoteNm.textContent = name;
   remoteAv.style.background = getColor(activeCallUid || 'x');
   remoteAv.textContent = getInitials(name);
@@ -9503,18 +9506,22 @@ async function showCallingScreen(name, type) {
         remoteNm.textContent = freshName;
         if (freshAvatar) {
           remoteAv.style.background = `url(${freshAvatar}) center/cover no-repeat`;
+          remoteAv.style.backgroundSize = 'cover';
           remoteAv.textContent = '';
         } else {
           remoteAv.style.background = getColor(activeCallUid);
           remoteAv.textContent = getInitials(freshName);
         }
       }
-    } catch(e) {}
+    } catch(e) { console.log('remote avatar error', e); }
   }
 
   // Kendi taraf — Firebase'den await ile çek
   const localAv = document.getElementById('localAvatarImg');
   const localNm = document.getElementById('localAvatarName');
+  const localAvatarDiv = document.getElementById('localAvatar');
+  if (localAvatarDiv) localAvatarDiv.style.display = 'flex';
+  document.getElementById('localVideo').style.display = 'none';
   if (currentUser) {
     const myName = currentUser.displayName || currentUser.email.split('@')[0];
     localNm.textContent = myName;
