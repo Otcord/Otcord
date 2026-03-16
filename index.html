@@ -9781,6 +9781,8 @@ function toggleCallMic() {
   micMuted = muted;
   const mainMicBtn = document.getElementById('micBtn');
   if (mainMicBtn) mainMicBtn.classList.toggle('active-red', muted);
+  const dmMicBtn = document.getElementById('dmMicBtn');
+  if (dmMicBtn) dmMicBtn.classList.toggle('active-red', muted);
   updateAvatarBadge();
 }
 
