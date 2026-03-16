@@ -358,7 +358,7 @@
     transition: all 0.1s;
   }
   .control-btn:hover { background: var(--bg-channel-hover); color: var(--text-primary); }
-  .control-btn.active-red { color: #f23f43 !important; }
+  .control-btn.active-red, .control-btn.active-red:hover { color: #f23f43 !important; }
   .control-btn.muted { color: var(--text-muted); }
   .control-btn.muted svg { position: relative; }
   .control-btn.muted svg::after {
@@ -1629,7 +1629,7 @@
   <!-- İki kişinin video/avatar alanı - yan yana -->
   <div style="display:flex;gap:4px;padding:8px;background:#111214;" id="callVideoArea">
     <!-- Karşı taraf -->
-    <div style="flex:1;border-radius:12px;overflow:hidden;position:relative;min-height:200px;background:#1e1f22;display:flex;align-items:center;justify-content:center;">
+    <div style="flex:1;border-radius:12px;overflow:hidden;position:relative;min-height:200px;background:#2b2d31;display:flex;align-items:center;justify-content:center;">
       <video id="remoteVideo" autoplay playsinline style="width:100%;height:100%;object-fit:cover;display:none;"></video>
       <div id="remoteAvatar" style="display:flex;flex-direction:column;align-items:center;gap:10px;">
         <div id="remoteAvatarImg" style="width:80px;height:80px;border-radius:50%;background:#9b59b6;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:white;"></div>
@@ -9502,24 +9502,22 @@ function showCallingScreen(name, type) {
     }
   }
 
-  // Kendi taraf — önce allOnlineUsers, yoksa Firebase
+  // Kendi taraf — her zaman Firebase'den çek
   if (currentUser) {
     const myName = currentUser.displayName || currentUser.email.split('@')[0];
     document.getElementById('localAvatarName').textContent = myName;
-    const myU = allOnlineUsers.find(u => u.uid === currentUser.uid);
     const localAv = document.getElementById('localAvatarImg');
-    if (myU?.avatarUrl) {
-      localAv.style.background = `url(${myU.avatarUrl}) center/cover no-repeat`;
-      localAv.textContent = '';
-    } else {
-      localAv.style.background = getColor(currentUser.uid);
-      localAv.textContent = getInitials(myName);
-      // Firebase'den çek
-      db.collection('users').doc(currentUser.uid).get().then(doc => {
-        const av = doc.exists ? (doc.data().avatarUrl || '') : '';
-        if (av) { localAv.style.background = `url(${av}) center/cover no-repeat`; localAv.textContent = ''; }
-      }).catch(() => {});
-    }
+    localAv.style.background = getColor(currentUser.uid);
+    localAv.textContent = getInitials(myName);
+    db.collection('users').doc(currentUser.uid).get().then(doc => {
+      if (!doc.exists) return;
+      const d = doc.data();
+      const freshName = d.displayName || d.username || myName;
+      const freshAvatar = d.avatarUrl || '';
+      document.getElementById('localAvatarName').textContent = freshName;
+      if (freshAvatar) { localAv.style.background = `url(${freshAvatar}) center/cover no-repeat`; localAv.textContent = ''; }
+      else { localAv.style.background = getColor(currentUser.uid); localAv.textContent = getInitials(freshName); }
+    }).catch(() => {});
   }
 
   // Video butonunu göster/gizle
