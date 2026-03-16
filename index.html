@@ -4,42 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>OtCord</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23111214'/%3E%3Ccircle cx='50' cy='50' r='42' fill='none' stroke='white' stroke-width='3' stroke-dasharray='6 4' opacity='0.5'/%3E%3Crect x='38' y='22' width='24' height='36' rx='12' fill='white'/%3E%3Cpath d='M28 50c0 12 9.6 22 22 22s22-10 22-22' stroke='white' stroke-width='4' stroke-linecap='round' fill='none'/%3E%3Cline x1='50' y1='72' x2='50' y2='80' stroke='white' stroke-width='4' stroke-linecap='round'/%3E%3Cline x1='40' y1='80' x2='60' y2='80' stroke='white' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E" type="image/svg+xml">
 
-<!-- PWA -->
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="OtCord">
-<meta name="application-name" content="OtCord">
-<meta name="theme-color" content="#1da8e0">
-<meta name="description" content="OtCord - Sohbet Uygulaması">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='115' fill='%231da8e0'/%3E%3Cpath d='M137 141c55-12 111-12 166 0 35 7 60 26 60 48v152c0 22-25 41-60 48-28 6-57 8-83 8l-54 54v-57c-23-8-39-22-39-39V189c0-22 25-41 60-48z' fill='white'/%3E%3C/svg%3E" type="image/svg+xml">
-<link rel="manifest" href="data:application/json,%7B%22name%22%3A%22OtCord%22%2C%22short_name%22%3A%22OtCord%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%231e1f22%22%2C%22theme_color%22%3A%22%231da8e0%22%7D">,%7B%22name%22%3A%22OtCord%22%2C%22short_name%22%3A%22OtCord%22%2C%22description%22%3A%22OtCord%20-%20Sohbet%20Uygulamas%C4%B1%22%2C%22start_url%22%3A%22.%2Fotcord.html%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%231e1f22%22%2C%22theme_color%22%3A%22%231da8e0%22%2C%22orientation%22%3A%22portrait%22%7D">
-
-<!-- PWA İkonları (inline SVG data URI) -->
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='115' fill='%231da8e0'/%3E%3Cpath d='M137 141c55-12 111-12 166 0 35 7 60 26 60 48v152c0 22-25 41-60 48-28 6-57 8-83 8l-54 54v-57c-23-8-39-22-39-39V189c0-22 25-41 60-48z' fill='white'/%3E%3C/svg%3E">
-
-<script>
-// PWA Service Worker kayıt
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    // Inline service worker
-    const swCode = `
-      const CACHE = 'otcord-v1';
-      self.addEventListener('install', e => self.skipWaiting());
-      self.addEventListener('activate', e => clients.claim());
-      self.addEventListener('fetch', e => {
-        if (e.request.mode === 'navigate') {
-          e.respondWith(fetch(e.request).catch(() => caches.match('/otcord.html')));
-        }
-      });
-    `;
-    const blob = new Blob([swCode], {type: 'application/javascript'});
-    const swUrl = URL.createObjectURL(blob);
-    navigator.serviceWorker.register(swUrl).catch(() => {});
-  });
-}
-</script>
+<!-- Firebase SDK -->
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
