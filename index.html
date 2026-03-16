@@ -1510,6 +1510,9 @@ if ('serviceWorker' in navigator) {
         <div class="control-btn" data-tooltip="Sessize Al" onclick="toggleMic()">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zm5.3 8.7a5.5 5.5 0 01-10.6 0l-1.4.5A7 7 0 0011 16.92V19H9v2h6v-2h-2v-2.08A7 7 0 0018.7 10.2l-1.4-.5z"/></svg>
         </div>
+        <div class="control-btn" id="dmDeafBtn" data-tooltip="Kulaklığı Kapat" onclick="toggleDeaf()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm16.56-2.56A9.97 9.97 0 0121 12a9.97 9.97 0 01-1.44 5.56l-1.42-1.42A7.98 7.98 0 0019 12c0-1.74-.56-3.35-1.5-4.66l1.06-1.9zm-2.83 2.82A5.98 5.98 0 0118 12a5.98 5.98 0 01-1.27 3.74l-1.42-1.42A4 4 0 0016 12c0-1.1-.45-2.1-1.17-2.83l1.9-1.07-.4.16z"/></svg>
+        </div>
         <div class="control-btn" data-tooltip="Kullanıcı Ayarları" onclick="openUserSettings()">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
         </div>
@@ -6878,8 +6881,15 @@ function toggleMic() {
 
 function toggleDeaf() {
   deafened = !deafened;
-  document.getElementById('deafBtn').style.opacity = deafened ? '0.5' : '1';
-  document.getElementById('deafBtn').style.color = deafened ? 'var(--red)' : '';
+  // Ana ekran butonu
+  const deafBtn = document.getElementById('deafBtn');
+  if (deafBtn) { deafBtn.style.opacity = deafened ? '0.5' : '1'; deafBtn.style.color = deafened ? 'var(--red)' : ''; }
+  // DM ekran butonu
+  const dmDeafBtn = document.getElementById('dmDeafBtn');
+  if (dmDeafBtn) { dmDeafBtn.style.opacity = deafened ? '0.5' : '1'; dmDeafBtn.style.color = deafened ? 'var(--red)' : ''; }
+  // Arama sırasında remote video/audio mute et
+  const remoteVideo = document.getElementById('remoteVideo');
+  if (remoteVideo) remoteVideo.muted = deafened;
   updateAvatarBadge();
   showToast(deafened ? '🔇 Ses kapatıldı' : '🔊 Ses açıldı');
 }
@@ -9523,6 +9533,35 @@ function showCallingScreen(name, type) {
     localVideo.style.display = 'block';
     document.getElementById('localAvatar').style.display = 'none';
   }
+
+  // Karşı taraf Firebase'den gerçek zamanlı güncelle
+  if (activeCallUid) {
+    if (window._callProfileListener) window._callProfileListener();
+    window._callProfileListener = db.collection('users').doc(activeCallUid).onSnapshot(doc => {
+      if (!doc.exists) return;
+      const d = doc.data();
+      const newName = d.displayName || d.username || name;
+      const newAvatar = d.avatarUrl || '';
+      const remoteAv = document.getElementById('remoteAvatarImg');
+      const remoteNm = document.getElementById('remoteAvatarName');
+      if (remoteAv) { remoteAv.style.background = newAvatar ? `url(${newAvatar}) center/cover no-repeat` : getColor(activeCallUid); remoteAv.textContent = newAvatar ? '' : getInitials(newName); }
+      if (remoteNm) remoteNm.textContent = newName;
+    });
+  }
+  // Kendi taraf Firebase'den gerçek zamanlı güncelle
+  if (currentUser) {
+    if (window._callLocalProfileListener) window._callLocalProfileListener();
+    window._callLocalProfileListener = db.collection('users').doc(currentUser.uid).onSnapshot(doc => {
+      if (!doc.exists) return;
+      const d = doc.data();
+      const newName = d.displayName || d.username || (currentUser.displayName || '');
+      const newAvatar = d.avatarUrl || '';
+      const localAv = document.getElementById('localAvatarImg');
+      const localNm = document.getElementById('localAvatarName');
+      if (localAv) { localAv.style.background = newAvatar ? `url(${newAvatar}) center/cover no-repeat` : getColor(currentUser.uid); localAv.textContent = newAvatar ? '' : getInitials(newName); }
+      if (localNm) localNm.textContent = newName;
+    });
+  }
 }
 
 function showActiveCallScreen() {
@@ -9698,6 +9737,8 @@ async function endCall() {
 
 function cleanupCall() {
   if (callSignalListener) { callSignalListener(); callSignalListener = null; }
+  if (window._callProfileListener) { window._callProfileListener(); window._callProfileListener = null; }
+  if (window._callLocalProfileListener) { window._callLocalProfileListener(); window._callLocalProfileListener = null; }
   if (callTimerInterval) { clearInterval(callTimerInterval); callTimerInterval = null; }
   if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
   if (peerConnection) { peerConnection.close(); peerConnection = null; }
