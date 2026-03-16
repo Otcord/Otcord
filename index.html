@@ -2,8 +2,43 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>OtCord</title>
+
+<!-- PWA -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OtCord">
+<meta name="application-name" content="OtCord">
+<meta name="theme-color" content="#1da8e0">
+<meta name="description" content="OtCord - Sohbet Uygulaması">
+<link rel="manifest" href="data:application/json,%7B%22name%22%3A%22OtCord%22%2C%22short_name%22%3A%22OtCord%22%2C%22description%22%3A%22OtCord%20-%20Sohbet%20Uygulamas%C4%B1%22%2C%22start_url%22%3A%22.%2Fotcord.html%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%231e1f22%22%2C%22theme_color%22%3A%22%231da8e0%22%2C%22orientation%22%3A%22portrait%22%7D">
+
+<!-- PWA İkonları (inline SVG data URI) -->
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='115' fill='%231da8e0'/%3E%3Cpath d='M137 141c55-12 111-12 166 0 35 7 60 26 60 48v152c0 22-25 41-60 48-28 6-57 8-83 8l-54 54v-57c-23-8-39-22-39-39V189c0-22 25-41 60-48z' fill='white'/%3E%3C/svg%3E">
+
+<script>
+// PWA Service Worker kayıt
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    // Inline service worker
+    const swCode = `
+      const CACHE = 'otcord-v1';
+      self.addEventListener('install', e => self.skipWaiting());
+      self.addEventListener('activate', e => clients.claim());
+      self.addEventListener('fetch', e => {
+        if (e.request.mode === 'navigate') {
+          e.respondWith(fetch(e.request).catch(() => caches.match('/otcord.html')));
+        }
+      });
+    `;
+    const blob = new Blob([swCode], {type: 'application/javascript'});
+    const swUrl = URL.createObjectURL(blob);
+    navigator.serviceWorker.register(swUrl).catch(() => {});
+  });
+}
+</script>
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
@@ -684,6 +719,25 @@
   .member-activity { font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   /* Tooltip */
+  @keyframes pulse {
+    0%,100% { opacity:1; transform:scale(1); }
+    50% { opacity:0.5; transform:scale(1.3); }
+  }
+  @keyframes callring {
+    0%,100% { box-shadow: 0 0 0 0 rgba(35,165,90,0.6); }
+    50% { box-shadow: 0 0 0 16px rgba(35,165,90,0); }
+  }
+
+  @keyframes savebar-shake {
+    0%,100% { transform: translateX(-50%); }
+    15% { transform: translateX(calc(-50% - 8px)); }
+    30% { transform: translateX(calc(-50% + 8px)); }
+    45% { transform: translateX(calc(-50% - 6px)); }
+    60% { transform: translateX(calc(-50% + 6px)); }
+    75% { transform: translateX(calc(-50% - 3px)); }
+    90% { transform: translateX(calc(-50% + 3px)); }
+  }
+
   .tooltip {
     position: fixed;
     background: #18191c;
@@ -1496,10 +1550,10 @@
         <div id="dmChatAvatar" style="width:24px;height:24px;border-radius:50%;flex-shrink:0;"></div>
         <span id="dmChatName" style="font-weight:700;font-size:15px;"></span>
         <div style="margin-left:auto;display:flex;gap:2px;align-items:center;">
-          <div class="header-btn" data-tooltip="Sesli Arama" onclick="showToast('Sesli arama yakında!')" style="width:36px;height:36px;">
+          <div class="header-btn" data-tooltip="Sesli Arama" onclick="startCall('voice')" style="width:36px;height:36px;">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
           </div>
-          <div class="header-btn" data-tooltip="Görüntülü Arama" onclick="showToast('Görüntülü arama yakında!')" style="width:36px;height:36px;">
+          <div class="header-btn" data-tooltip="Görüntülü Arama" onclick="startCall('video')" style="width:36px;height:36px;">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
           </div>
           <div class="header-btn" data-tooltip="Pinlenmiş Mesajlar" onclick="toggleDmPinnedPanel()" id="dmPinnedBtn" style="width:36px;height:36px;">
@@ -1551,10 +1605,11 @@
         </div>
         <!-- Sağ profil paneli -->
         <div id="dmUserProfilePanel" style="width:240px;border-left:1px solid #1e1f22;overflow-y:auto;display:none;flex-shrink:0;">
-          <div id="dmUserProfileBanner" style="height:90px;background:linear-gradient(135deg,#5865f2,#3b82f6);"></div>
+          <div id="dmUserProfileBanner" style="height:90px;background:linear-gradient(135deg,#9b59b6,#3b82f6);"></div>
           <div style="padding:0 12px 16px;">
-            <div style="margin-top:-36px;margin-bottom:10px;">
+            <div style="margin-top:-36px;margin-bottom:10px;position:relative;display:inline-block;">
               <div id="dmUserProfileAvatar" style="width:72px;height:72px;border-radius:50%;border:5px solid #313338;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:white;"></div>
+              <div id="dmUserProfileStatus" style="position:absolute;bottom:3px;right:3px;width:16px;height:16px;border-radius:50%;background:#80848e;border:3px solid #313338;"></div>
             </div>
             <div id="dmUserProfileName" style="font-size:16px;font-weight:700;color:#f2f3f5;"></div>
             <div id="dmUserProfileTag" style="font-size:13px;color:#80848e;margin-bottom:10px;"></div>
@@ -1573,6 +1628,70 @@
 
   <!-- TOOLTIP -->
 <div class="tooltip" id="tooltip"></div>
+
+<!-- GELEN ARAMA EKRANI -->
+<div id="incomingCallScreen" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:999999;flex-direction:column;align-items:center;justify-content:center;gap:24px;">
+  <div id="incomingCallAvatar" style="width:96px;height:96px;border-radius:50%;background:#9b59b6;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;color:white;border:4px solid rgba(255,255,255,0.2);"></div>
+  <div style="text-align:center;">
+    <div id="incomingCallName" style="font-size:24px;font-weight:700;color:#f2f3f5;margin-bottom:6px;"></div>
+    <div id="incomingCallType" style="font-size:14px;color:#b5bac1;">Seni arıyor...</div>
+  </div>
+  <div style="display:flex;gap:32px;margin-top:8px;">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+      <div onclick="rejectCall()" style="width:64px;height:64px;border-radius:50%;background:#f23f43;display:flex;align-items:center;justify-content:center;cursor:pointer;" onmouseover="this.style.background='#c0393c'" onmouseout="this.style.background='#f23f43'">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M20.384 15.14c-1.265-1.386-2.795-2.133-4.388-2.133-.755 0-1.511.189-2.244.561l-1.73-.966c-.29-.162-.65-.162-.94 0L9.352 13.57c-.733-.373-1.489-.562-2.244-.562-1.593 0-3.123.748-4.388 2.133C2.24 15.7 2 16.38 2 17.08c0 .7.24 1.38.72 1.94.48.56 1.14.88 1.84.88h14.88c.7 0 1.36-.32 1.84-.88.48-.56.72-1.24.72-1.94 0-.7-.24-1.38-.72-1.94z" transform="rotate(135, 12, 12)"/></svg>
+      </div>
+      <span style="font-size:12px;color:#f23f43;font-weight:600;">Reddet</span>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+      <div onclick="acceptCall()" style="width:64px;height:64px;border-radius:50%;background:#23a55a;display:flex;align-items:center;justify-content:center;cursor:pointer;" onmouseover="this.style.background='#1b8a47'" onmouseout="this.style.background='#23a55a'">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M20.384 15.14c-1.265-1.386-2.795-2.133-4.388-2.133-.755 0-1.511.189-2.244.561l-1.73-.966c-.29-.162-.65-.162-.94 0L9.352 13.57c-.733-.373-1.489-.562-2.244-.562-1.593 0-3.123.748-4.388 2.133C2.24 15.7 2 16.38 2 17.08c0 .7.24 1.38.72 1.94.48.56 1.14.88 1.84.88h14.88c.7 0 1.36-.32 1.84-.88.48-.56.72-1.24.72-1.94 0-.7-.24-1.38-.72-1.94z"/></svg>
+      </div>
+      <span style="font-size:12px;color:#23a55a;font-weight:600;">Kabul Et</span>
+    </div>
+  </div>
+</div>
+
+<!-- AKTİF ARAMA EKRANI (DM'in üstüne overlay) -->
+<div id="activeCallScreen" style="display:none;position:fixed;inset:0;background:#111214;z-index:99000;flex-direction:column;">
+  <!-- Video alanı -->
+  <div style="flex:1;display:flex;position:relative;background:#1e1f22;overflow:hidden;" id="callVideoArea">
+    <!-- Karşı taraf video -->
+    <video id="remoteVideo" autoplay playsinline style="width:100%;height:100%;object-fit:cover;background:#1e1f22;"></video>
+    <!-- Karşı taraf avatar (video yokken) -->
+    <div id="remoteAvatar" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
+      <div id="remoteAvatarImg" style="width:120px;height:120px;border-radius:50%;background:#9b59b6;display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:700;color:white;"></div>
+      <div id="remoteAvatarName" style="font-size:18px;font-weight:700;color:#f2f3f5;"></div>
+      <div id="callStatusText" style="font-size:14px;color:#b5bac1;">Bağlanıyor...</div>
+    </div>
+    <!-- Kendi küçük video -->
+    <video id="localVideo" autoplay playsinline muted style="position:absolute;bottom:16px;right:16px;width:120px;height:90px;border-radius:8px;object-fit:cover;background:#2b2d31;border:2px solid #1da8e0;display:none;"></video>
+    <!-- Süre -->
+    <div id="callTimer" style="position:absolute;top:16px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.5);color:#f2f3f5;font-size:14px;font-weight:600;padding:6px 16px;border-radius:20px;display:none;">0:00</div>
+    <!-- Küçült -->
+    <div onclick="minimizeCall()" style="position:absolute;top:12px;right:12px;background:rgba(0,0,0,0.5);border-radius:6px;padding:6px 12px;color:#f2f3f5;font-size:12px;font-weight:600;cursor:pointer;">Sohbete Dön</div>
+  </div>
+  <!-- Arama kontrolleri -->
+  <div style="height:100px;background:#111214;display:flex;align-items:center;justify-content:center;gap:24px;flex-shrink:0;">
+    <div id="callMicBtn" onclick="toggleCallMic()" data-tooltip="Mikrofon" style="width:52px;height:52px;border-radius:50%;background:#2b2d31;display:flex;align-items:center;justify-content:center;cursor:pointer;" onmouseover="this.style.background='#35373c'" onmouseout="this.style.background=this.dataset.muted=='1'?'#f23f43':'#2b2d31'">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zm5.3 8.7a5.5 5.5 0 01-10.6 0l-1.4.5A7 7 0 0011 16.92V19H9v2h6v-2h-2v-2.08A7 7 0 0018.7 10.2l-1.4-.5z"/></svg>
+    </div>
+    <div id="callVideoBtn" onclick="toggleCallVideo()" data-tooltip="Kamera" style="width:52px;height:52px;border-radius:50%;background:#2b2d31;display:flex;align-items:center;justify-content:center;cursor:pointer;display:none;" onmouseover="this.style.background='#35373c'" onmouseout="this.style.background=this.dataset.off=='1'?'#f23f43':'#2b2d31'">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+    </div>
+    <div onclick="endCall()" data-tooltip="Aramayı Bitir" style="width:52px;height:52px;border-radius:50%;background:#f23f43;display:flex;align-items:center;justify-content:center;cursor:pointer;" onmouseover="this.style.background='#c0393c'" onmouseout="this.style.background='#f23f43'">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M20.384 15.14c-1.265-1.386-2.795-2.133-4.388-2.133-.755 0-1.511.189-2.244.561l-1.73-.966c-.29-.162-.65-.162-.94 0L9.352 13.57c-.733-.373-1.489-.562-2.244-.562-1.593 0-3.123.748-4.388 2.133C2.24 15.7 2 16.38 2 17.08c0 .7.24 1.38.72 1.94.48.56 1.14.88 1.84.88h14.88c.7 0 1.36-.32 1.84-.88.48-.56.72-1.24.72-1.94 0-.7-.24-1.38-.72-1.94z" transform="rotate(135, 12, 12)"/></svg>
+    </div>
+  </div>
+</div>
+
+<!-- AKTIF ARAMA - ÜSTTE BAR (sohbetteyken) -->
+<div id="activeCallBar" style="display:none;position:fixed;top:48px;left:72px;right:0;height:40px;background:#23a55a;z-index:8000;align-items:center;padding:0 16px;gap:10px;">
+  <div style="width:8px;height:8px;border-radius:50%;background:white;animation:pulse 1.5s infinite;"></div>
+  <span id="activeCallBarName" style="font-size:13px;font-weight:600;color:white;flex:1;"></span>
+  <div onclick="showActiveCall()" style="background:rgba(255,255,255,0.2);color:white;font-size:12px;font-weight:600;padding:4px 12px;border-radius:4px;cursor:pointer;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">Aramaya Dön</div>
+  <div onclick="endCall()" style="background:#f23f43;color:white;font-size:12px;font-weight:600;padding:4px 12px;border-radius:4px;cursor:pointer;" onmouseover="this.style.background='#c0393c'" onmouseout="this.style.background='#f23f43'">Kapat</div>
+</div>
 
 <!-- CONTEXT MENU -->
 <!-- DM ARKADAŞ SEÇİCİ MODALI -->
@@ -1626,7 +1745,7 @@
 <!-- MEMBER 3 NOKTA MENÜ -->
 <div id="memberDotMenu" style="display:none;position:fixed;background:#18191c;border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,0.6);z-index:999999;min-width:200px;padding:6px 0;border:1px solid #2e3035;">
   <div id="mdmName" style="padding:6px 14px;font-size:11px;font-weight:700;text-transform:uppercase;color:#80848e;letter-spacing:.05em;border-bottom:1px solid #2e3035;margin-bottom:4px;"></div>
-  <div class="ctx-item" onclick="mdmRename()" style="padding:8px 14px;font-size:14px;color:#f2f3f5;cursor:pointer;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='#5865f2';this.style.color='white'" onmouseout="this.style.background='';this.style.color='#f2f3f5'">✏️ Kullanıcı adını değiştir</div>
+  <div class="ctx-item" onclick="mdmRename()" style="padding:8px 14px;font-size:14px;color:#f2f3f5;cursor:pointer;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='#9b59b6';this.style.color='white'" onmouseout="this.style.background='';this.style.color='#f2f3f5'">✏️ Kullanıcı adını değiştir</div>
   <div class="ctx-item" onclick="mdmKick()" style="padding:8px 14px;font-size:14px;color:#f23f43;cursor:pointer;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='rgba(242,63,67,0.15)'" onmouseout="this.style.background=''">🚪 Kullanıcıyı at</div>
   <div class="ctx-item" onclick="mdmBan()" style="padding:8px 14px;font-size:14px;color:#f23f43;cursor:pointer;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='rgba(242,63,67,0.15)'" onmouseout="this.style.background=''">🔨 Kullanıcıyı yasakla</div>
 </div>
@@ -1736,7 +1855,7 @@
         <div id="tronActivateTitle" style="font-size:20px;font-weight:900;font-style:italic;text-transform:uppercase;letter-spacing:.04em;"></div>
       </div>
       <p id="tronActivateDesc" style="font-size:14px;color:#b5bac1;line-height:1.6;margin-bottom:20px;"></p>
-      <button onclick="closeTronActivateModal()" style="background:#5865f2;color:white;border:none;border-radius:8px;padding:10px 32px;font-size:15px;font-weight:700;cursor:pointer;" onmouseover="this.style.background='#4752c4'" onmouseout="this.style.background='#5865f2'">Harika!</button>
+      <button onclick="closeTronActivateModal()" style="background:#9b59b6;color:white;border:none;border-radius:8px;padding:10px 32px;font-size:15px;font-weight:700;cursor:pointer;" onmouseover="this.style.background='#4752c4'" onmouseout="this.style.background='#9b59b6'">Harika!</button>
     </div>
   </div>
 </div>
@@ -1769,16 +1888,16 @@
       <!-- 1 yıl -->
       <label style="display:flex;align-items:center;background:#1e1f22;border-radius:8px;padding:14px 16px;margin-bottom:8px;cursor:pointer;border:2px solid transparent;" id="giftOpt1yr" onclick="selectGiftPlan('1yil')">
         <div style="display:flex;align-items:center;gap:10px;">
-          <div id="giftRadio1yr" style="width:18px;height:18px;border-radius:50%;border:2px solid #5865f2;display:flex;align-items:center;justify-content:center;flex-shrink:0;"></div>
+          <div id="giftRadio1yr" style="width:18px;height:18px;border-radius:50%;border:2px solid #9b59b6;display:flex;align-items:center;justify-content:center;flex-shrink:0;"></div>
           <span style="font-size:14px;color:#f2f3f5;">1 Yıl</span>
           <span style="background:#2dc770;color:white;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;">%16 TASARRUF</span>
         </div>
       </label>
 
       <!-- 1 ay -->
-      <label style="display:flex;align-items:center;background:#1e1f22;border-radius:8px;padding:14px 16px;margin-bottom:16px;cursor:pointer;border:2px solid #5865f2;" id="giftOpt1mo" onclick="selectGiftPlan('1ay')">
+      <label style="display:flex;align-items:center;background:#1e1f22;border-radius:8px;padding:14px 16px;margin-bottom:16px;cursor:pointer;border:2px solid #9b59b6;" id="giftOpt1mo" onclick="selectGiftPlan('1ay')">
         <div style="display:flex;align-items:center;gap:10px;">
-          <div id="giftRadio1mo" style="width:18px;height:18px;border-radius:50%;border:2px solid #5865f2;background:#5865f2;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <div id="giftRadio1mo" style="width:18px;height:18px;border-radius:50%;border:2px solid #9b59b6;background:#9b59b6;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
           </div>
           <span style="font-size:14px;color:#f2f3f5;">1 Ay</span>
@@ -1993,18 +2112,38 @@
 
           <!-- PROFİL RENGİ -->
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-            <span style="font-size:11px;font-weight:700;text-transform:uppercase;color:#80848e;letter-spacing:.05em;">Profil Rengi</span>
-            <span style="background:#00a8fc;color:white;font-size:10px;font-weight:700;padding:2px 6px;border-radius:3px;">BETA</span>
+            <span style="font-size:11px;font-weight:700;text-transform:uppercase;color:#80848e;letter-spacing:.05em;">Profil Banner Rengi</span>
+            <span style="background:#1da8e0;color:white;font-size:10px;font-weight:700;padding:2px 6px;border-radius:3px;">BETA</span>
           </div>
-          <div style="display:flex;gap:12px;margin-bottom:24px;">
-            <div onclick="setProfileColorMode('default')" id="profColorDefault" style="width:56px;height:56px;border-radius:6px;background:#00a8fc;cursor:pointer;display:flex;align-items:center;justify-content:center;border:3px solid #f2f3f5;position:relative;" title="Varsayılan">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
-              <div style="position:absolute;bottom:-18px;font-size:11px;color:#80848e;white-space:nowrap;">Varsayılan</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:28px;align-items:flex-end;" id="bannerColorPicker">
+            <!-- Hazır renkler -->
+            <div onclick="selectBannerPreset(this,'#9b59b6')" class="banner-color-opt" data-color="#9b59b6" style="width:48px;height:48px;border-radius:6px;background:#9b59b6;cursor:pointer;border:3px solid #f2f3f5;position:relative;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+              <svg class="color-tick" width="20" height="20" viewBox="0 0 24 24" fill="white" style="display:block;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
             </div>
-            <div onclick="document.getElementById('customColorInput').click()" id="profColorCustom" style="width:56px;height:56px;border-radius:6px;background:#4e5058;cursor:pointer;display:flex;align-items:center;justify-content:center;border:3px solid transparent;position:relative;" title="Özel">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="#b5bac1"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
-              <input id="customColorInput" type="color" value="#4e5058" style="display:none;" oninput="setCustomProfileColor(this.value)">
-              <div style="position:absolute;bottom:-18px;font-size:11px;color:#80848e;white-space:nowrap;">Özel</div>
+            <div onclick="selectBannerPreset(this,'#1da8e0')" class="banner-color-opt" data-color="#1da8e0" style="width:48px;height:48px;border-radius:6px;background:#1da8e0;cursor:pointer;border:3px solid transparent;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+              <svg class="color-tick" width="20" height="20" viewBox="0 0 24 24" fill="white" style="display:none;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+            </div>
+            <div onclick="selectBannerPreset(this,'#23a55a')" class="banner-color-opt" data-color="#23a55a" style="width:48px;height:48px;border-radius:6px;background:#23a55a;cursor:pointer;border:3px solid transparent;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+              <svg class="color-tick" width="20" height="20" viewBox="0 0 24 24" fill="white" style="display:none;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+            </div>
+            <div onclick="selectBannerPreset(this,'#f23f43')" class="banner-color-opt" data-color="#f23f43" style="width:48px;height:48px;border-radius:6px;background:#f23f43;cursor:pointer;border:3px solid transparent;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+              <svg class="color-tick" width="20" height="20" viewBox="0 0 24 24" fill="white" style="display:none;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+            </div>
+            <div onclick="selectBannerPreset(this,'#f0b232')" class="banner-color-opt" data-color="#f0b232" style="width:48px;height:48px;border-radius:6px;background:#f0b232;cursor:pointer;border:3px solid transparent;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+              <svg class="color-tick" width="20" height="20" viewBox="0 0 24 24" fill="white" style="display:none;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+            </div>
+            <div onclick="selectBannerPreset(this,'#eb459e')" class="banner-color-opt" data-color="#eb459e" style="width:48px;height:48px;border-radius:6px;background:#eb459e;cursor:pointer;border:3px solid transparent;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+              <svg class="color-tick" width="20" height="20" viewBox="0 0 24 24" fill="white" style="display:none;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+            </div>
+            <!-- Özel renk -->
+            <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;">
+              <div id="profColorCustom" onclick="document.getElementById('customColorInput').click()" style="width:48px;height:48px;border-radius:6px;background:#4e5058;cursor:pointer;border:3px solid transparent;display:flex;align-items:center;justify-content:center;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="#b5bac1"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+              </div>
+              <input id="customColorInput" type="color" value="#4e5058"
+                style="width:0;height:0;opacity:0;position:absolute;"
+                oninput="setCustomProfileColor(this.value)">
+              <div style="font-size:11px;color:#80848e;margin-top:4px;">Özel</div>
             </div>
           </div>
 
@@ -2021,7 +2160,7 @@
           <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#80848e;letter-spacing:.05em;margin-bottom:6px;">Hakkında</div>
           <div style="font-size:13px;color:#80848e;margin-bottom:8px;">İstersen markdown ve bağlantı kullanabilirsin.</div>
           <div style="position:relative;">
-            <textarea id="aboutMeInput" maxlength="190" oninput="updateAboutMe()" placeholder="Kendinden bahset..." style="width:100%;background:#1e1f22;border:1px solid #1a1b1e;border-radius:4px;color:#f2f3f5;font-size:14px;padding:10px 12px;outline:none;box-sizing:border-box;font-family:inherit;resize:none;line-height:1.5;onfocus" rows="4" onfocus="this.style.borderColor='#1da8e0'" onblur="this.style.borderColor='#1a1b1e'"></textarea>
+            <textarea id="aboutMeInput" maxlength="190" oninput="updateAboutMe(true)" placeholder="Kendinden bahset..." style="width:100%;background:#1e1f22;border:1px solid #1a1b1e;border-radius:4px;color:#f2f3f5;font-size:14px;padding:10px 12px;outline:none;box-sizing:border-box;font-family:inherit;resize:none;line-height:1.5;onfocus" rows="4" onfocus="this.style.borderColor='#1da8e0'" onblur="this.style.borderColor='#1a1b1e'"></textarea>
             <div id="aboutMeCount" style="text-align:right;font-size:11px;color:#80848e;margin-top:4px;">0 / 190</div>
           </div>
 
@@ -2035,7 +2174,7 @@
           <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#80848e;letter-spacing:.05em;margin-bottom:10px;">Önizleme</div>
           <div style="background:#232428;border-radius:10px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.4);">
             <!-- Banner -->
-            <div id="previewBanner" style="height:80px;background:#00a8fc;background-size:cover;background-position:center;position:relative;">
+            <div id="previewBanner" style="height:80px;background:#9b59b6;background-size:cover;background-position:center;position:relative;">
               <div id="previewAvatar" style="position:absolute;bottom:-28px;left:12px;width:60px;height:60px;border-radius:50%;border:4px solid #232428;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:white;background-size:cover;background-position:center;"></div>
             </div>
             <!-- İsim alanı -->
@@ -2316,7 +2455,7 @@
       <h2 style="font-size:20px;font-weight:700;margin-bottom:20px;">Sunucu Boost</h2>
 
       <!-- Hero banner -->
-      <div style="background:linear-gradient(160deg,#5865f2 0%,#7c3aed 50%,#a855f7 100%);border-radius:16px;overflow:hidden;margin-bottom:24px;position:relative;">
+      <div style="background:linear-gradient(160deg,#9b59b6 0%,#7c3aed 50%,#a855f7 100%);border-radius:16px;overflow:hidden;margin-bottom:24px;position:relative;">
         <!-- Dalga alt dekor -->
         <div style="position:absolute;bottom:0;left:0;right:0;height:60px;background:rgba(0,0,0,0.2);border-radius:50% 50% 0 0 / 100% 100% 0 0;"></div>
         <!-- Yıldızlar -->
@@ -2360,7 +2499,7 @@
       <p style="font-size:14px;color:#80848e;margin-bottom:20px;">Bunlar mevcut aboneliklerinizdir. İstediğiniz zaman güncelleyebilirsiniz.</p>
 
       <!-- Tron abonelik kartı -->
-      <div id="abonelikTronKart" style="display:none;border:2px dashed #5865f2;border-radius:12px;overflow:hidden;margin-bottom:24px;">
+      <div id="abonelikTronKart" style="display:none;border:2px dashed #9b59b6;border-radius:12px;overflow:hidden;margin-bottom:24px;">
         <div id="abonelikBanner" style="background:linear-gradient(135deg,#4752c4,#7c3aed,#a855f7);padding:20px 24px;display:flex;align-items:center;gap:16px;position:relative;">
           <div style="font-size:48px;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.3));">🔮</div>
           <div style="flex:1;">
@@ -2382,7 +2521,7 @@
         <div style="font-size:48px;margin-bottom:12px;">🔮</div>
         <div style="font-size:16px;font-weight:700;color:#f2f3f5;margin-bottom:8px;">Henüz aktif aboneliğin yok</div>
         <div style="font-size:13px;color:#80848e;margin-bottom:20px;">Tron ile ayrıcalıklı özelliklerin kilidini aç!</div>
-        <button onclick="switchSettingsTab('nitro')" style="background:#5865f2;color:white;border:none;border-radius:6px;padding:10px 24px;font-size:14px;font-weight:600;cursor:pointer;" onmouseover="this.style.background='#4752c4'" onmouseout="this.style.background='#5865f2'">Tron'u Keşfet</button>
+        <button onclick="switchSettingsTab('nitro')" style="background:#9b59b6;color:white;border:none;border-radius:6px;padding:10px 24px;font-size:14px;font-weight:600;cursor:pointer;" onmouseover="this.style.background='#4752c4'" onmouseout="this.style.background='#9b59b6'">Tron'u Keşfet</button>
       </div>
 
       <!-- Ödeme bölümü -->
@@ -2406,8 +2545,8 @@
 
       <!-- Kod girme -->
       <div style="display:flex;gap:8px;margin-bottom:32px;">
-        <input id="redeemCodeInput" placeholder="WUMP-AAAAA-BBBBB-CCCCC" style="flex:1;background:#1e1f22;border:1px solid #3f4147;border-radius:6px;padding:10px 14px;color:#f2f3f5;font-size:14px;outline:none;font-family:inherit;" onfocus="this.style.borderColor='#5865f2'" onblur="this.style.borderColor='#3f4147'">
-        <button onclick="redeemGiftCode()" style="background:#5865f2;color:white;border:none;border-radius:6px;padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer;" onmouseover="this.style.background='#4752c4'" onmouseout="this.style.background='#5865f2'">Al</button>
+        <input id="redeemCodeInput" placeholder="WUMP-AAAAA-BBBBB-CCCCC" style="flex:1;background:#1e1f22;border:1px solid #3f4147;border-radius:6px;padding:10px 14px;color:#f2f3f5;font-size:14px;outline:none;font-family:inherit;" onfocus="this.style.borderColor='#9b59b6'" onblur="this.style.borderColor='#3f4147'">
+        <button onclick="redeemGiftCode()" style="background:#9b59b6;color:white;border:none;border-radius:6px;padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer;" onmouseover="this.style.background='#4752c4'" onmouseout="this.style.background='#9b59b6'">Al</button>
       </div>
 
       <div style="height:1px;background:#2e3035;margin-bottom:24px;"></div>
@@ -2426,7 +2565,7 @@
           <div style="font-size:14px;font-weight:700;color:#f2f3f5;margin-bottom:4px;">Kayıtlı bir ödeme yöntemi yok</div>
           <div style="font-size:13px;color:#80848e;">Bir ödeme yöntemi kaydederek daha hızlı ödeme yap</div>
         </div>
-        <button onclick="openOdemeModal()" style="background:#5865f2;color:white;border:none;border-radius:6px;padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;" onmouseover="this.style.background='#4752c4'" onmouseout="this.style.background='#5865f2'">Ödeme Yöntemi Ekle</button>
+        <button onclick="openOdemeModal()" style="background:#9b59b6;color:white;border:none;border-radius:6px;padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;" onmouseover="this.style.background='#4752c4'" onmouseout="this.style.background='#9b59b6'">Ödeme Yöntemi Ekle</button>
       </div>
 
       <div style="height:1px;background:#2e3035;margin-bottom:24px;"></div>
@@ -2446,7 +2585,7 @@
         <div style="font-size:48px;margin-bottom:16px;">😄</div>
         <h2 style="font-size:20px;font-weight:800;color:#f2f3f5;margin-bottom:8px;">Şaka Şaka!</h2>
         <p style="font-size:14px;color:#80848e;line-height:1.6;margin-bottom:24px;">Satın alınacak bir şey yok burada.<br>OtCord tamamen ücretsiz! 🎉</p>
-        <button onclick="closeOdemeModal()" style="background:#5865f2;color:white;border:none;border-radius:8px;padding:10px 32px;font-size:14px;font-weight:600;cursor:pointer;" onmouseover="this.style.background='#4752c4'" onmouseout="this.style.background='#5865f2'">Anladım 👍</button>
+        <button onclick="closeOdemeModal()" style="background:#9b59b6;color:white;border:none;border-radius:8px;padding:10px 32px;font-size:14px;font-weight:600;cursor:pointer;" onmouseover="this.style.background='#4752c4'" onmouseout="this.style.background='#9b59b6'">Anladım 👍</button>
       </div>
     </div>
     <div id="usTab_erisim" style="display:none;">
@@ -3868,7 +4007,7 @@
             <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;">
               <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#dbdee1;">😀 <span>100 Emoji Yuvası</span></div>
               <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#dbdee1;">🎵 <span>24 Ses Paneli Yuvası</span></div>
-              <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#dbdee1;"><span style="font-size:10px;font-weight:700;background:#5865f2;padding:1px 4px;border-radius:3px;color:white;">GIF</span> <span>Hareketli Sunucu Simgesi</span></div>
+              <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#dbdee1;"><span style="font-size:10px;font-weight:700;background:#9b59b6;padding:1px 4px;border-radius:3px;color:white;">GIF</span> <span>Hareketli Sunucu Simgesi</span></div>
               <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#dbdee1;">🎧 <span>Daha Yüksek Kaliteli Ses</span></div>
               <div style="font-size:12px;color:#80848e;">...ve daha fazlası!</div>
             </div>
@@ -3901,7 +4040,7 @@
               <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#dbdee1;">⭐ <span>Özel Sunucu Daveti Bağlantısı</span></div>
               <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#dbdee1;">⬆️ <span>100 MB Dosya Yükleme</span></div>
               <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#dbdee1;">🎧 <span>En Yüksek Kaliteli Ses</span></div>
-              <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#dbdee1;"><span style="font-size:10px;font-weight:700;background:#5865f2;padding:1px 4px;border-radius:3px;color:white;">GIF</span> <span>Hareketli Sunucu Afişi</span></div>
+              <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#dbdee1;"><span style="font-size:10px;font-weight:700;background:#9b59b6;padding:1px 4px;border-radius:3px;color:white;">GIF</span> <span>Hareketli Sunucu Afişi</span></div>
               <div style="font-size:12px;color:#80848e;">...ve daha fazlası!</div>
             </div>
             <div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#f47fff;">🔮 <span>7 Takviye</span></div>
@@ -5343,8 +5482,10 @@ function openPCard(memberName, el) {
   const isMe = m.name === myUname;
   const color = getColor(m.uid || (isMe && currentUser ? currentUser.uid : m.name));
 
-  // Banner
-  document.getElementById('pcBanner').style.background = `linear-gradient(135deg, ${color}ee, ${color}44)`;
+  // Banner — önce varsayılan renk, sonra Firebase'den gerçek rengi al
+  const pcBannerEl = document.getElementById('pcBanner');
+  pcBannerEl.style.background = `linear-gradient(135deg, ${color}ee, ${color}44)`;
+  pcBannerEl.setAttribute('data-uid', m.uid || '');
 
   // Avatar
   const av = document.getElementById('pcAvatar');
@@ -5376,6 +5517,13 @@ function openPCard(memberName, el) {
     db.collection('users').doc(tuid).get().then(doc => {
       const d = doc.exists ? doc.data() : {};
       document.getElementById('pcBio').textContent = d.bio || 'Henüz bir şey yazmamış.';
+      // Banner (resim öncelikli, sonra renk)
+      if (d.bannerImage) {
+        pcBannerEl.style.background = `url(${d.bannerImage}) center/cover no-repeat`;
+      } else if (d.bannerColor) {
+        pcBannerEl.style.backgroundImage = '';
+        pcBannerEl.style.background = d.bannerColor;
+      }
       if (d.createdAt) {
         const dt = d.createdAt.toDate ? d.createdAt.toDate() : new Date(d.createdAt);
         document.getElementById('pcJoined').textContent = dt.toLocaleDateString('tr-TR', { day:'numeric', month:'long', year:'numeric' });
@@ -5701,17 +5849,17 @@ function selectGiftPlan(plan) {
   const r1yr = document.getElementById('giftRadio1yr');
   const r1mo = document.getElementById('giftRadio1mo');
   if (plan === '1yil') {
-    opt1yr.style.border = '2px solid #5865f2';
+    opt1yr.style.border = '2px solid #9b59b6';
     opt1mo.style.border = '2px solid transparent';
     r1yr.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>';
-    r1yr.style.background = '#5865f2';
+    r1yr.style.background = '#9b59b6';
     r1mo.innerHTML = '';
     r1mo.style.background = 'transparent';
   } else {
-    opt1mo.style.border = '2px solid #5865f2';
+    opt1mo.style.border = '2px solid #9b59b6';
     opt1yr.style.border = '2px solid transparent';
     r1mo.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>';
-    r1mo.style.background = '#5865f2';
+    r1mo.style.background = '#9b59b6';
     r1yr.innerHTML = '';
     r1yr.style.background = 'transparent';
   }
@@ -6691,8 +6839,15 @@ document.addEventListener('mousemove', (e) => {
   if (el) {
     tooltip.textContent = el.dataset.tooltip;
     tooltip.style.display = 'block';
-    tooltip.style.left = e.clientX + 12 + 'px';
-    tooltip.style.top = e.clientY - 30 + 'px';
+    // Önce göster, sonra boyut hesapla
+    const tw = tooltip.offsetWidth;
+    const th = tooltip.offsetHeight;
+    let x = e.clientX + 12;
+    let y = e.clientY - 30;
+    if (x + tw + 8 > window.innerWidth) x = e.clientX - tw - 12;
+    if (y < 4) y = e.clientY + 16;
+    tooltip.style.left = x + 'px';
+    tooltip.style.top = y + 'px';
   } else {
     tooltip.style.display = 'none';
   }
@@ -7567,13 +7722,13 @@ function switchDmTab(tab) {
         </div>
         <div style="display:flex;gap:4px;">
           ${['Ana Sayfa','Yenilikler','Tron\'un En İyileri','Planlar','Karşılaştır'].map((t,i) => `
-            <div style="padding:14px 12px;font-size:14px;color:${i===0?'#f2f3f5':'#b5bac1'};cursor:pointer;border-bottom:${i===0?'2px solid #5865f2':'2px solid transparent'};font-weight:${i===0?'600':'400'};"
+            <div style="padding:14px 12px;font-size:14px;color:${i===0?'#f2f3f5':'#b5bac1'};cursor:pointer;border-bottom:${i===0?'2px solid #9b59b6':'2px solid transparent'};font-weight:${i===0?'600':'400'};"
               onmouseover="this.style.color='#f2f3f5'" onmouseout="this.style.color='${i===0?'#f2f3f5':'#b5bac1'}'">
               ${t}
             </div>`).join('')}
         </div>
         <div style="margin-left:auto;">
-          <button onclick="openTronGiftModal('tron')" style="background:#5865f2;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;" onmouseover="this.style.background='#4752c4'" onmouseout="this.style.background='#5865f2'">
+          <button onclick="openTronGiftModal('tron')" style="background:#9b59b6;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;" onmouseover="this.style.background='#4752c4'" onmouseout="this.style.background='#9b59b6'">
             🎁 Tron Hediye Et
           </button>
         </div>
@@ -7626,13 +7781,13 @@ function switchDmTab(tab) {
           <div style="background:#2b2d31;border-radius:12px;padding:24px;border:1px solid #3f4147;">
             <div style="font-size:13px;font-weight:700;color:#80848e;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Tron Basic</div>
             
-            <button onclick="openTronGiftModal('basic','subscribe')" style="width:100%;background:#5865f2;color:white;border:none;border-radius:6px;padding:10px;font-size:14px;font-weight:600;cursor:pointer;" onmouseover="this.style.background='#4752c4'" onmouseout="this.style.background='#5865f2'">Abone Ol</button>
+            <button onclick="openTronGiftModal('basic','subscribe')" style="width:100%;background:#9b59b6;color:white;border:none;border-radius:6px;padding:10px;font-size:14px;font-weight:600;cursor:pointer;" onmouseover="this.style.background='#4752c4'" onmouseout="this.style.background='#9b59b6'">Abone Ol</button>
           </div>
           <div style="background:linear-gradient(135deg,#2b2d31,#3b2f5e);border-radius:12px;padding:24px;border:2px solid #a855f7;position:relative;">
             <div style="position:absolute;top:-10px;right:16px;background:#a855f7;color:white;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;">EN POPÜLER</div>
             <div style="font-size:13px;font-weight:700;color:#c4b5fd;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Tron</div>
             
-            <button onclick="openTronGiftModal('tron','subscribe')" style="width:100%;background:linear-gradient(135deg,#a855f7,#5865f2);color:white;border:none;border-radius:6px;padding:10px;font-size:14px;font-weight:600;cursor:pointer;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">Abone Ol</button>
+            <button onclick="openTronGiftModal('tron','subscribe')" style="width:100%;background:linear-gradient(135deg,#a855f7,#9b59b6);color:white;border:none;border-radius:6px;padding:10px;font-size:14px;font-weight:600;cursor:pointer;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">Abone Ol</button>
           </div>
         </div>
       </div>
@@ -7682,7 +7837,7 @@ function renderAddFriendPanel() {
       <div style="display:flex;gap:8px;background:#1e1f22;border-radius:8px;padding:12px 16px;border:1px solid #3f4147;" id="addFriendBox">
         <input type="text" id="addFriendInput" placeholder="Kullanıcıadı#0000" style="flex:1;background:none;border:none;outline:none;color:#f2f3f5;font-size:15px;font-family:inherit;"
           onkeydown="if(event.key==='Enter') sendFriendRequest()">
-        <button id="addFriendBtn" style="background:#5865f2;color:white;border:none;border-radius:4px;padding:8px 18px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" onclick="sendFriendRequest()">Arkadaşlık İsteği Gönder</button>
+        <button id="addFriendBtn" style="background:#9b59b6;color:white;border:none;border-radius:4px;padding:8px 18px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" onclick="sendFriendRequest()">Arkadaşlık İsteği Gönder</button>
       </div>
       <div id="addFriendResult" style="margin-top:12px;font-size:14px;"></div>
       <div style="position:relative;margin-top:32px;margin-bottom:16px;">
@@ -7866,7 +8021,7 @@ function renderAllFriends() {
     _allFriendsUnsubs = [];
 
     if (friendUids.length === 0) {
-      content.innerHTML = '<div style="text-align:center;color:#80848e;margin-top:60px;font-size:14px;">Henüz hiç arkadaşın yok.<br>Arkadaş eklemek için üstteki <strong style="color:#5865f2;">Arkadaş Ekle</strong> butonuna bas!</div>';
+      content.innerHTML = '<div style="text-align:center;color:#80848e;margin-top:60px;font-size:14px;">Henüz hiç arkadaşın yok.<br>Arkadaş eklemek için üstteki <strong style="color:#9b59b6;">Arkadaş Ekle</strong> butonuna bas!</div>';
       return;
     }
 
@@ -8113,7 +8268,6 @@ function toggleProfileMenu(e) {
 
   if (menu.style.display !== 'none') { menu.style.display = 'none'; return; }
 
-  // Tıklanan elementin en yakın user-panel'ini bul
   const panel = e.currentTarget.closest('.user-panel') || document.getElementById('myUserPanel');
   const rect = panel.getBoundingClientRect();
   menu.style.left = rect.left + 'px';
@@ -8122,6 +8276,22 @@ function toggleProfileMenu(e) {
   menu.style.display = 'block';
 
   updateMyStatus(myStatus);
+
+  // Banner rengini yükle
+  if (currentUser && db) {
+    db.collection('users').doc(currentUser.uid).get().then(doc => {
+      const d = doc.exists ? doc.data() : {};
+      const pmBanner = document.getElementById('pmBanner');
+      if (pmBanner) {
+        if (d.bannerImage) {
+          pmBanner.style.background = `url(${d.bannerImage}) center/cover no-repeat`;
+        } else {
+          pmBanner.style.backgroundImage = '';
+          pmBanner.style.background = d.bannerColor || getColor(currentUser.uid);
+        }
+      }
+    }).catch(() => {});
+  }
 }
 
 function showStatusSubMenu(e) {
@@ -8937,11 +9107,11 @@ function openUserSettings() {
   const user = currentUser;
   if (!user) return;
   const uname = user.displayName || user.email.split('@')[0];
-  const color = getColor(user.uid); // UID'den — sabit kalsın
+  const color = getColor(user.uid);
   const initials = getInitials(uname);
   const tag = getTag(user.uid);
 
-  // Profil bilgilerini doldur
+  // Önce initials ile göster
   const av = document.getElementById('usAvatar');
   av.textContent = initials;
   av.style.background = color;
@@ -8954,6 +9124,28 @@ function openUserSettings() {
   switchSettingsTab('hesap');
   const modal = document.getElementById('userSettingsModal');
   modal.style.display = 'flex';
+
+  // Firebase'den avatar ve banner rengini yükle
+  if (currentUser && db) {
+    db.collection('users').doc(currentUser.uid).get().then(doc => {
+      const d = doc.exists ? doc.data() : {};
+      // Avatar
+      if (d.avatarUrl) {
+        av.style.background = `url(${d.avatarUrl}) center/cover no-repeat`;
+        av.textContent = '';
+      }
+      // Banner (resim öncelikli, sonra renk)
+      const usBanner = document.getElementById('usBanner');
+      if (usBanner) {
+        if (d.bannerImage) {
+          usBanner.style.background = `url(${d.bannerImage}) center/cover no-repeat`;
+        } else if (d.bannerColor) {
+          usBanner.style.backgroundImage = '';
+          usBanner.style.background = d.bannerColor;
+        }
+      }
+    }).catch(() => {});
+  }
 }
 
 function closeUserSettings() {
@@ -9163,7 +9355,355 @@ function checkBanBeforeJoin(serverId, uid, uname, onAllowed) {
   }).catch(() => onAllowed());
 }
 
-// ===== DİREKT MESAJ SİSTEMİ =====
+// ===== WEBRTC ARAMA SİSTEMİ =====
+let peerConnection = null;
+let localStream = null;
+let callType = null; // 'voice' | 'video'
+let activeCallUid = null;
+let activeCallName = null;
+let callTimerInterval = null;
+let callSeconds = 0;
+let callSignalListener = null;
+let incomingCallData = null;
+
+const STUN_SERVERS = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+  ]
+};
+
+function getCallDocId(uid1, uid2) {
+  return [uid1, uid2].sort().join('_');
+}
+
+// Arama başlat (sesli veya görüntülü)
+async function startCall(type) {
+  if (!currentUser || !activeDmUid) return;
+  if (activeCallUid) { showToast('Zaten aktif bir arama var.'); return; }
+
+  callType = type;
+  activeCallUid = activeDmUid;
+  activeCallName = activeDmName;
+
+  // Medya izni al
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: type === 'video'
+    });
+  } catch(e) {
+    showToast('❌ Mikrofon/kamera izni verilmedi.');
+    return;
+  }
+
+  // PeerConnection oluştur
+  peerConnection = new RTCPeerConnection(STUN_SERVERS);
+  localStream.getTracks().forEach(t => peerConnection.addTrack(t, localStream));
+
+  // Uzak stream gelince
+  peerConnection.ontrack = e => {
+    const remoteVideo = document.getElementById('remoteVideo');
+    if (remoteVideo) remoteVideo.srcObject = e.streams[0];
+    document.getElementById('remoteAvatar').style.display = 'none';
+    document.getElementById('callStatusText').textContent = '';
+  };
+
+  // ICE candidate
+  peerConnection.onicecandidate = e => {
+    if (e.candidate) {
+      db.collection('calls').doc(getCallDocId(currentUser.uid, activeCallUid))
+        .collection('callerCandidates').add(e.candidate.toJSON());
+    }
+  };
+
+  // Offer oluştur
+  const offer = await peerConnection.createOffer();
+  await peerConnection.setLocalDescription(offer);
+
+  const callDoc = {
+    offer: { type: offer.type, sdp: offer.sdp },
+    callType: type,
+    callerUid: currentUser.uid,
+    callerName: currentUser.displayName || currentUser.email.split('@')[0],
+    callerAvatar: (allOnlineUsers.find(u => u.uid === currentUser.uid)?.avatarUrl || ''),
+    calleeUid: activeCallUid,
+    status: 'calling',
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  const docId = getCallDocId(currentUser.uid, activeCallUid);
+  await db.collection('calls').doc(docId).set(callDoc);
+
+  // Arama ekranını göster (arıyor UI)
+  showCallingScreen(activeCallName, type);
+
+  // Karşı tarafın cevabını dinle
+  callSignalListener = db.collection('calls').doc(docId).onSnapshot(async snap => {
+    const data = snap.data();
+    if (!data) return;
+    if (data.status === 'rejected') {
+      showToast('📵 Arama reddedildi.');
+      cleanupCall();
+      return;
+    }
+    if (data.status === 'accepted' && data.answer && !peerConnection.currentRemoteDescription) {
+      const answer = new RTCSessionDescription(data.answer);
+      await peerConnection.setRemoteDescription(answer);
+      // Karşı tarafın ICE adaylarını dinle
+      db.collection('calls').doc(docId).collection('calleeCandidates').onSnapshot(snap => {
+        snap.docChanges().forEach(change => {
+          if (change.type === 'added') {
+            peerConnection.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+          }
+        });
+      });
+      showActiveCallScreen();
+    }
+    if (data.status === 'ended') {
+      cleanupCall();
+    }
+  });
+}
+
+function showCallingScreen(name, type) {
+  // Arama ekranını göster - karşı taraf cevaplayana kadar
+  const screen = document.getElementById('activeCallScreen');
+  screen.style.display = 'flex';
+  document.getElementById('remoteAvatarName').textContent = name;
+  document.getElementById('callStatusText').textContent = type === 'video' ? '📹 Görüntülü arıyor...' : '📞 Sesli arıyor...';
+  document.getElementById('callTimer').style.display = 'none';
+  // Avatar
+  const u = allOnlineUsers.find(u => u.uid === activeCallUid);
+  const av = document.getElementById('remoteAvatarImg');
+  if (u?.avatarUrl) { av.style.background = `url(${u.avatarUrl}) center/cover no-repeat`; av.textContent = ''; }
+  else { av.style.background = getColor(activeCallUid); av.textContent = getInitials(name); }
+  // Video butonu
+  document.getElementById('callVideoBtn').style.display = type === 'video' ? 'flex' : 'none';
+  if (type === 'video') {
+    const localVideo = document.getElementById('localVideo');
+    localVideo.srcObject = localStream;
+    localVideo.style.display = 'block';
+  }
+}
+
+function showActiveCallScreen() {
+  document.getElementById('callStatusText').textContent = '';
+  document.getElementById('callTimer').style.display = 'block';
+  callSeconds = 0;
+  callTimerInterval = setInterval(() => {
+    callSeconds++;
+    const m = Math.floor(callSeconds/60);
+    const s = callSeconds % 60;
+    document.getElementById('callTimer').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+  }, 1000);
+}
+
+// Gelen arama dinle
+function listenIncomingCalls() {
+  if (!currentUser) return;
+  db.collection('calls')
+    .where('calleeUid', '==', currentUser.uid)
+    .where('status', '==', 'calling')
+    .onSnapshot(snap => {
+      snap.docChanges().forEach(change => {
+        if (change.type === 'added') {
+          const data = change.doc.data();
+          if (activeCallUid) return; // Zaten aramadayız
+          incomingCallData = { ...data, docId: change.doc.id };
+          showIncomingCall(data);
+        }
+      });
+    });
+}
+
+function showIncomingCall(data) {
+  const screen = document.getElementById('incomingCallScreen');
+  screen.style.display = 'flex';
+  document.getElementById('incomingCallName').textContent = data.callerName;
+  document.getElementById('incomingCallType').textContent = data.callType === 'video' ? '📹 Görüntülü arıyor...' : '📞 Sesli arıyor...';
+  const av = document.getElementById('incomingCallAvatar');
+  if (data.callerAvatar) { av.style.background = `url(${data.callerAvatar}) center/cover no-repeat`; av.textContent = ''; }
+  else { av.style.background = getColor(data.callerUid); av.textContent = getInitials(data.callerName); }
+
+  // Arama bildirimi - eğer DM sohbeti açıksa bar göster
+  if (activeDmUid !== data.callerUid) {
+    // DM'e yönlendir
+    const saved = JSON.parse(localStorage.getItem('otcord_dm_sidebar') || '[]');
+    const existing = saved.find(s => s.uid === data.callerUid);
+    if (existing) {
+      openDmChat(data.callerUid, data.callerName, data.callerAvatar);
+    }
+  }
+
+  // Zil sesi (Web Audio)
+  try {
+    if (!window._callRingCtx) window._callRingCtx = new AudioContext();
+    const ctx = window._callRingCtx;
+    function ring() {
+      if (!document.getElementById('incomingCallScreen') || document.getElementById('incomingCallScreen').style.display === 'none') return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = 440;
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+      osc.start(); osc.stop(ctx.currentTime + 0.5);
+      setTimeout(ring, 1500);
+    }
+    ring();
+  } catch(e) {}
+}
+
+async function acceptCall() {
+  if (!incomingCallData) return;
+  const data = incomingCallData;
+  document.getElementById('incomingCallScreen').style.display = 'none';
+
+  callType = data.callType;
+  activeCallUid = data.callerUid;
+  activeCallName = data.callerName;
+
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: data.callType === 'video'
+    });
+  } catch(e) {
+    showToast('❌ Mikrofon/kamera izni verilmedi.');
+    await db.collection('calls').doc(data.docId).update({ status: 'rejected' });
+    return;
+  }
+
+  peerConnection = new RTCPeerConnection(STUN_SERVERS);
+  localStream.getTracks().forEach(t => peerConnection.addTrack(t, localStream));
+
+  peerConnection.ontrack = e => {
+    const remoteVideo = document.getElementById('remoteVideo');
+    if (remoteVideo) remoteVideo.srcObject = e.streams[0];
+    document.getElementById('remoteAvatar').style.display = 'none';
+  };
+
+  peerConnection.onicecandidate = e => {
+    if (e.candidate) {
+      db.collection('calls').doc(data.docId).collection('calleeCandidates').add(e.candidate.toJSON());
+    }
+  };
+
+  // Offer'ı al ve answer oluştur
+  await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+
+  // Arayan tarafın ICE adaylarını al
+  db.collection('calls').doc(data.docId).collection('callerCandidates').onSnapshot(snap => {
+    snap.docChanges().forEach(change => {
+      if (change.type === 'added') {
+        peerConnection.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+      }
+    });
+  });
+
+  const answer = await peerConnection.createAnswer();
+  await peerConnection.setLocalDescription(answer);
+  await db.collection('calls').doc(data.docId).update({
+    answer: { type: answer.type, sdp: answer.sdp },
+    status: 'accepted'
+  });
+
+  // Sinyal dinle (bitiş için)
+  callSignalListener = db.collection('calls').doc(data.docId).onSnapshot(snap => {
+    const d = snap.data();
+    if (d?.status === 'ended') cleanupCall();
+  });
+
+  showCallingScreen(data.callerName, data.callType);
+  showActiveCallScreen();
+
+  // Sohbete at
+  if (!activeDmUid || activeDmUid !== data.callerUid) {
+    openDmScreen();
+    openDmChat(data.callerUid, data.callerName, data.callerAvatar);
+  }
+}
+
+async function rejectCall() {
+  if (!incomingCallData) return;
+  await db.collection('calls').doc(incomingCallData.docId).update({ status: 'rejected' });
+  document.getElementById('incomingCallScreen').style.display = 'none';
+  incomingCallData = null;
+}
+
+async function endCall() {
+  if (activeCallUid && currentUser) {
+    const docId = getCallDocId(currentUser.uid, activeCallUid);
+    await db.collection('calls').doc(docId).update({ status: 'ended' }).catch(() => {});
+    // Arama mesajı yaz
+    const chatId = [currentUser.uid, activeCallUid].sort().join('_');
+    const myName = currentUser.displayName || currentUser.email.split('@')[0];
+    const dur = callSeconds > 0 ? `${Math.floor(callSeconds/60)}:${(callSeconds%60).toString().padStart(2,'0')}` : null;
+    db.collection('dmChats').doc(chatId).collection('messages').add({
+      author: myName,
+      authorUid: currentUser.uid,
+      text: dur ? `📞 Arama ${dur} sürdü.` : `📞 Cevapsız arama`,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      isCallMsg: true
+    }).catch(() => {});
+  }
+  cleanupCall();
+}
+
+function cleanupCall() {
+  if (callSignalListener) { callSignalListener(); callSignalListener = null; }
+  if (callTimerInterval) { clearInterval(callTimerInterval); callTimerInterval = null; }
+  if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+  if (peerConnection) { peerConnection.close(); peerConnection = null; }
+
+  const remoteVideo = document.getElementById('remoteVideo');
+  if (remoteVideo) remoteVideo.srcObject = null;
+  const localVideo = document.getElementById('localVideo');
+  if (localVideo) { localVideo.srcObject = null; localVideo.style.display = 'none'; }
+  document.getElementById('remoteAvatar').style.display = 'flex';
+
+  document.getElementById('activeCallScreen').style.display = 'none';
+  document.getElementById('activeCallBar').style.display = 'none';
+  document.getElementById('incomingCallScreen').style.display = 'none';
+
+  activeCallUid = null;
+  activeCallName = null;
+  callType = null;
+  callSeconds = 0;
+  incomingCallData = null;
+}
+
+function showActiveCall() {
+  document.getElementById('activeCallScreen').style.display = 'flex';
+  document.getElementById('activeCallBar').style.display = 'none';
+}
+
+function minimizeCall() {
+  document.getElementById('activeCallScreen').style.display = 'none';
+  document.getElementById('activeCallBar').style.display = 'flex';
+  document.getElementById('activeCallBarName').textContent = activeCallName || '';
+}
+
+function toggleCallMic() {
+  if (!localStream) return;
+  const btn = document.getElementById('callMicBtn');
+  const track = localStream.getAudioTracks()[0];
+  if (!track) return;
+  track.enabled = !track.enabled;
+  btn.dataset.muted = track.enabled ? '0' : '1';
+  btn.style.background = track.enabled ? '#2b2d31' : '#f23f43';
+}
+
+function toggleCallVideo() {
+  if (!localStream) return;
+  const btn = document.getElementById('callVideoBtn');
+  const track = localStream.getVideoTracks()[0];
+  if (!track) return;
+  track.enabled = !track.enabled;
+  btn.dataset.off = track.enabled ? '0' : '1';
+  btn.style.background = track.enabled ? '#2b2d31' : '#f23f43';
+}
 let activeDmUid = null;
 let activeDmName = null;
 let dmMessages = {}; // { uid: [{author,text,time,uid}] }
@@ -9285,6 +9825,7 @@ function addDmToSidebar(uid, name, avatarUrl) {
     div.innerHTML = `
       <div style="position:relative;flex-shrink:0;">
         <div class="dm-av" style="width:36px;height:36px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;">${txt}</div>
+        <div class="dm-status-dot" style="position:absolute;bottom:-1px;right:-1px;width:12px;height:12px;border-radius:50%;background:#80848e;border:2px solid #2b2d31;"></div>
         <div class="dm-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#f23f43;color:white;font-size:10px;font-weight:700;border-radius:10px;padding:1px 5px;min-width:16px;text-align:center;border:2px solid #2b2d31;"></div>
       </div>
       <span class="dm-nm" style="font-size:14px;font-weight:500;color:#f2f3f5;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${finalName}</span>
@@ -9293,6 +9834,22 @@ function addDmToSidebar(uid, name, avatarUrl) {
     div.onmouseout  = () => { div.style.background = div.classList.contains('dm-sidebar-active') ? '#404249' : ''; div.querySelector('.dm-close-btn').style.opacity = '0'; };
     div.onclick = () => openDmChat(uid, finalName, finalAvatar);
     list.appendChild(div);
+    // Durum noktasını hemen güncelle
+    setStatusDot(div.querySelector('.dm-status-dot'), uid);
+    // allOnlineUsers henüz yoksa onlineUsers'dan çek
+    if (!allOnlineUsers.find(u => u.uid === uid)) {
+      db.collection('onlineUsers').doc(uid).get().then(snap => {
+        if (snap.exists) {
+          const status = snap.data().status || 'offline';
+          const fakeDot = div.querySelector('.dm-status-dot');
+          const c = status === 'online' ? '#23a55a' : status === 'idle' ? '#f0b232' : status === 'dnd' ? '#f23f43' : null;
+          if (fakeDot) {
+            if (c) { fakeDot.style.background = c; fakeDot.style.border = '2px solid #2b2d31'; }
+            else { fakeDot.style.background = 'transparent'; fakeDot.style.border = '2.5px solid #80848e'; }
+          }
+        }
+      }).catch(() => {});
+    }
     saveDmSidebar();
     listenDmNotifications(uid);
   };
@@ -9498,6 +10055,44 @@ function sendDmMessage() {
   }).catch(() => showToast('❌ Mesaj gönderilemedi.'));
 }
 
+function getDmStatusColor(uid) {
+  const u = allOnlineUsers.find(u => u.uid === uid);
+  if (!u || u.status === 'offline') return null; // offline = çevrimdışı ikonu
+  return u.status === 'online' ? '#23a55a' : u.status === 'idle' ? '#f0b232' : u.status === 'dnd' ? '#f23f43' : null;
+}
+
+function setStatusDot(dotEl, uid) {
+  if (!dotEl) return;
+  const color = getDmStatusColor(uid);
+  if (color) {
+    dotEl.style.background = color;
+    dotEl.style.border = '2px solid #2b2d31';
+    dotEl.innerHTML = '';
+  } else {
+    // Çevrimdışı - içi boş halka
+    dotEl.style.background = 'transparent';
+    dotEl.style.border = '2.5px solid #80848e';
+    dotEl.innerHTML = '';
+  }
+}
+
+function updateDmSidebarStatus(uid) {
+  const item = document.querySelector(`#dmFriendList .dm-sidebar-item[data-uid="${uid}"]`);
+  if (!item) return;
+  setStatusDot(item.querySelector('.dm-status-dot'), uid);
+}
+
+function updateAllDmSidebarStatuses() {
+  document.querySelectorAll('#dmFriendList .dm-sidebar-item').forEach(item => {
+    const uid = item.getAttribute('data-uid');
+    if (!uid) return;
+    setStatusDot(item.querySelector('.dm-status-dot'), uid);
+  });
+  if (activeDmUid) {
+    setStatusDot(document.getElementById('dmUserProfileStatus'), activeDmUid);
+  }
+}
+
 function updateDmUserProfile(uid, name, avatarUrl) {
   const color = getColor(uid);
   const av = document.getElementById('dmUserProfileAvatar');
@@ -9507,13 +10102,27 @@ function updateDmUserProfile(uid, name, avatarUrl) {
   document.getElementById('dmUserProfileName').textContent = name;
   document.getElementById('dmUserProfileTag').textContent = name + getTag(uid);
 
-  // Firebase'den bio ve tarih çek
+  // Durum noktası
+  setStatusDot(document.getElementById('dmUserProfileStatus'), uid);
+  updateDmSidebarStatus(uid);
+
+  // Firebase'den bio, tarih ve bannerColor çek
   db.collection('users').doc(uid).get().then(doc => {
     const d = doc.exists ? doc.data() : {};
     document.getElementById('dmUserProfileBio').textContent = d.bio || 'Henüz bir şey yazmamış.';
     if (d.createdAt) {
       const dt = d.createdAt.toDate ? d.createdAt.toDate() : new Date(d.createdAt);
       document.getElementById('dmUserProfileJoined').textContent = dt.toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'});
+    }
+    // Banner (resim öncelikli, sonra renk)
+    const dmBanner = document.getElementById('dmUserProfileBanner');
+    if (dmBanner) {
+      if (d.bannerImage) {
+        dmBanner.style.background = `url(${d.bannerImage}) center/cover no-repeat`;
+      } else {
+        dmBanner.style.backgroundImage = '';
+        dmBanner.style.background = d.bannerColor || `linear-gradient(135deg,${color}dd,${color}44)`;
+      }
     }
   }).catch(() => {});
 
@@ -9549,6 +10158,19 @@ function updateDmUserProfile(uid, name, avatarUrl) {
     // Bio güncelle
     const bioEl = document.getElementById('dmUserProfileBio');
     if (bioEl) bioEl.textContent = d.bio || 'Henüz bir şey yazmamış.';
+    // Banner rengi güncelle
+    const dmBannerEl = document.getElementById('dmUserProfileBanner');
+    if (dmBannerEl) {
+      if (d.bannerImage) {
+        dmBannerEl.style.background = `url(${d.bannerImage}) center/cover no-repeat`;
+      } else {
+        dmBannerEl.style.backgroundImage = '';
+        dmBannerEl.style.background = d.bannerColor || `linear-gradient(135deg,${getColor(uid)}dd,${getColor(uid)}44)`;
+      }
+    }
+    // Durum noktasını güncelle
+    setStatusDot(document.getElementById('dmUserProfileStatus'), uid);
+    updateDmSidebarStatus(uid);
   });
 }
 
@@ -9932,6 +10554,14 @@ function disableTestMode() {
 }
 
 function switchSettingsTab(tab) {
+  // Kaydedilmemiş değişiklik varsa engelle ve bar titreşsin
+  const bar = document.getElementById('profileSaveBar');
+  const currentTab = document.querySelector('.us-menu-item.active')?.id?.replace('usMenu_','');
+  if (bar && bar.style.display === 'flex' && currentTab === 'profil' && tab !== 'profil') {
+    shakeProfileSaveBar();
+    return;
+  }
+
   ['hesap','profil','gizlilik','aile','uygulamalar','cihazlar','baglantilar','arkadaslar',
     'nitro','boost','abonelik','hediye','fatura',
     'gorunum','erisim','ses','metin','bildirim','tuslar','dil','windows','yayinci','gelismis',
@@ -9964,11 +10594,41 @@ function switchSettingsTab(tab) {
     if (nm) nm.textContent = uname;
     const tg = document.getElementById('previewTag');
     if (tg) tg.textContent = uname + tag;
-    // Bio'yu Firestore'dan yükle
+    // Firebase yüklenene kadar geçici olarak mor göster
+    const bnTemp = document.getElementById('previewBanner');
+    if (bnTemp && !bnTemp.style.backgroundImage) { bnTemp.style.backgroundImage = ''; bnTemp.style.background = '#9b59b6'; }
+    // Bio'yu Firestore'dan yükle ve önizlemeyi güncelle
     db.collection('users').doc(currentUser.uid).get().then(doc => {
       const bio = doc.exists ? (doc.data().bio || '') : '';
       const aboutEl = document.getElementById('aboutMeInput');
-      if (aboutEl) { aboutEl.value = bio; document.getElementById('aboutMeCount').textContent = bio.length + ' / 190'; }
+      if (aboutEl) {
+        aboutEl.value = bio;
+        document.getElementById('aboutMeCount').textContent = bio.length + ' / 190';
+        updateAboutMe(false);
+      }
+      // Avatar ve banner'ı da güncelle
+      const avatarUrl = doc.exists ? (doc.data().avatarUrl || '') : '';
+      const bannerColor = doc.exists ? (doc.data().bannerColor || '') : '';
+      const bannerImage = doc.exists ? (doc.data().bannerImage || '') : '';
+      if (avatarUrl) {
+        const av = document.getElementById('previewAvatar');
+        if (av) { av.style.background = `url(${avatarUrl}) center/cover no-repeat`; av.textContent = ''; }
+        const usAv = document.getElementById('usAvatar');
+        if (usAv) { usAv.style.background = `url(${avatarUrl}) center/cover no-repeat`; usAv.textContent = ''; }
+      }
+      const bn = document.getElementById('previewBanner');
+      const usBanner = document.getElementById('usBanner');
+      if (bannerImage) {
+        // Banner fotoğrafı varsa göster
+        if (bn) { bn.style.background = `url(${bannerImage}) center/cover no-repeat`; }
+        if (usBanner) { usBanner.style.background = `url(${bannerImage}) center/cover no-repeat`; }
+      } else if (bannerColor) {
+        if (bn) { bn.style.backgroundImage = ''; bn.style.background = bannerColor; }
+        if (usBanner) { usBanner.style.backgroundImage = ''; usBanner.style.background = bannerColor; }
+        markSelectedBannerColor(bannerColor);
+      } else {
+        markSelectedBannerColor('#9b59b6');
+      }
     }).catch(() => {});
   }
   if (tab === 'treatment') {
@@ -10073,6 +10733,14 @@ function saveDisplayName() {
   currentUser.updateProfile({ displayName: newName })
     .then(() => db.collection('users').doc(currentUser.uid).set({ username: newName, displayName: newName, bio }, { merge: true }))
     .then(() => {
+      // Bekleyen banner rengini veya görselini kaydet
+      if (_pendingBannerImage) {
+        applyBannerImageEverywhere(_pendingBannerImage);
+        _pendingBannerImage = null;
+      } else if (_pendingBannerColor) {
+        applyBannerColorEverywhere(_pendingBannerColor);
+        _pendingBannerColor = null;
+      }
       _applyUsernameEverywhere(newName);
       const saveBar = document.getElementById('profileSaveBar');
       if (saveBar) saveBar.style.display = 'none';
@@ -10081,18 +10749,44 @@ function saveDisplayName() {
     .catch(e => showToast('❌ ' + e.message));
 }
 
+function shakeProfileSaveBar() {
+  const bar = document.getElementById('profileSaveBar');
+  if (!bar) return;
+  bar.style.animation = 'none';
+  bar.offsetHeight; // reflow
+  bar.style.animation = 'savebar-shake 0.4s ease';
+  setTimeout(() => { bar.style.animation = ''; }, 400);
+}
+
 function resetProfileChanges() {
+  _pendingBannerColor = null;
+  _pendingBannerImage = null;
   const uname = currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : '';
   const inp = document.getElementById('displayNameInput');
   if (inp) inp.value = uname;
   updateDisplayNamePreview();
-  // Bio'yu Firebase'den sıfırla
   if (currentUser && db) {
     db.collection('users').doc(currentUser.uid).get().then(doc => {
-      const bio = doc.exists ? (doc.data().bio || '') : '';
+      const d = doc.exists ? doc.data() : {};
+      // Bio sıfırla
+      const bio = d.bio || '';
       const aboutEl = document.getElementById('aboutMeInput');
       if (aboutEl) { aboutEl.value = bio; document.getElementById('aboutMeCount').textContent = bio.length + ' / 190'; }
-      updateAboutMe();
+      updateAboutMe(false);
+      // Banner rengi sıfırla - Firebase'deki değere dön
+      const bannerColor = d.bannerColor || '';
+      const bannerImage = d.bannerImage || '';
+      const previewBn = document.getElementById('previewBanner');
+      const usBanner = document.getElementById('usBanner');
+      if (bannerImage) {
+        if (previewBn) { previewBn.style.background = `url(${bannerImage}) center/cover no-repeat`; }
+        if (usBanner) { usBanner.style.background = `url(${bannerImage}) center/cover no-repeat`; }
+      } else {
+        const restoreColor = bannerColor || '#9b59b6';
+        if (previewBn) { previewBn.style.backgroundImage = ''; previewBn.style.background = restoreColor; }
+        if (usBanner) { usBanner.style.backgroundImage = ''; usBanner.style.background = restoreColor; }
+        markSelectedBannerColor(restoreColor);
+      }
     });
   }
   const bar = document.getElementById('profileSaveBar');
@@ -10735,6 +11429,19 @@ function showLoadingScreen() {
       if (homeIcon) switchServer(homeIcon, 'dm');
       // Tüm DM kanallarını dinle (gelen mesajlar için)
       listenAllDmChats();
+      listenIncomingCalls();
+      // Banner rengini yükle
+      if (currentUser && db) {
+        db.collection('users').doc(currentUser.uid).get().then(doc => {
+          const color = doc.exists ? (doc.data().bannerColor || '') : '';
+          if (color) {
+            const usBanner = document.getElementById('usBanner');
+            const pmBanner = document.getElementById('pmBanner');
+            if (usBanner) { usBanner.style.backgroundImage = ''; usBanner.style.background = color; }
+            if (pmBanner) { pmBanner.style.backgroundImage = ''; pmBanner.style.background = color; }
+          }
+        }).catch(() => {});
+      }
     }, 400);
   }, 1800);
 }
@@ -10827,50 +11534,147 @@ function _applyAvatarEverywhere(avatarUrl) {
   renderMembers();
 }
 
+let _pendingBannerImage = null;
+
 function handleBannerChange(e) {
   const file = e.target.files[0];
+  e.target.value = ''; // Aynı dosyayı tekrar seçebilmek için sıfırla
   if (!file) return;
   const reader = new FileReader();
   reader.onload = ev => {
+    const dataUrl = ev.target.result;
+    // Önizlemede göster
     const bn = document.getElementById('previewBanner');
-    if (bn) { bn.style.backgroundImage = `url(${ev.target.result})`; bn.style.backgroundSize = 'cover'; bn.style.backgroundPosition = 'center'; }
-    showToast('✅ Banner önizlemesi güncellendi!');
+    if (bn) { bn.style.background = ''; bn.style.backgroundImage = `url(${dataUrl})`; bn.style.backgroundSize = 'cover'; bn.style.backgroundPosition = 'center'; }
+    const usBanner = document.getElementById('usBanner');
+    if (usBanner) { usBanner.style.backgroundImage = `url(${dataUrl})`; usBanner.style.backgroundSize = 'cover'; usBanner.style.backgroundPosition = 'center'; }
+    _pendingBannerImage = dataUrl;
+    _pendingBannerColor = null;
+    // Save bar göster
+    const bar = document.getElementById('profileSaveBar');
+    if (bar) bar.style.display = 'flex';
+    // Cloudinary'e yükle
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_PRESET);
+    fetch('https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD + '/image/upload', { method: 'POST', body: formData })
+      .then(r => r.json()).then(data => {
+        if (data.secure_url) {
+          _pendingBannerImage = data.secure_url;
+          // Önizlemeyi gerçek URL ile güncelle
+          const bn = document.getElementById('previewBanner');
+          if (bn) bn.style.background = `url(${data.secure_url}) center/cover no-repeat`;
+          const usBanner = document.getElementById('usBanner');
+          if (usBanner) usBanner.style.background = `url(${data.secure_url}) center/cover no-repeat`;
+        }
+      }).catch(() => {});
   };
   reader.readAsDataURL(file);
 }
 
-function removeBanner() {
-  if (!currentUser) return;
-  const uname = currentUser.displayName || currentUser.email.split('@')[0];
-  const bn = document.getElementById('previewBanner');
-  if (bn) { bn.style.backgroundImage = ''; bn.style.background = getColor(uname); }
-  showToast('Banner kaldırıldı.');
-}
-
-function setProfileColorMode(mode) {
-  const defBtn = document.getElementById('profColorDefault');
-  const cusBtn = document.getElementById('profColorCustom');
-  if (mode === 'default') {
-    defBtn.style.borderColor = '#f2f3f5';
-    cusBtn.style.borderColor = 'transparent';
-    if (currentUser) {
-      const bn = document.getElementById('previewBanner');
-      if (bn && !bn.style.backgroundImage) bn.style.background = getColor(currentUser.displayName || currentUser.email.split('@')[0]);
-    }
-  } else {
-    defBtn.style.borderColor = 'transparent';
-    cusBtn.style.borderColor = '#f2f3f5';
-    document.getElementById('customColorInput').click();
+function applyBannerImageEverywhere(url) {
+  const style = `url(${url}) center/cover no-repeat`;
+  const els = ['previewBanner','usBanner','pmBanner'];
+  els.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.style.background = style; }
+  });
+  const pcBannerEl = document.getElementById('pcBanner');
+  if (pcBannerEl && currentUser && pcBannerEl.getAttribute('data-uid') === currentUser.uid) {
+    pcBannerEl.style.background = style;
+  }
+  if (currentUser) {
+    db.collection('users').doc(currentUser.uid).set({ bannerImage: url, bannerColor: '' }, { merge: true }).catch(() => {});
   }
 }
 
-function setCustomProfileColor(val) {
-  const bn = document.getElementById('previewBanner');
-  if (bn && !bn.style.backgroundImage) bn.style.background = val;
-  document.getElementById('profColorCustom').style.background = val;
+function removeBanner() {
+  if (!currentUser) return;
+  const defaultColor = '#9b59b6';
+  ['previewBanner','usBanner','pmBanner'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.style.backgroundImage = ''; el.style.background = defaultColor; }
+  });
+  // Seçili renk butonunu işaretle
+  document.querySelectorAll('.banner-color-opt, #profColorCustom').forEach(b => b.style.borderColor = 'transparent');
+  const presetBtn = document.querySelector(`.banner-color-opt[data-color="${defaultColor}"]`);
+  if (presetBtn) presetBtn.style.borderColor = '#f2f3f5';
+  _pendingBannerImage = null;
+  _pendingBannerColor = null;
+  db.collection('users').doc(currentUser.uid).set({ bannerImage: '', bannerColor: defaultColor }, { merge: true }).catch(() => {});
+  const bar = document.getElementById('profileSaveBar');
+  if (bar) bar.style.display = 'none';
+  showToast('🗑️ Banner kaldırıldı.');
 }
 
-function updateAboutMe() {
+let _pendingBannerColor = null;
+
+function markSelectedBannerColor(color) {
+  document.querySelectorAll('.banner-color-opt, #profColorCustom').forEach(btn => {
+    btn.style.borderColor = 'transparent';
+    const tick = btn.querySelector('.color-tick');
+    if (tick) tick.style.display = 'none';
+  });
+  const preset = document.querySelector(`.banner-color-opt[data-color="${color}"]`);
+  if (preset) {
+    preset.style.borderColor = '#f2f3f5';
+    const tick = preset.querySelector('.color-tick');
+    if (tick) tick.style.display = 'block';
+  } else {
+    const cus = document.getElementById('profColorCustom');
+    if (cus) { cus.style.background = color; cus.style.borderColor = '#f2f3f5'; }
+  }
+}
+
+function selectBannerPreset(el, color) {
+  document.querySelectorAll('.banner-color-opt, #profColorCustom').forEach(btn => {
+    btn.style.borderColor = 'transparent';
+    const tick = btn.querySelector('.color-tick');
+    if (tick) tick.style.display = 'none';
+  });
+  el.style.borderColor = '#f2f3f5';
+  const tick = el.querySelector('.color-tick');
+  if (tick) tick.style.display = 'block';
+  _pendingBannerColor = color;
+  _previewBannerColor(color);
+  const bar = document.getElementById('profileSaveBar');
+  if (bar) bar.style.display = 'flex';
+}
+
+function setCustomProfileColor(val) {
+  document.querySelectorAll('.banner-color-opt').forEach(btn => btn.style.borderColor = 'transparent');
+  const cusBtn = document.getElementById('profColorCustom');
+  if (cusBtn) { cusBtn.style.background = val; cusBtn.style.borderColor = '#f2f3f5'; }
+  _pendingBannerColor = val;
+  _previewBannerColor(val);
+  const bar = document.getElementById('profileSaveBar');
+  if (bar) bar.style.display = 'flex';
+}
+
+function _previewBannerColor(color) {
+  // Sadece önizleme ve hesabım'a uygula — Firebase'e yazma
+  const bn = document.getElementById('previewBanner');
+  if (bn) { bn.style.backgroundImage = ''; bn.style.background = color; }
+  const usBanner = document.getElementById('usBanner');
+  if (usBanner) { usBanner.style.backgroundImage = ''; usBanner.style.background = color; }
+}
+
+function applyBannerColorEverywhere(color) {
+  // Kaydet butonuna basılınca çağrılır — her yere uygular ve Firebase'e yazar
+  _previewBannerColor(color);
+  const pmBanner = document.getElementById('pmBanner');
+  if (pmBanner) { pmBanner.style.backgroundImage = ''; pmBanner.style.background = color; }
+  if (currentUser) {
+    const pcBannerEl = document.getElementById('pcBanner');
+    if (pcBannerEl && pcBannerEl.getAttribute('data-uid') === currentUser.uid) {
+      pcBannerEl.style.backgroundImage = '';
+      pcBannerEl.style.background = color;
+    }
+    db.collection('users').doc(currentUser.uid).set({ bannerColor: color }, { merge: true }).catch(() => {});
+  }
+}
+
+function updateAboutMe(showSaveBar) {
   const val = document.getElementById('aboutMeInput').value;
   document.getElementById('aboutMeCount').textContent = val.length + ' / 190';
   const wrap = document.getElementById('previewAboutWrap');
@@ -10881,9 +11685,11 @@ function updateAboutMe() {
   } else {
     wrap.style.display = 'none';
   }
-  // Save bar'ı göster
-  const bar = document.getElementById('profileSaveBar');
-  if (bar) bar.style.display = 'flex';
+  // Save bar'ı sadece kullanıcı yazdığında göster
+  if (showSaveBar) {
+    const bar = document.getElementById('profileSaveBar');
+    if (bar) bar.style.display = 'flex';
+  }
 }
 
 // Profil sekmesi açılınca önizlemeyi init et
@@ -11679,6 +12485,7 @@ function listenToOnlineUsers(myUname) {
       }));
 
       updateMembersForCurrentServer();
+      if (typeof updateAllDmSidebarStatuses === 'function') updateAllDmSidebarStatuses();
     });
 }
 
