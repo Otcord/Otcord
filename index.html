@@ -1628,20 +1628,20 @@
 <div id="activeCallScreen" style="display:none;position:fixed;z-index:99000;flex-direction:column;background:#111214;">
   <!-- İki kişinin video/avatar alanı - yan yana -->
   <div style="display:flex;gap:4px;padding:8px;background:#111214;" id="callVideoArea">
-    <!-- Karşı taraf -->
-    <div style="flex:1;border-radius:12px;overflow:hidden;position:relative;min-height:200px;background:#2b2d31;display:flex;align-items:center;justify-content:center;">
-      <video id="remoteVideo" autoplay playsinline style="width:100%;height:100%;object-fit:cover;display:none;"></video>
-      <div id="remoteAvatar" style="display:flex;flex-direction:column;align-items:center;gap:10px;">
-        <div id="remoteAvatarImg" style="width:80px;height:80px;border-radius:50%;background:#9b59b6;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:white;"></div>
-        <div id="remoteAvatarName" style="font-size:13px;font-weight:600;color:#f2f3f5;"></div>
-      </div>
-    </div>
-    <!-- Kendi taraf -->
-    <div style="flex:1;border-radius:12px;overflow:hidden;position:relative;min-height:200px;background:#2b2d31;display:flex;align-items:center;justify-content:center;">
-      <video id="localVideo" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;display:none;"></video>
-      <div id="localAvatar" style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+    <!-- Kendi taraf (sol) -->
+    <div style="flex:1;border-radius:12px;overflow:hidden;position:relative;min-height:200px;background:#2b2d31;">
+      <video id="localVideo" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;display:none;position:absolute;inset:0;"></video>
+      <div id="localAvatar" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;">
         <div id="localAvatarImg" style="width:80px;height:80px;border-radius:50%;background:#1da8e0;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:white;"></div>
         <div id="localAvatarName" style="font-size:13px;font-weight:600;color:#f2f3f5;"></div>
+      </div>
+    </div>
+    <!-- Karşı taraf (sağ) -->
+    <div style="flex:1;border-radius:12px;overflow:hidden;position:relative;min-height:200px;background:#2b2d31;">
+      <video id="remoteVideo" autoplay playsinline style="width:100%;height:100%;object-fit:cover;display:none;position:absolute;inset:0;"></video>
+      <div id="remoteAvatar" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;">
+        <div id="remoteAvatarImg" style="width:80px;height:80px;border-radius:50%;background:#9b59b6;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:white;"></div>
+        <div id="remoteAvatarName" style="font-size:13px;font-weight:600;color:#f2f3f5;"></div>
       </div>
     </div>
   </div>
@@ -9616,12 +9616,14 @@ function showIncomingCall(data) {
     }
   }
 
-  // Zil sesi (Web Audio)
+  // Zil sesi - önceki zili durdur
+  stopRingSound();
+  window._ringActive = true;
   try {
     if (!window._callRingCtx) window._callRingCtx = new AudioContext();
     const ctx = window._callRingCtx;
     function ring() {
-      if (!document.getElementById('incomingCallScreen') || document.getElementById('incomingCallScreen').style.display === 'none') return;
+      if (!window._ringActive) return;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain); gain.connect(ctx.destination);
@@ -9629,14 +9631,20 @@ function showIncomingCall(data) {
       gain.gain.setValueAtTime(0.3, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
       osc.start(); osc.stop(ctx.currentTime + 0.5);
-      setTimeout(ring, 1500);
+      window._ringTimeout = setTimeout(ring, 1500);
     }
     ring();
   } catch(e) {}
 }
 
+function stopRingSound() {
+  window._ringActive = false;
+  if (window._ringTimeout) { clearTimeout(window._ringTimeout); window._ringTimeout = null; }
+}
+
 async function acceptCall() {
   if (!incomingCallData) return;
+  stopRingSound();
   const data = incomingCallData;
   document.getElementById('incomingCallScreen').style.display = 'none';
 
@@ -9707,6 +9715,7 @@ async function acceptCall() {
 
 async function rejectCall() {
   if (!incomingCallData) return;
+  stopRingSound();
   await db.collection('calls').doc(incomingCallData.docId).update({ status: 'rejected' });
   document.getElementById('incomingCallScreen').style.display = 'none';
   incomingCallData = null;
@@ -9733,6 +9742,7 @@ async function endCall() {
 
 function cleanupCall() {
   if (callSignalListener) { callSignalListener(); callSignalListener = null; }
+  stopRingSound();
   if (window._callProfileListener) { window._callProfileListener(); window._callProfileListener = null; }
   if (window._callLocalProfileListener) { window._callLocalProfileListener(); window._callLocalProfileListener = null; }
   if (callTimerInterval) { clearInterval(callTimerInterval); callTimerInterval = null; }
