@@ -9582,16 +9582,40 @@ function showActiveCallScreen() {
 // Gelen arama dinle
 function listenIncomingCalls() {
   if (!currentUser) return;
+  // Gelen arama ekle
   db.collection('calls')
     .where('calleeUid', '==', currentUser.uid)
-    .where('status', '==', 'calling')
     .onSnapshot(snap => {
       snap.docChanges().forEach(change => {
-        if (change.type === 'added') {
-          const data = change.doc.data();
-          if (activeCallUid) return; // Zaten aramadayız
-          incomingCallData = { ...data, docId: change.doc.id };
-          showIncomingCall(data);
+        const data = change.doc.data();
+        const docId = change.doc.id;
+
+        if (change.type === 'added' && data.status === 'calling') {
+          if (activeCallUid) return;
+          // callerAvatar'ı Firebase'den çek
+          db.collection('users').doc(data.callerUid).get().then(doc => {
+            const freshAvatar = doc.exists ? (doc.data().avatarUrl || '') : '';
+            incomingCallData = { ...data, docId, callerAvatar: freshAvatar };
+            showIncomingCall({ ...data, callerAvatar: freshAvatar });
+          }).catch(() => {
+            incomingCallData = { ...data, docId };
+            showIncomingCall(data);
+          });
+        }
+
+        if (change.type === 'modified') {
+          // Arayan kapattıysa gelen arama ekranını kapat
+          if (data.status === 'ended' || data.status === 'rejected') {
+            if (incomingCallData && incomingCallData.docId === docId) {
+              stopRingSound();
+              document.getElementById('incomingCallScreen').style.display = 'none';
+              incomingCallData = null;
+            }
+            // Aktif aramdaysa temizle
+            if (activeCallUid && data.status === 'ended') {
+              cleanupCall();
+            }
+          }
         }
       });
     });
@@ -9603,8 +9627,14 @@ function showIncomingCall(data) {
   document.getElementById('incomingCallName').textContent = data.callerName;
   document.getElementById('incomingCallType').textContent = data.callType === 'video' ? '📹 Görüntülü arıyor...' : '📞 Sesli arıyor...';
   const av = document.getElementById('incomingCallAvatar');
-  if (data.callerAvatar) { av.style.background = `url(${data.callerAvatar}) center/cover no-repeat`; av.textContent = ''; }
-  else { av.style.background = getColor(data.callerUid); av.textContent = getInitials(data.callerName); }
+  if (data.callerAvatar) {
+    av.style.background = `url(${data.callerAvatar}) center/cover no-repeat`;
+    av.style.backgroundSize = 'cover';
+    av.textContent = '';
+  } else {
+    av.style.background = getColor(data.callerUid);
+    av.textContent = getInitials(data.callerName);
+  }
 
   // Arama bildirimi - eğer DM sohbeti açıksa bar göster
   if (activeDmUid !== data.callerUid) {
