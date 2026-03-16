@@ -13,7 +13,8 @@
 <meta name="application-name" content="OtCord">
 <meta name="theme-color" content="#1da8e0">
 <meta name="description" content="OtCord - Sohbet Uygulaması">
-<link rel="manifest" href="data:application/json,%7B%22name%22%3A%22OtCord%22%2C%22short_name%22%3A%22OtCord%22%2C%22description%22%3A%22OtCord%20-%20Sohbet%20Uygulamas%C4%B1%22%2C%22start_url%22%3A%22.%2Fotcord.html%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%231e1f22%22%2C%22theme_color%22%3A%22%231da8e0%22%2C%22orientation%22%3A%22portrait%22%7D">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='115' fill='%231da8e0'/%3E%3Cpath d='M137 141c55-12 111-12 166 0 35 7 60 26 60 48v152c0 22-25 41-60 48-28 6-57 8-83 8l-54 54v-57c-23-8-39-22-39-39V189c0-22 25-41 60-48z' fill='white'/%3E%3C/svg%3E" type="image/svg+xml">
+<link rel="manifest" href="data:application/json,%7B%22name%22%3A%22OtCord%22%2C%22short_name%22%3A%22OtCord%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%231e1f22%22%2C%22theme_color%22%3A%22%231da8e0%22%7D">,%7B%22name%22%3A%22OtCord%22%2C%22short_name%22%3A%22OtCord%22%2C%22description%22%3A%22OtCord%20-%20Sohbet%20Uygulamas%C4%B1%22%2C%22start_url%22%3A%22.%2Fotcord.html%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%231e1f22%22%2C%22theme_color%22%3A%22%231da8e0%22%2C%22orientation%22%3A%22portrait%22%7D">
 
 <!-- PWA İkonları (inline SVG data URI) -->
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='115' fill='%231da8e0'/%3E%3Cpath d='M137 141c55-12 111-12 166 0 35 7 60 26 60 48v152c0 22-25 41-60 48-28 6-57 8-83 8l-54 54v-57c-23-8-39-22-39-39V189c0-22 25-41 60-48z' fill='white'/%3E%3C/svg%3E">
@@ -390,6 +391,7 @@ if ('serviceWorker' in navigator) {
     transition: all 0.1s;
   }
   .control-btn:hover { background: var(--bg-channel-hover); color: var(--text-primary); }
+  .control-btn.active-red { color: #f23f43 !important; }
   .control-btn.muted { color: var(--text-muted); }
   .control-btn.muted svg { position: relative; }
   .control-btn.muted svg::after {
@@ -6881,14 +6883,12 @@ function toggleMic() {
 
 function toggleDeaf() {
   deafened = !deafened;
-  const color = deafened ? '#f23f43' : '';
-  const opacity = deafened ? '1' : '1';
   // Ana ekran butonu
   const deafBtn = document.getElementById('deafBtn');
-  if (deafBtn) { deafBtn.style.color = color; deafBtn.style.opacity = deafened ? '1' : '1'; }
+  if (deafBtn) deafBtn.classList.toggle('active-red', deafened);
   // DM ekran butonu
   const dmDeafBtn = document.getElementById('dmDeafBtn');
-  if (dmDeafBtn) { dmDeafBtn.style.color = color; }
+  if (dmDeafBtn) dmDeafBtn.classList.toggle('active-red', deafened);
   // Arama sırasında remote audio mute et
   const remoteVideo = document.getElementById('remoteVideo');
   if (remoteVideo) remoteVideo.muted = deafened;
