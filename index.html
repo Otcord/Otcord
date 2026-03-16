@@ -9438,7 +9438,6 @@ async function startCall(type) {
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   };
 
-  const docId = getCallDocId(currentUser.uid, activeCallUid);
   await db.collection('calls').doc(docId).set(callDoc);
 
   // Arama ekranını göster (avatar önceden yükle)
