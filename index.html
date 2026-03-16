@@ -9491,7 +9491,8 @@ async function showCallingScreen(name, type) {
   const remoteAv = document.getElementById('remoteAvatarImg');
   const remoteNm = document.getElementById('remoteAvatarName');
   const remoteAvatarDiv = document.getElementById('remoteAvatar');
-  if (remoteAvatarDiv) remoteAvatarDiv.style.display = 'flex'; // Her zaman göster
+  console.log('[CALL] activeCallUid:', activeCallUid, 'name:', name);
+  if (remoteAvatarDiv) remoteAvatarDiv.style.display = 'flex';
   document.getElementById('remoteVideo').style.display = 'none'; // Video gizle
   remoteNm.textContent = name;
   remoteAv.style.background = getColor(activeCallUid || 'x');
