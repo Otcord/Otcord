@@ -1476,7 +1476,7 @@
         <div class="user-tag" id="dmMyTag">#0001</div>
       </div>
       <div class="user-controls">
-        <div class="control-btn" data-tooltip="Sessize Al" onclick="toggleMic()">
+        <div class="control-btn" id="dmMicBtn" data-tooltip="Sessize Al" onclick="toggleMic()">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zm5.3 8.7a5.5 5.5 0 01-10.6 0l-1.4.5A7 7 0 0011 16.92V19H9v2h6v-2h-2v-2.08A7 7 0 0018.7 10.2l-1.4-.5z"/></svg>
         </div>
         <div class="control-btn" id="dmDeafBtn" data-tooltip="Kulaklığı Kapat" onclick="toggleDeaf()">
@@ -6844,7 +6844,9 @@ function toggleMic() {
   micMuted = !micMuted;
   const micBtn = document.getElementById('micBtn');
   if (micBtn) micBtn.classList.toggle('active-red', micMuted);
-  // Arama sırasında arama mikrofonu da sync et
+  const dmMicBtn = document.getElementById('dmMicBtn');
+  if (dmMicBtn) dmMicBtn.classList.toggle('active-red', micMuted);
+  // Arama sırasında sync et
   if (localStream) {
     const track = localStream.getAudioTracks()[0];
     if (track) track.enabled = !micMuted;
@@ -9487,19 +9489,18 @@ function showCallingScreen(name, type) {
   document.getElementById('remoteAvatarName').textContent = name;
   document.getElementById('callStatusText').textContent = type === 'video' ? '📹 Görüntülü arıyor...' : '📞 Sesli arıyor...';
   const remoteAv = document.getElementById('remoteAvatarImg');
-  remoteAv.style.background = getColor(activeCallUid);
+  remoteAv.style.background = getColor(activeCallUid || 'x');
   remoteAv.textContent = getInitials(name);
   if (activeCallUid) {
-    // Önce incomingCallData'dan avatar al (gelen aramada)
-    if (incomingCallData && incomingCallData.callerAvatar) {
-      remoteAv.style.background = `url(${incomingCallData.callerAvatar}) center/cover no-repeat`;
-      remoteAv.textContent = '';
-    } else {
-      db.collection('users').doc(activeCallUid).get().then(doc => {
-        const av = doc.exists ? (doc.data().avatarUrl || '') : '';
-        if (av) { remoteAv.style.background = `url(${av}) center/cover no-repeat`; remoteAv.textContent = ''; }
-      }).catch(() => {});
-    }
+    db.collection('users').doc(activeCallUid).get().then(doc => {
+      if (!doc.exists) return;
+      const d = doc.data();
+      const freshName = d.displayName || d.username || name;
+      const freshAvatar = d.avatarUrl || '';
+      document.getElementById('remoteAvatarName').textContent = freshName;
+      if (freshAvatar) { remoteAv.style.background = `url(${freshAvatar}) center/cover no-repeat`; remoteAv.textContent = ''; }
+      else { remoteAv.style.background = getColor(activeCallUid); remoteAv.textContent = getInitials(freshName); }
+    }).catch(() => {});
   }
 
   // Kendi taraf — her zaman Firebase'den çek
