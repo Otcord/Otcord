@@ -9411,7 +9411,12 @@ async function startCall(type) {
   peerConnection.ontrack = e => {
     const remoteVideo = document.getElementById('remoteVideo');
     if (remoteVideo) remoteVideo.srcObject = e.streams[0];
-    document.getElementById('remoteAvatar').style.display = 'none';
+    // Sadece video track varsa remoteAvatar'ı gizle
+    const hasVideo = e.streams[0]?.getVideoTracks().length > 0;
+    if (hasVideo) {
+      document.getElementById('remoteAvatar').style.display = 'none';
+      if (remoteVideo) remoteVideo.style.display = 'block';
+    }
     document.getElementById('callStatusText').textContent = '';
   };
 
@@ -9456,13 +9461,18 @@ async function startCall(type) {
       const answer = new RTCSessionDescription(data.answer);
       await peerConnection.setRemoteDescription(answer);
       // Karşı tarafın ICE adaylarını dinle
-      db.collection('calls').doc(docId).collection('calleeCandidates').onSnapshot(snap => {
+      const calleeCandidatesUnsub = db.collection('calls').doc(docId).collection('calleeCandidates').onSnapshot(snap => {
         snap.docChanges().forEach(change => {
           if (change.type === 'added') {
-            peerConnection.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+            if (peerConnection && peerConnection.remoteDescription) {
+              peerConnection.addIceCandidate(new RTCIceCandidate(change.doc.data())).catch(() => {});
+            }
           }
         });
       });
+      // Cleanup sırasında bu listener'ı da kapat
+      if (!window._extraCallListeners) window._extraCallListeners = [];
+      window._extraCallListeners.push(calleeCandidatesUnsub);
       showActiveCallScreen();
     }
     if (data.status === 'ended') {
@@ -9484,6 +9494,8 @@ async function showCallingScreen(name, type) {
     screen.style.bottom = 'auto';
     screen.style.height = 'auto';
   }
+  // Ekranı hemen göster
+  screen.style.display = 'flex';
 
   document.getElementById('callStatusText').textContent = type === 'video' ? '📹 Görüntülü arıyor...' : '📞 Sesli arıyor...';
 
@@ -9492,14 +9504,24 @@ async function showCallingScreen(name, type) {
   const remoteNm = document.getElementById('remoteAvatarName');
   const remoteAvatarDiv = document.getElementById('remoteAvatar');
   console.log('[CALL] activeCallUid:', activeCallUid, 'name:', name);
-  if (remoteAvatarDiv) remoteAvatarDiv.style.display = 'flex';
-  document.getElementById('remoteVideo').style.display = 'none'; // Video gizle
+  if (remoteAvatarDiv) { remoteAvatarDiv.style.display = 'flex'; remoteAvatarDiv.style.zIndex = '10'; }
+  document.getElementById('remoteVideo').style.display = 'none';
   remoteNm.textContent = name;
+  remoteAv.style.width = '80px';
+  remoteAv.style.height = '80px';
+  remoteAv.style.borderRadius = '50%';
+  remoteAv.style.display = 'flex';
+  remoteAv.style.alignItems = 'center';
+  remoteAv.style.justifyContent = 'center';
+  remoteAv.style.fontSize = '26px';
+  remoteAv.style.fontWeight = '700';
+  remoteAv.style.color = 'white';
   remoteAv.style.background = getColor(activeCallUid || 'x');
   remoteAv.textContent = getInitials(name);
   if (activeCallUid) {
     try {
       const doc = await db.collection('users').doc(activeCallUid).get();
+      console.log('[CALL] remote doc exists:', doc.exists, 'data:', doc.exists ? doc.data() : null);
       if (doc.exists) {
         const d = doc.data();
         const freshName = d.displayName || d.username || name;
@@ -9507,7 +9529,6 @@ async function showCallingScreen(name, type) {
         remoteNm.textContent = freshName;
         if (freshAvatar) {
           remoteAv.style.background = `url(${freshAvatar}) center/cover no-repeat`;
-          remoteAv.style.backgroundSize = 'cover';
           remoteAv.textContent = '';
         } else {
           remoteAv.style.background = getColor(activeCallUid);
@@ -9584,8 +9605,6 @@ async function showCallingScreen(name, type) {
       }
     });
   }
-
-  screen.style.display = 'flex';
 }
 
 function showActiveCallScreen() {
@@ -9727,7 +9746,12 @@ async function acceptCall() {
   peerConnection.ontrack = e => {
     const remoteVideo = document.getElementById('remoteVideo');
     if (remoteVideo) remoteVideo.srcObject = e.streams[0];
-    document.getElementById('remoteAvatar').style.display = 'none';
+    // Sadece video track varsa remoteAvatar'ı gizle
+    const hasVideo = e.streams[0]?.getVideoTracks().length > 0;
+    if (hasVideo) {
+      document.getElementById('remoteAvatar').style.display = 'none';
+      if (remoteVideo) remoteVideo.style.display = 'block';
+    }
   };
 
   peerConnection.onicecandidate = e => {
@@ -9740,13 +9764,17 @@ async function acceptCall() {
   await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
 
   // Arayan tarafın ICE adaylarını al
-  db.collection('calls').doc(data.docId).collection('callerCandidates').onSnapshot(snap => {
+  const callerCandidatesUnsub = db.collection('calls').doc(data.docId).collection('callerCandidates').onSnapshot(snap => {
     snap.docChanges().forEach(change => {
       if (change.type === 'added') {
-        peerConnection.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+        if (peerConnection && peerConnection.remoteDescription) {
+          peerConnection.addIceCandidate(new RTCIceCandidate(change.doc.data())).catch(() => {});
+        }
       }
     });
   });
+  if (!window._extraCallListeners) window._extraCallListeners = [];
+  window._extraCallListeners.push(callerCandidatesUnsub);
 
   const answer = await peerConnection.createAnswer();
   await peerConnection.setLocalDescription(answer);
@@ -9810,6 +9838,8 @@ function cleanupCall() {
   stopRingSound();
   if (window._callProfileListener) { window._callProfileListener(); window._callProfileListener = null; }
   if (window._callLocalProfileListener) { window._callLocalProfileListener(); window._callLocalProfileListener = null; }
+  // Ekstra ICE candidate listener'larını temizle
+  if (window._extraCallListeners) { window._extraCallListeners.forEach(fn => fn()); window._extraCallListeners = []; }
   if (callTimerInterval) { clearInterval(callTimerInterval); callTimerInterval = null; }
   if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
   if (peerConnection) { peerConnection.close(); peerConnection = null; }
