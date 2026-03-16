@@ -1652,35 +1652,49 @@ if ('serviceWorker' in navigator) {
   </div>
 </div>
 
-<!-- AKTİF ARAMA EKRANI (DM'in üstüne overlay) -->
-<div id="activeCallScreen" style="display:none;position:fixed;inset:0;background:#111214;z-index:99000;flex-direction:column;">
-  <!-- Video alanı -->
-  <div style="flex:1;display:flex;position:relative;background:#1e1f22;overflow:hidden;" id="callVideoArea">
-    <!-- Karşı taraf video -->
-    <video id="remoteVideo" autoplay playsinline style="width:100%;height:100%;object-fit:cover;background:#1e1f22;"></video>
-    <!-- Karşı taraf avatar (video yokken) -->
-    <div id="remoteAvatar" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
-      <div id="remoteAvatarImg" style="width:120px;height:120px;border-radius:50%;background:#9b59b6;display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:700;color:white;"></div>
-      <div id="remoteAvatarName" style="font-size:18px;font-weight:700;color:#f2f3f5;"></div>
-      <div id="callStatusText" style="font-size:14px;color:#b5bac1;">Bağlanıyor...</div>
+<!-- AKTİF ARAMA EKRANI - DM sohbetinin içinde üstte -->
+<div id="activeCallScreen" style="display:none;position:fixed;z-index:99000;flex-direction:column;background:#111214;">
+  <!-- İki kişinin video/avatar alanı - yan yana -->
+  <div style="display:flex;gap:4px;padding:8px;background:#111214;" id="callVideoArea">
+    <!-- Karşı taraf -->
+    <div style="flex:1;border-radius:12px;overflow:hidden;position:relative;min-height:200px;background:#1e1f22;display:flex;align-items:center;justify-content:center;">
+      <video id="remoteVideo" autoplay playsinline style="width:100%;height:100%;object-fit:cover;display:none;"></video>
+      <div id="remoteAvatar" style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+        <div id="remoteAvatarImg" style="width:80px;height:80px;border-radius:50%;background:#9b59b6;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:white;"></div>
+        <div id="remoteAvatarName" style="font-size:13px;font-weight:600;color:#f2f3f5;"></div>
+      </div>
     </div>
-    <!-- Kendi küçük video -->
-    <video id="localVideo" autoplay playsinline muted style="position:absolute;bottom:16px;right:16px;width:120px;height:90px;border-radius:8px;object-fit:cover;background:#2b2d31;border:2px solid #1da8e0;display:none;"></video>
-    <!-- Süre -->
-    <div id="callTimer" style="position:absolute;top:16px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.5);color:#f2f3f5;font-size:14px;font-weight:600;padding:6px 16px;border-radius:20px;display:none;">0:00</div>
-    <!-- Küçült -->
-    <div onclick="minimizeCall()" style="position:absolute;top:12px;right:12px;background:rgba(0,0,0,0.5);border-radius:6px;padding:6px 12px;color:#f2f3f5;font-size:12px;font-weight:600;cursor:pointer;">Sohbete Dön</div>
+    <!-- Kendi taraf -->
+    <div style="flex:1;border-radius:12px;overflow:hidden;position:relative;min-height:200px;background:#2b2d31;display:flex;align-items:center;justify-content:center;">
+      <video id="localVideo" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;display:none;"></video>
+      <div id="localAvatar" style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+        <div id="localAvatarImg" style="width:80px;height:80px;border-radius:50%;background:#1da8e0;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:white;"></div>
+        <div id="localAvatarName" style="font-size:13px;font-weight:600;color:#f2f3f5;"></div>
+      </div>
+    </div>
   </div>
-  <!-- Arama kontrolleri -->
-  <div style="height:100px;background:#111214;display:flex;align-items:center;justify-content:center;gap:24px;flex-shrink:0;">
-    <div id="callMicBtn" onclick="toggleCallMic()" data-tooltip="Mikrofon" style="width:52px;height:52px;border-radius:50%;background:#2b2d31;display:flex;align-items:center;justify-content:center;cursor:pointer;" onmouseover="this.style.background='#35373c'" onmouseout="this.style.background=this.dataset.muted=='1'?'#f23f43':'#2b2d31'">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zm5.3 8.7a5.5 5.5 0 01-10.6 0l-1.4.5A7 7 0 0011 16.92V19H9v2h6v-2h-2v-2.08A7 7 0 0018.7 10.2l-1.4-.5z"/></svg>
+  <!-- Durum + Süre -->
+  <div style="text-align:center;padding:4px 0 2px;">
+    <span id="callStatusText" style="font-size:12px;color:#b5bac1;"></span>
+    <span id="callTimer" style="font-size:12px;color:#b5bac1;display:none;"> · 0:00</span>
+  </div>
+  <!-- Arama kontrol butonları -->
+  <div style="display:flex;align-items:center;justify-content:center;gap:16px;padding:8px 16px 10px;">
+    <!-- Mikrofon -->
+    <div id="callMicBtn" onclick="toggleCallMic()" data-muted="0" style="width:44px;height:44px;border-radius:50%;background:#2b2d31;display:flex;align-items:center;justify-content:center;cursor:pointer;" title="Mikrofon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zm5.3 8.7a5.5 5.5 0 01-10.6 0l-1.4.5A7 7 0 0011 16.92V19H9v2h6v-2h-2v-2.08A7 7 0 0018.7 10.2l-1.4-.5z"/></svg>
     </div>
-    <div id="callVideoBtn" onclick="toggleCallVideo()" data-tooltip="Kamera" style="width:52px;height:52px;border-radius:50%;background:#2b2d31;display:flex;align-items:center;justify-content:center;cursor:pointer;display:none;" onmouseover="this.style.background='#35373c'" onmouseout="this.style.background=this.dataset.off=='1'?'#f23f43':'#2b2d31'">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+    <!-- Ekran paylaşımı (Discord'daki gibi) -->
+    <div onclick="showToast('Ekran paylaşımı yakında!')" style="width:44px;height:44px;border-radius:50%;background:#2b2d31;display:flex;align-items:center;justify-content:center;cursor:pointer;" title="Ekran Paylaş">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/></svg>
     </div>
-    <div onclick="endCall()" data-tooltip="Aramayı Bitir" style="width:52px;height:52px;border-radius:50%;background:#f23f43;display:flex;align-items:center;justify-content:center;cursor:pointer;" onmouseover="this.style.background='#c0393c'" onmouseout="this.style.background='#f23f43'">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M20.384 15.14c-1.265-1.386-2.795-2.133-4.388-2.133-.755 0-1.511.189-2.244.561l-1.73-.966c-.29-.162-.65-.162-.94 0L9.352 13.57c-.733-.373-1.489-.562-2.244-.562-1.593 0-3.123.748-4.388 2.133C2.24 15.7 2 16.38 2 17.08c0 .7.24 1.38.72 1.94.48.56 1.14.88 1.84.88h14.88c.7 0 1.36-.32 1.84-.88.48-.56.72-1.24.72-1.94 0-.7-.24-1.38-.72-1.94z" transform="rotate(135, 12, 12)"/></svg>
+    <!-- Kamera -->
+    <div id="callVideoBtn" onclick="toggleCallVideo()" data-off="0" style="width:44px;height:44px;border-radius:50%;background:#2b2d31;display:flex;align-items:center;justify-content:center;cursor:pointer;" title="Kamera">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+    </div>
+    <!-- Aramayı Bitir (kırmızı) -->
+    <div onclick="endCall()" style="width:44px;height:44px;border-radius:50%;background:#f23f43;display:flex;align-items:center;justify-content:center;cursor:pointer;" title="Aramayı Bitir">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z" transform="rotate(135,12,12)"/></svg>
     </div>
   </div>
 </div>
@@ -9467,36 +9481,67 @@ async function startCall(type) {
 }
 
 function showCallingScreen(name, type) {
-  // Arama ekranını göster - karşı taraf cevaplayana kadar
   const screen = document.getElementById('activeCallScreen');
+  // DM chat view içinde konumlandır
+  const chatView = document.getElementById('dmChatView');
+  if (chatView) {
+    const rect = chatView.getBoundingClientRect();
+    screen.style.position = 'fixed';
+    screen.style.left = rect.left + 'px';
+    screen.style.top = rect.top + 'px';
+    screen.style.width = rect.width + 'px';
+    screen.style.right = 'auto';
+    screen.style.bottom = 'auto';
+    // Yüksekliği hesapla - mesaj alanı ve input için yer bırak
+    screen.style.height = 'auto';
+  }
   screen.style.display = 'flex';
+
+  // Karşı taraf
   document.getElementById('remoteAvatarName').textContent = name;
   document.getElementById('callStatusText').textContent = type === 'video' ? '📹 Görüntülü arıyor...' : '📞 Sesli arıyor...';
-  document.getElementById('callTimer').style.display = 'none';
-  // Avatar
   const u = allOnlineUsers.find(u => u.uid === activeCallUid);
-  const av = document.getElementById('remoteAvatarImg');
-  if (u?.avatarUrl) { av.style.background = `url(${u.avatarUrl}) center/cover no-repeat`; av.textContent = ''; }
-  else { av.style.background = getColor(activeCallUid); av.textContent = getInitials(name); }
-  // Video butonu
+  const remoteAv = document.getElementById('remoteAvatarImg');
+  if (u?.avatarUrl) { remoteAv.style.background = `url(${u.avatarUrl}) center/cover no-repeat`; remoteAv.textContent = ''; }
+  else { remoteAv.style.background = getColor(activeCallUid); remoteAv.textContent = getInitials(name); }
+
+  // Kendi taraf
+  if (currentUser) {
+    const myName = currentUser.displayName || currentUser.email.split('@')[0];
+    document.getElementById('localAvatarName').textContent = myName;
+    const myU = allOnlineUsers.find(u => u.uid === currentUser.uid);
+    const localAv = document.getElementById('localAvatarImg');
+    if (myU?.avatarUrl) { localAv.style.background = `url(${myU.avatarUrl}) center/cover no-repeat`; localAv.textContent = ''; }
+    else { localAv.style.background = getColor(currentUser.uid); localAv.textContent = getInitials(myName); }
+  }
+
+  // Video butonunu göster/gizle
   document.getElementById('callVideoBtn').style.display = type === 'video' ? 'flex' : 'none';
-  if (type === 'video') {
+  if (type === 'video' && localStream) {
     const localVideo = document.getElementById('localVideo');
     localVideo.srcObject = localStream;
     localVideo.style.display = 'block';
+    document.getElementById('localAvatar').style.display = 'none';
   }
 }
 
 function showActiveCallScreen() {
   document.getElementById('callStatusText').textContent = '';
-  document.getElementById('callTimer').style.display = 'block';
+  const timerEl = document.getElementById('callTimer');
+  timerEl.style.display = 'inline';
   callSeconds = 0;
   callTimerInterval = setInterval(() => {
     callSeconds++;
     const m = Math.floor(callSeconds/60);
     const s = callSeconds % 60;
-    document.getElementById('callTimer').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    timerEl.textContent = ` · ${m}:${s.toString().padStart(2,'0')}`;
   }, 1000);
+  // Karşı taraf bağlandı, videosu varsa göster
+  const remoteVideo = document.getElementById('remoteVideo');
+  if (remoteVideo?.srcObject) {
+    remoteVideo.style.display = 'block';
+    document.getElementById('remoteAvatar').style.display = 'none';
+  }
 }
 
 // Gelen arama dinle
@@ -9675,13 +9720,14 @@ function cleanupCall() {
 }
 
 function showActiveCall() {
-  document.getElementById('activeCallScreen').style.display = 'flex';
+  showCallingScreen(activeCallName, callType);
   document.getElementById('activeCallBar').style.display = 'none';
 }
 
 function minimizeCall() {
   document.getElementById('activeCallScreen').style.display = 'none';
-  document.getElementById('activeCallBar').style.display = 'flex';
+  const bar = document.getElementById('activeCallBar');
+  bar.style.display = 'flex';
   document.getElementById('activeCallBarName').textContent = activeCallName || '';
 }
 
