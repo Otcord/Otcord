@@ -1632,7 +1632,7 @@
     <div style="flex:1;border-radius:12px;overflow:hidden;position:relative;min-height:200px;background:#2b2d31;">
       <video id="localVideo" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;display:none;position:absolute;inset:0;"></video>
       <div id="localAvatar" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;">
-        <div id="localAvatarImg" style="width:80px;height:80px;border-radius:50%;background:#1da8e0;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:white;"></div>
+        <div id="localAvatarImg" style="width:80px;height:80px;border-radius:50%;background:#1da8e0;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:white;flex-shrink:0;overflow:hidden;"></div>
         <div id="localAvatarName" style="font-size:13px;font-weight:600;color:#f2f3f5;"></div>
       </div>
     </div>
@@ -1640,7 +1640,7 @@
     <div style="flex:1;border-radius:12px;overflow:hidden;position:relative;min-height:200px;background:#2b2d31;">
       <video id="remoteVideo" autoplay playsinline style="width:100%;height:100%;object-fit:cover;display:none;position:absolute;inset:0;"></video>
       <div id="remoteAvatar" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;">
-        <div id="remoteAvatarImg" style="width:80px;height:80px;border-radius:50%;background:#9b59b6;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:white;"></div>
+        <div id="remoteAvatarImg" style="width:80px;height:80px;border-radius:50%;background:#9b59b6;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:white;flex-shrink:0;overflow:hidden;"></div>
         <div id="remoteAvatarName" style="font-size:13px;font-weight:600;color:#f2f3f5;"></div>
       </div>
     </div>
@@ -9446,7 +9446,10 @@ async function startCall(type) {
   await db.collection('calls').doc(docId).set(callDoc);
 
   // Arama ekranını göster (avatar önceden yükle)
-  await showCallingScreen(activeCallName, type);
+  // Karşı tarafın avatarını önce önbellekten al
+  const _remoteUser = allOnlineUsers.find(u => u.uid === activeCallUid);
+  const _remoteAvatar = _remoteUser?.avatarUrl || '';
+  await showCallingScreen(activeCallName, type, _remoteAvatar);
 
   // Karşı tarafın cevabını dinle
   callSignalListener = db.collection('calls').doc(docId).onSnapshot(async snap => {
@@ -9481,7 +9484,41 @@ async function startCall(type) {
   });
 }
 
-async function showCallingScreen(name, type) {
+function _setAvatarEl(el, nameEl, uid, nameStr, avatarUrl) {
+  if (!el) return;
+  if (nameEl) nameEl.textContent = nameStr || '';
+
+  if (avatarUrl) {
+    // Resimli avatar — img tag kullan, kesinlikle görünür
+    el.textContent = '';
+    el.style.backgroundColor = '#2b2d31';
+    el.style.backgroundImage = '';
+    const img = document.createElement('img');
+    img.src = avatarUrl;
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;';
+    img.onerror = function() {
+      // Resim yüklenemezse baş harf göster
+      el.textContent = '';
+      el.removeChild(img);
+      el.style.backgroundColor = getColor(uid || 'x');
+      el.style.backgroundImage = '';
+      const span = document.createElement('span');
+      span.textContent = getInitials(nameStr);
+      el.appendChild(span);
+    };
+    el.appendChild(img);
+  } else {
+    // Baş harf avatar
+    el.textContent = '';
+    el.style.backgroundImage = '';
+    el.style.backgroundColor = getColor(uid || 'x');
+    const span = document.createElement('span');
+    span.textContent = getInitials(nameStr || '?');
+    el.appendChild(span);
+  }
+}
+
+async function showCallingScreen(name, type, remoteAvatarUrl) {
   const screen = document.getElementById('activeCallScreen');
   const chatView = document.getElementById('dmChatView');
   if (chatView) {
@@ -9494,77 +9531,63 @@ async function showCallingScreen(name, type) {
     screen.style.bottom = 'auto';
     screen.style.height = 'auto';
   }
-  // Ekranı hemen göster
   screen.style.display = 'flex';
 
   document.getElementById('callStatusText').textContent = type === 'video' ? '📹 Görüntülü arıyor...' : '📞 Sesli arıyor...';
 
-  // Karşı taraf — Firebase'den await ile çek
-  const remoteAv = document.getElementById('remoteAvatarImg');
-  const remoteNm = document.getElementById('remoteAvatarName');
+  // --- KARŞI TARAF AVATAR ---
+  const remoteAv  = document.getElementById('remoteAvatarImg');
+  const remoteNm  = document.getElementById('remoteAvatarName');
   const remoteAvatarDiv = document.getElementById('remoteAvatar');
-  console.log('[CALL] activeCallUid:', activeCallUid, 'name:', name);
-  if (remoteAvatarDiv) { remoteAvatarDiv.style.display = 'flex'; remoteAvatarDiv.style.zIndex = '10'; }
+  remoteAvatarDiv.style.display = 'flex';
+  remoteAvatarDiv.style.zIndex  = '10';
   document.getElementById('remoteVideo').style.display = 'none';
-  remoteNm.textContent = name;
-  remoteAv.style.width = '80px';
-  remoteAv.style.height = '80px';
-  remoteAv.style.borderRadius = '50%';
-  remoteAv.style.display = 'flex';
-  remoteAv.style.alignItems = 'center';
-  remoteAv.style.justifyContent = 'center';
-  remoteAv.style.fontSize = '26px';
-  remoteAv.style.fontWeight = '700';
-  remoteAv.style.color = 'white';
-  remoteAv.style.background = getColor(activeCallUid || 'x');
-  remoteAv.textContent = getInitials(name);
+
+  // Önce hemen göster (varsa geçilen avatarUrl ile)
+  _setAvatarEl(remoteAv, remoteNm, activeCallUid, name, remoteAvatarUrl || '');
+
+  // Firebase'den taze veri çek (arka planda, ekranı bloklama)
   if (activeCallUid) {
-    try {
-      const doc = await db.collection('users').doc(activeCallUid).get();
-      console.log('[CALL] remote doc exists:', doc.exists, 'data:', doc.exists ? doc.data() : null);
-      if (doc.exists) {
-        const d = doc.data();
-        const freshName = d.displayName || d.username || name;
-        const freshAvatar = d.avatarUrl || '';
-        remoteNm.textContent = freshName;
-        if (freshAvatar) {
-          remoteAv.style.background = `url(${freshAvatar}) center/cover no-repeat`;
-          remoteAv.textContent = '';
-        } else {
-          remoteAv.style.background = getColor(activeCallUid);
-          remoteAv.textContent = getInitials(freshName);
-        }
-      }
-    } catch(e) { console.log('remote avatar error', e); }
+    db.collection('users').doc(activeCallUid).get().then(doc => {
+      if (!doc.exists) return;
+      const d = doc.data();
+      const freshName   = d.displayName || d.username || name;
+      const freshAvatar = d.avatarUrl || '';
+      _setAvatarEl(remoteAv, remoteNm, activeCallUid, freshName, freshAvatar);
+    }).catch(() => {});
+
+    // Realtime güncelleme
+    if (window._callProfileListener) window._callProfileListener();
+    window._callProfileListener = db.collection('users').doc(activeCallUid).onSnapshot(doc => {
+      if (!doc.exists) return;
+      const d = doc.data();
+      _setAvatarEl(remoteAv, remoteNm, activeCallUid, d.displayName || d.username || name, d.avatarUrl || '');
+    });
   }
 
-  // Kendi taraf — Firebase'den await ile çek
-  const localAv = document.getElementById('localAvatarImg');
-  const localNm = document.getElementById('localAvatarName');
+  // --- KENDİ AVATAR ---
+  const localAv  = document.getElementById('localAvatarImg');
+  const localNm  = document.getElementById('localAvatarName');
   const localAvatarDiv = document.getElementById('localAvatar');
-  if (localAvatarDiv) localAvatarDiv.style.display = 'flex';
+  localAvatarDiv.style.display = 'flex';
   document.getElementById('localVideo').style.display = 'none';
+
   if (currentUser) {
     const myName = currentUser.displayName || currentUser.email.split('@')[0];
-    localNm.textContent = myName;
-    localAv.style.background = getColor(currentUser.uid);
-    localAv.textContent = getInitials(myName);
-    try {
-      const doc = await db.collection('users').doc(currentUser.uid).get();
-      if (doc.exists) {
-        const d = doc.data();
-        const freshName = d.displayName || d.username || myName;
-        const freshAvatar = d.avatarUrl || '';
-        localNm.textContent = freshName;
-        if (freshAvatar) {
-          localAv.style.background = `url(${freshAvatar}) center/cover no-repeat`;
-          localAv.textContent = '';
-        } else {
-          localAv.style.background = getColor(currentUser.uid);
-          localAv.textContent = getInitials(freshName);
-        }
-      }
-    } catch(e) {}
+    _setAvatarEl(localAv, localNm, currentUser.uid, myName, '');
+
+    db.collection('users').doc(currentUser.uid).get().then(doc => {
+      if (!doc.exists) return;
+      const d = doc.data();
+      _setAvatarEl(localAv, localNm, currentUser.uid, d.displayName || d.username || myName, d.avatarUrl || '');
+    }).catch(() => {});
+
+    if (window._callLocalProfileListener) window._callLocalProfileListener();
+    window._callLocalProfileListener = db.collection('users').doc(currentUser.uid).onSnapshot(doc => {
+      if (!doc.exists) return;
+      const d = doc.data();
+      _setAvatarEl(localAv, localNm, currentUser.uid, d.displayName || d.username || '', d.avatarUrl || '');
+    });
   }
 
   // Video butonu her zaman göster
@@ -9573,38 +9596,9 @@ async function showCallingScreen(name, type) {
     const localVideo = document.getElementById('localVideo');
     localVideo.srcObject = localStream;
     localVideo.style.display = 'block';
-    document.getElementById('localAvatar').style.display = 'none';
+    localAvatarDiv.style.display = 'none';
   }
 
-  // Realtime listener
-  if (activeCallUid) {
-    if (window._callProfileListener) window._callProfileListener();
-    window._callProfileListener = db.collection('users').doc(activeCallUid).onSnapshot(doc => {
-      if (!doc.exists) return;
-      const d = doc.data();
-      const n = d.displayName || d.username || name;
-      const av = d.avatarUrl || '';
-      if (remoteNm) remoteNm.textContent = n;
-      if (remoteAv) {
-        remoteAv.style.background = av ? `url(${av}) center/cover no-repeat` : getColor(activeCallUid);
-        remoteAv.textContent = av ? '' : getInitials(n);
-      }
-    });
-  }
-  if (currentUser) {
-    if (window._callLocalProfileListener) window._callLocalProfileListener();
-    window._callLocalProfileListener = db.collection('users').doc(currentUser.uid).onSnapshot(doc => {
-      if (!doc.exists) return;
-      const d = doc.data();
-      const n = d.displayName || d.username || '';
-      const av = d.avatarUrl || '';
-      if (localNm) localNm.textContent = n;
-      if (localAv) {
-        localAv.style.background = av ? `url(${av}) center/cover no-repeat` : getColor(currentUser.uid);
-        localAv.textContent = av ? '' : getInitials(n);
-      }
-    });
-  }
 }
 
 function showActiveCallScreen() {
@@ -9612,17 +9606,23 @@ function showActiveCallScreen() {
   const timerEl = document.getElementById('callTimer');
   timerEl.style.display = 'inline';
   callSeconds = 0;
+  if (callTimerInterval) clearInterval(callTimerInterval);
   callTimerInterval = setInterval(() => {
     callSeconds++;
     const m = Math.floor(callSeconds/60);
     const s = callSeconds % 60;
     timerEl.textContent = ` · ${m}:${s.toString().padStart(2,'0')}`;
   }, 1000);
-  // Karşı taraf bağlandı, videosu varsa göster
+  // Sadece gerçekten video track varsa remoteAvatar'ı gizle
   const remoteVideo = document.getElementById('remoteVideo');
-  if (remoteVideo?.srcObject) {
+  const hasVideoTrack = remoteVideo?.srcObject?.getVideoTracks().length > 0;
+  if (hasVideoTrack) {
     remoteVideo.style.display = 'block';
     document.getElementById('remoteAvatar').style.display = 'none';
+  } else {
+    // Sesli arama — avatar görünür kalsın
+    if (remoteVideo) remoteVideo.style.display = 'none';
+    document.getElementById('remoteAvatar').style.display = 'flex';
   }
 }
 
@@ -9789,7 +9789,7 @@ async function acceptCall() {
     if (d?.status === 'ended') cleanupCall();
   });
 
-  await showCallingScreen(data.callerName, data.callType);
+  await showCallingScreen(data.callerName, data.callType, data.callerAvatar || '');
   showActiveCallScreen();
 
   // Sohbete at
