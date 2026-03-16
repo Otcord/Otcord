@@ -1683,17 +1683,17 @@ if ('serviceWorker' in navigator) {
   </div>
   <!-- Arama kontrol butonları -->
   <div style="display:flex;align-items:center;justify-content:center;gap:16px;padding:8px 16px 10px;">
+    <!-- Kamera (her zaman görünür) -->
+    <div id="callVideoBtn" onclick="toggleCallVideo()" data-off="0" style="width:44px;height:44px;border-radius:50%;background:#2b2d31;display:flex;align-items:center;justify-content:center;cursor:pointer;" title="Kamera">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+    </div>
     <!-- Mikrofon -->
     <div id="callMicBtn" onclick="toggleCallMic()" data-muted="0" style="width:44px;height:44px;border-radius:50%;background:#2b2d31;display:flex;align-items:center;justify-content:center;cursor:pointer;" title="Mikrofon">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zm5.3 8.7a5.5 5.5 0 01-10.6 0l-1.4.5A7 7 0 0011 16.92V19H9v2h6v-2h-2v-2.08A7 7 0 0018.7 10.2l-1.4-.5z"/></svg>
     </div>
-    <!-- Ekran paylaşımı (Discord'daki gibi) -->
+    <!-- Ekran paylaşımı -->
     <div onclick="showToast('Ekran paylaşımı yakında!')" style="width:44px;height:44px;border-radius:50%;background:#2b2d31;display:flex;align-items:center;justify-content:center;cursor:pointer;" title="Ekran Paylaş">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/></svg>
-    </div>
-    <!-- Kamera -->
-    <div id="callVideoBtn" onclick="toggleCallVideo()" data-off="0" style="width:44px;height:44px;border-radius:50%;background:#2b2d31;display:flex;align-items:center;justify-content:center;cursor:pointer;" title="Kamera">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
     </div>
     <!-- Aramayı Bitir (kırmızı) -->
     <div onclick="endCall()" style="width:44px;height:44px;border-radius:50%;background:#f23f43;display:flex;align-items:center;justify-content:center;cursor:pointer;" title="Aramayı Bitir">
@@ -6881,13 +6881,15 @@ function toggleMic() {
 
 function toggleDeaf() {
   deafened = !deafened;
+  const color = deafened ? '#f23f43' : '';
+  const opacity = deafened ? '1' : '1';
   // Ana ekran butonu
   const deafBtn = document.getElementById('deafBtn');
-  if (deafBtn) { deafBtn.style.opacity = deafened ? '0.5' : '1'; deafBtn.style.color = deafened ? 'var(--red)' : ''; }
+  if (deafBtn) { deafBtn.style.color = color; deafBtn.style.opacity = deafened ? '1' : '1'; }
   // DM ekran butonu
   const dmDeafBtn = document.getElementById('dmDeafBtn');
-  if (dmDeafBtn) { dmDeafBtn.style.opacity = deafened ? '0.5' : '1'; dmDeafBtn.style.color = deafened ? 'var(--red)' : ''; }
-  // Arama sırasında remote video/audio mute et
+  if (dmDeafBtn) { dmDeafBtn.style.color = color; }
+  // Arama sırasında remote audio mute et
   const remoteVideo = document.getElementById('remoteVideo');
   if (remoteVideo) remoteVideo.muted = deafened;
   updateAvatarBadge();
@@ -9515,14 +9517,24 @@ function showCallingScreen(name, type) {
   if (u?.avatarUrl) { remoteAv.style.background = `url(${u.avatarUrl}) center/cover no-repeat`; remoteAv.textContent = ''; }
   else { remoteAv.style.background = getColor(activeCallUid); remoteAv.textContent = getInitials(name); }
 
-  // Kendi taraf
+  // Kendi taraf — önce allOnlineUsers, yoksa Firebase
   if (currentUser) {
     const myName = currentUser.displayName || currentUser.email.split('@')[0];
     document.getElementById('localAvatarName').textContent = myName;
     const myU = allOnlineUsers.find(u => u.uid === currentUser.uid);
     const localAv = document.getElementById('localAvatarImg');
-    if (myU?.avatarUrl) { localAv.style.background = `url(${myU.avatarUrl}) center/cover no-repeat`; localAv.textContent = ''; }
-    else { localAv.style.background = getColor(currentUser.uid); localAv.textContent = getInitials(myName); }
+    if (myU?.avatarUrl) {
+      localAv.style.background = `url(${myU.avatarUrl}) center/cover no-repeat`;
+      localAv.textContent = '';
+    } else {
+      localAv.style.background = getColor(currentUser.uid);
+      localAv.textContent = getInitials(myName);
+      // Firebase'den çek
+      db.collection('users').doc(currentUser.uid).get().then(doc => {
+        const av = doc.exists ? (doc.data().avatarUrl || '') : '';
+        if (av) { localAv.style.background = `url(${av}) center/cover no-repeat`; localAv.textContent = ''; }
+      }).catch(() => {});
+    }
   }
 
   // Video butonunu göster/gizle
@@ -9778,18 +9790,43 @@ function toggleCallMic() {
   const track = localStream.getAudioTracks()[0];
   if (!track) return;
   track.enabled = !track.enabled;
-  btn.dataset.muted = track.enabled ? '0' : '1';
-  btn.style.background = track.enabled ? '#2b2d31' : '#f23f43';
+  const muted = !track.enabled;
+  btn.dataset.muted = muted ? '1' : '0';
+  btn.style.background = muted ? '#f23f43' : '#2b2d31';
+  // Sol alttaki mikrofon ile senkronize et
+  micMuted = muted;
+  const mainMicBtn = document.getElementById('micBtn');
+  if (mainMicBtn) { mainMicBtn.style.opacity = muted ? '0.5' : '1'; mainMicBtn.style.color = muted ? 'var(--red)' : ''; }
+  updateAvatarBadge();
 }
 
 function toggleCallVideo() {
-  if (!localStream) return;
   const btn = document.getElementById('callVideoBtn');
+  if (!localStream) {
+    // Kamera yoksa aç
+    navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+      stream.getVideoTracks().forEach(t => {
+        if (peerConnection) peerConnection.addTrack(t, stream);
+      });
+      localStream = localStream ? new MediaStream([...localStream.getTracks(), ...stream.getVideoTracks()]) : stream;
+      const localVideo = document.getElementById('localVideo');
+      localVideo.srcObject = localStream;
+      localVideo.style.display = 'block';
+      document.getElementById('localAvatar').style.display = 'none';
+      btn.style.background = '#2b2d31'; btn.dataset.off = '0';
+    }).catch(() => showToast('❌ Kamera izni verilmedi.'));
+    return;
+  }
   const track = localStream.getVideoTracks()[0];
-  if (!track) return;
+  if (!track) {
+    showToast('❌ Kamera bulunamadı.'); return;
+  }
   track.enabled = !track.enabled;
   btn.dataset.off = track.enabled ? '0' : '1';
   btn.style.background = track.enabled ? '#2b2d31' : '#f23f43';
+  const localVideo = document.getElementById('localVideo');
+  if (!track.enabled) { localVideo.style.display = 'none'; document.getElementById('localAvatar').style.display = 'flex'; }
+  else { localVideo.style.display = 'block'; document.getElementById('localAvatar').style.display = 'none'; }
 }
 let activeDmUid = null;
 let activeDmName = null;
