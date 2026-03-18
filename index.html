@@ -12170,6 +12170,7 @@ function openDmChat(uid, name, avatarUrl) {
   document.getElementById('dmPickerModal').style.display = 'none';
   activeDmUid = uid;
   activeDmName = name;
+  _dmDividerScrolled = false; // Yeni sohbet — divider scroll sıfırla
 
   // Sohbet ekranını göster
   document.getElementById('dmFriendsHeader').style.display = 'none';
@@ -12357,6 +12358,7 @@ const _dmUserListeners = {};
 let _dmActiveMsgs = [];      // Son snapshot'tan gelen mesajlar
 let _dmActiveUid = null;     // Hangi uid için
 let _dmActiveLastSeen = 0;
+let _dmDividerScrolled = false; // Unread divider'a sadece bir kez scroll
 
 function _watchDmUser(uid) {
   if (_dmUserListeners[uid]) return;
@@ -12515,9 +12517,10 @@ function renderDmMessages(msgs, uid, lastSeen) {
 
   container.innerHTML = html;
 
-  // Okunmamış mesaj varsa oraya scroll
+  // Okunmamış divider'a scroll — sadece ilk açılışta bir kez yap
   const divider = document.getElementById('dmUnreadDivider');
-  if (divider) {
+  if (divider && !_dmDividerScrolled) {
+    _dmDividerScrolled = true;
     divider.scrollIntoView({ block: 'center' });
     return;
   }
