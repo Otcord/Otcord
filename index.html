@@ -9255,23 +9255,10 @@ function openDmScreen() {
   const homeBtn = document.querySelector('.server-icon.home');
   if (homeBtn) homeBtn.classList.add('active');
   currentServer = 'dm';
-  // Aktif arama varsa ekranı DM üstüne geri getir
+  // Aktif arama varsa ekranı göster — artık dmChatView içinde olduğu için otomatik konumlanır
   if (activeCallUid) {
     const callScreen = document.getElementById('activeCallScreen');
-    if (callScreen) {
-      callScreen.style.display = 'flex';
-      // DM chat view içine konumlandır
-      setTimeout(() => {
-        const dmChat = document.getElementById('dmChatView');
-        if (dmChat) {
-          const rect = dmChat.getBoundingClientRect();
-          callScreen.style.position = 'fixed';
-          callScreen.style.top = rect.top + 'px';
-          callScreen.style.left = rect.left + 'px';
-          callScreen.style.width = rect.width + 'px';
-        }
-      }, 80);
-    }
+    if (callScreen) callScreen.style.display = 'flex';
     showCallStatusBar();
   }
   const testBar = document.getElementById('testModeBar');
@@ -9326,6 +9313,12 @@ function switchDmTab(tab) {
   });
   const map = { arkadaslar:'Ark', nitro:'Nitro', magaza:'Magaza', gorev:'Gorev' };
   document.getElementById('dmTab' + map[tab])?.classList.add('dm-nav-active');
+
+  // Arkadaşlar/Tron/Mağaza sekmesine geçince arama ekranını gizle, bar'ı göster
+  if (activeCallUid) {
+    document.getElementById('activeCallScreen').style.display = 'none';
+    showCallStatusBar();
+  }
 
   // Arkadaşlar sekmesine basınca chat'i her zaman kapat
   document.getElementById('dmChatView').style.display = 'none';
@@ -11188,39 +11181,20 @@ async function showCallingScreen(name, type, remoteAvatarUrl) {
 
   function _positionScreen() {
     const dmChatView = document.getElementById('dmChatView');
-    const mainContent = document.getElementById('mainContent');
-    const dmScr = document.getElementById('dmScreen');
 
-    // DM ekranı açık VE dmChatView görünür durumdaysa ona göre konumlan
-    let ref = null;
-    if (dmScr && dmScr.style.display === 'flex') {
-      const cv = document.getElementById('dmChatView');
-      if (cv && cv.style.display !== 'none' && cv.getBoundingClientRect().width > 0) {
-        ref = cv;
-      }
-    }
-    if (!ref && mainContent && mainContent.getBoundingClientRect().width > 0) {
-      ref = mainContent;
+    // activeCallScreen'i dmChatView içine taşı — parent gizlenince otomatik gizlenir
+    if (dmChatView && screen.parentElement !== dmChatView) {
+      dmChatView.insertBefore(screen, dmChatView.firstChild);
     }
 
-    if (ref) {
-      const rect = ref.getBoundingClientRect();
-      screen.style.position = 'fixed';
-      screen.style.left   = rect.left + 'px';
-      screen.style.top    = rect.top  + 'px';
-      screen.style.width  = rect.width + 'px';
-      screen.style.right  = 'auto';
-      screen.style.bottom = 'auto';
-      screen.style.height = 'auto';
-    } else {
-      screen.style.position = 'fixed';
-      screen.style.left   = '72px';
-      screen.style.top    = '0';
-      screen.style.right  = '0';
-      screen.style.bottom = 'auto';
-      screen.style.width  = 'auto';
-      screen.style.height = 'auto';
-    }
+    screen.style.position = 'relative';
+    screen.style.left   = 'auto';
+    screen.style.top    = 'auto';
+    screen.style.right  = 'auto';
+    screen.style.bottom = 'auto';
+    screen.style.width  = '100%';
+    screen.style.height = 'auto';
+    screen.style.zIndex = '10';
   }
 
   // İlk konumlandırma
@@ -11560,6 +11534,9 @@ function cleanupCall() {
 
   document.getElementById('activeCallScreen').style.display = 'none';
   document.getElementById('activeCallBar').style.display = 'none';
+  // activeCallScreen'i body'e geri taşı (dmChatView içine taşınmış olabilir)
+  const _cs = document.getElementById('activeCallScreen');
+  if (_cs && _cs.parentElement !== document.body) document.body.appendChild(_cs);
   document.getElementById('incomingCallScreen').style.display = 'none';
   hideCallStatusBar();
   // Mesaj alanı padding'ini sıfırla
@@ -12381,7 +12358,7 @@ function loadDmMessages(uid) {
   _watchDmUser(uid);
 
   dmListeners[chatId] = db.collection('dmChats').doc(chatId).collection('messages')
-    .orderBy('timestamp').limit(100)
+    .orderBy('timestamp')
     .onSnapshot(snap => {
       const msgs = [];
       snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
@@ -12453,14 +12430,16 @@ function renderDmMessages(msgs, uid, lastSeen) {
     const avatarBg    = avatarUrl ? `url(${avatarUrl}) center/cover no-repeat` : color;
     const avatarText  = avatarUrl ? '' : getInitials(displayName);
 
-    // İçerik: gif / resim / dosya / metin
+    // İçerik: gif / resim / video / dosya / metin
     const dmContent = msg.gif
       ? `<img src="${msg.gif}" style="max-width:280px;max-height:200px;border-radius:8px;display:block;margin-top:4px;" loading="lazy">`
       : msg.uploadedImage
         ? `<img src="${msg.uploadedImage}" style="max-width:320px;max-height:240px;border-radius:8px;display:block;cursor:pointer;margin-top:4px;" onclick="openImgViewer('${msg.uploadedImage}','${msg.fileName||'resim'}')">`
-        : msg.uploadedFile
-          ? `<div style="display:flex;align-items:center;gap:10px;background:#2b2d31;border-radius:8px;padding:10px 14px;margin-top:4px;max-width:320px;"><span style="font-size:22px;">📎</span><div><div style="font-size:13px;font-weight:600;color:#f2f3f5;">${msg.fileName||'dosya'}</div><div style="font-size:11px;color:#80848e;">${msg.fileSize||''}</div></div></div>`
-          : `<div style="font-size:15px;color:#f2f3f5;line-height:1.5;word-break:break-word;">${formatText(msg.text||'')}</div>`;
+        : msg.uploadedVideo
+          ? `<div style="margin-top:4px;"><div style="font-size:12px;color:#80848e;margin-bottom:4px;">📎 ${msg.fileName||''}</div><video src="${msg.uploadedVideo}" controls style="max-width:320px;max-height:240px;border-radius:8px;display:block;background:#000;"></video></div>`
+          : msg.uploadedFile
+            ? `<a href="${msg.fileUrl||'#'}" target="_blank" style="text-decoration:none;"><div style="display:flex;align-items:center;gap:10px;background:#2b2d31;border-radius:8px;padding:10px 14px;margin-top:4px;max-width:320px;cursor:pointer;" onmouseover="this.style.background='#35373c'" onmouseout="this.style.background='#2b2d31'"><span style="font-size:22px;">📎</span><div><div style="font-size:13px;font-weight:600;color:#f2f3f5;">${msg.fileName||'dosya'}</div><div style="font-size:11px;color:#80848e;">${msg.fileSize||''}</div></div></div></a>`
+            : `<div style="font-size:15px;color:#f2f3f5;line-height:1.5;word-break:break-word;">${formatText(msg.text||'')}</div>`;
 
     // Reply gösterimi — sunucudaki gibi
     const dmReplyHtml = msg.replyTo
@@ -12498,11 +12477,20 @@ function renderDmMessages(msgs, uid, lastSeen) {
 
   container.innerHTML = html;
 
-  // Okunmamış mesaj varsa oraya scroll, yoksa en alta
+  // Okunmamış mesaj varsa oraya scroll
   const divider = document.getElementById('dmUnreadDivider');
   if (divider) {
     divider.scrollIntoView({ block: 'center' });
-  } else {
+    return;
+  }
+
+  // Kendi mesajımızı gönderdikten sonra her zaman en alta in
+  // Karşı taraf mesaj attıysa: zaten en alttaysak in, değilsek inme
+  const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 120;
+  const lastMsg = msgs[msgs.length - 1];
+  const isOwnMsg = lastMsg && lastMsg.authorUid === myUid;
+
+  if (isOwnMsg || isAtBottom) {
     container.scrollTop = container.scrollHeight;
   }
 }
@@ -12532,6 +12520,13 @@ function sendDmMessage() {
   }
 
   db.collection('dmChats').doc(chatId).collection('messages').add(msgData)
+    .then(() => {
+      // Mesaj gönderilince hemen en alta in
+      setTimeout(() => {
+        const c = document.getElementById('dmChatMessages');
+        if (c) c.scrollTop = c.scrollHeight;
+      }, 100);
+    })
     .catch(() => showToast('❌ Mesaj gönderilemedi.'));
 }
 
@@ -12752,8 +12747,41 @@ function cancelDmReply() {
 }
 
 function handleDmFileUpload(e) {
-  showToast('Dosya yükleme DM\'de yakında!');
+  const files = Array.from(e.target.files);
   e.target.value = '';
+  if (!files.length || !activeDmUid || !currentUser) return;
+
+  const myUid = currentUser.uid;
+  const myName = currentUser.displayName || currentUser.email.split('@')[0];
+  const chatId = [myUid, activeDmUid].sort().join('_');
+
+  files.forEach(file => {
+    const isImage = file.type.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(file.name);
+    const isVideo = file.type.startsWith('video/') || /\.mp4$/i.test(file.name);
+    const fileType = file.name.split('.').pop().toUpperCase();
+    const fileSize = formatFileSize(file.size);
+
+    showToast('⬆️ Yükleniyor...');
+
+    uploadToCloudinary(file)
+      .then(url => {
+        const msg = {
+          author: myName,
+          authorUid: myUid,
+          text: '',
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          fileName: file.name,
+          fileSize,
+        };
+        if (isImage)      msg.uploadedImage = url;
+        else if (isVideo) msg.uploadedVideo = url;
+        else              { msg.uploadedFile = true; msg.fileType = fileType; msg.fileUrl = url; }
+
+        return db.collection('dmChats').doc(chatId).collection('messages').add(msg);
+      })
+      .then(() => showToast('✅ Dosya gönderildi!'))
+      .catch(err => { console.error(err); showToast('❌ Yükleme başarısız: ' + (err.message || '')); });
+  });
 }
 
 function saveDmSidebar() {
