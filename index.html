@@ -1716,8 +1716,8 @@
     </div>
     <!-- Karşı taraf (sağ) -->
     <div style="flex:1;border-radius:12px;overflow:hidden;position:relative;aspect-ratio:16/9;background:#2b2d31;">
-      <video id="remoteVideo" autoplay playsinline style="width:100%;height:100%;object-fit:cover;display:none;position:absolute;inset:0;"></video>
-      <div id="remoteAvatar" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;">
+      <video id="remoteVideo" autoplay playsinline style="width:100%;height:100%;object-fit:cover;display:none;position:absolute;inset:0;z-index:3;"></video>
+      <div id="remoteAvatar" style="position:absolute;inset:0;z-index:2;background:#2b2d31;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;">
         <div id="remoteAvatarImg" style="width:80px;height:80px;border-radius:50%;background:#9b59b6;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:white;flex-shrink:0;overflow:hidden;"></div>
         <div id="remoteAvatarName" style="font-size:13px;font-weight:600;color:#f2f3f5;"></div>
       </div>
@@ -11087,6 +11087,10 @@ async function startCall(type) {
     if (data.reOffer && data.reOfferFrom && data.reOfferFrom !== currentUser.uid) {
       _handleReOffer(data.reOffer, docId, 'callee');
     }
+    // Karşı taraf kamerayı kapattı/açtı
+    if (typeof data.videoMuted !== 'undefined' && data.videoMutedBy && data.videoMutedBy !== currentUser.uid) {
+      _setRemoteVideoMuted(data.videoMuted);
+    }
     if (data.status === 'ended') {
       cleanupCall();
     }
@@ -11260,14 +11264,14 @@ function showActiveCallScreen() {
   }, 1000);
   // Sadece gerçekten video track varsa remoteAvatar'ı gizle
   const remoteVideo = document.getElementById('remoteVideo');
+  const remoteAvatar = document.getElementById('remoteAvatar');
   const hasVideoTrack = remoteVideo?.srcObject?.getVideoTracks().length > 0;
   if (hasVideoTrack) {
-    remoteVideo.style.display = 'block';
-    document.getElementById('remoteAvatar').style.display = 'none';
+    remoteVideo.style.display = 'block'; remoteVideo.style.zIndex = '3';
+    if (remoteAvatar) remoteAvatar.style.display = 'none';
   } else {
-    // Sesli arama — avatar görünür kalsın
-    if (remoteVideo) remoteVideo.style.display = 'none';
-    document.getElementById('remoteAvatar').style.display = 'flex';
+    if (remoteVideo) { remoteVideo.style.display = 'none'; remoteVideo.style.zIndex = '1'; }
+    if (remoteAvatar) { remoteAvatar.style.display = 'flex'; remoteAvatar.style.zIndex = '2'; }
   }
 }
 
@@ -11428,6 +11432,10 @@ async function acceptCall() {
     // Karşı taraf yeni track ekleyince (kamera/ekran) renegotiation
     if (d?.reOffer && d?.reOfferFrom && d.reOfferFrom !== currentUser.uid) {
       _handleReOffer(d.reOffer, data.docId, 'caller');
+    }
+    // Karşı taraf kamerayı kapattı/açtı
+    if (typeof d?.videoMuted !== 'undefined' && d?.videoMutedBy && d.videoMutedBy !== currentUser.uid) {
+      _setRemoteVideoMuted(d.videoMuted);
     }
   });
   _listenReAnswer(data.docId);
@@ -11709,12 +11717,12 @@ function _handleRemoteTrack(e) {
     const hasVideo = _remoteMediaStream.getVideoTracks().some(t => t.readyState === 'live' && !t.muted);
     const remoteAvatar = document.getElementById('remoteAvatar');
     if (hasVideo) {
-      if (remoteVideo) remoteVideo.style.display = 'block';
-      if (remoteAvatar) remoteAvatar.style.display = 'none';
+      if (remoteVideo) { remoteVideo.style.display = 'block'; remoteVideo.style.zIndex = '3'; }
+      if (remoteAvatar) { remoteAvatar.style.display = 'none'; }
       showRemoteVideoInProfile(_remoteMediaStream);
     } else {
-      if (remoteVideo) remoteVideo.style.display = 'none';
-      if (remoteAvatar) remoteAvatar.style.display = 'flex';
+      if (remoteVideo) { remoteVideo.style.display = 'none'; remoteVideo.style.zIndex = '1'; }
+      if (remoteAvatar) { remoteAvatar.style.display = 'flex'; remoteAvatar.style.zIndex = '2'; }
       hideRemoteVideoInProfile();
     }
   };
@@ -11887,6 +11895,17 @@ function stopScreenShare() {
   const btn = document.getElementById('screenShareBtn');
   if (btn) btn.style.background = '#2b2d31';
   _screenTrackSender = null;
+
+  // Karşı tarafa video durumunu bildir
+  if (activeCallUid && currentUser) {
+    const camTrackActive = !!(localStream?.getVideoTracks()[0]?.enabled);
+    const docId = getCallDocId(currentUser.uid, activeCallUid);
+    db.collection('calls').doc(docId).update({
+      videoMuted: !camTrackActive,
+      videoMutedBy: currentUser.uid
+    }).catch(() => {});
+  }
+
   showToast('🖥️ Ekran paylaşımı durduruldu.');
 }
 
@@ -11896,18 +11915,17 @@ function setLocalVideoState(stream) {
   const localAvatar = document.getElementById('localAvatar');
   if (!localVideo || !localAvatar) return;
 
-  // Her zaman önce videoyu durdur ve temizle
-  localVideo.pause();
-  localVideo.srcObject = null;
-  localVideo.load();
+  // Önce videoyu durdur
+  try { localVideo.pause(); } catch(e) {}
 
   if (stream) {
-    localAvatar.style.display = 'none';    // avatarı kapat (z-index:2 olduğu için mutlaka kapatmalı)
-    localVideo.style.zIndex   = '3';       // videoyu avatarın üstüne al
+    localAvatar.style.display = 'none';
+    localVideo.style.zIndex   = '3';
     localVideo.style.display  = 'block';
     localVideo.srcObject      = stream;
     localVideo.play().catch(() => {});
   } else {
+    localVideo.srcObject      = null;   // load() yerine sadece null — file:// uyumlu
     localVideo.style.display  = 'none';
     localVideo.style.zIndex   = '1';
     localAvatar.style.display = 'flex';
@@ -11949,10 +11967,39 @@ function toggleCallVideo() {
   btn.dataset.off = track.enabled ? '0' : '1';
   btn.style.background = track.enabled ? '#2b2d31' : '#f23f43';
 
+  // Karşı tarafa kamera durumunu Firebase üzerinden bildir
+  if (activeCallUid && currentUser) {
+    const docId = getCallDocId(currentUser.uid, activeCallUid);
+    db.collection('calls').doc(docId).update({
+      videoMuted: !track.enabled,
+      videoMutedBy: currentUser.uid
+    }).catch(() => {});
+  }
+
   if (!track.enabled) {
-    setLocalVideoState(null);   // avatar göster, video temizle
+    setLocalVideoState(null);
   } else {
-    setLocalVideoState(localStream);  // video yeniden bağla
+    setLocalVideoState(localStream);
+  }
+}
+
+// Karşı taraf kamerayı kapatınca/açınca remoteVideo/remoteAvatar güncelle
+function _setRemoteVideoMuted(muted) {
+  const remoteVideo  = document.getElementById('remoteVideo');
+  const remoteAvatar = document.getElementById('remoteAvatar');
+  if (!remoteVideo || !remoteAvatar) return;
+
+  if (muted) {
+    remoteVideo.style.display  = 'none';
+    remoteVideo.style.zIndex   = '1';
+    remoteAvatar.style.display = 'flex';
+    remoteAvatar.style.zIndex  = '2';
+    hideRemoteVideoInProfile();
+  } else {
+    remoteAvatar.style.display = 'none';
+    remoteVideo.style.zIndex   = '3';
+    remoteVideo.style.display  = 'block';
+    showRemoteVideoInProfile(_remoteMediaStream);
   }
 }
 
