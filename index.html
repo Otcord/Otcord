@@ -12963,39 +12963,6 @@ function handleDmFileUpload(e) {
   handleDmFileSelect(e);
 }
 
-  const myUid = currentUser.uid;
-  const myName = currentUser.displayName || currentUser.email.split('@')[0];
-  const chatId = [myUid, activeDmUid].sort().join('_');
-
-  files.forEach(file => {
-    const isImage = file.type.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(file.name);
-    const isVideo = file.type.startsWith('video/') || /\.mp4$/i.test(file.name);
-    const fileType = file.name.split('.').pop().toUpperCase();
-    const fileSize = formatFileSize(file.size);
-
-    showToast('⬆️ Yükleniyor...');
-
-    uploadToCloudinary(file)
-      .then(url => {
-        const msg = {
-          author: myName,
-          authorUid: myUid,
-          text: '',
-          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-          fileName: file.name,
-          fileSize,
-        };
-        if (isImage)      msg.uploadedImage = url;
-        else if (isVideo) msg.uploadedVideo = url;
-        else              { msg.uploadedFile = true; msg.fileType = fileType; msg.fileUrl = url; }
-
-        return db.collection('dmChats').doc(chatId).collection('messages').add(msg);
-      })
-      .then(() => showToast('✅ Dosya gönderildi!'))
-      .catch(err => { console.error(err); showToast('❌ Yükleme başarısız: ' + (err.message || '')); });
-  });
-}
-
 function saveDmSidebar() {
   const items = [];
   document.querySelectorAll('#dmFriendList .dm-sidebar-item').forEach(el => {
