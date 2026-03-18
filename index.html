@@ -529,26 +529,28 @@
   .msg-actions {
     position: absolute;
     right: 16px;
-    top: -16px;
+    top: -18px;
     background: var(--bg-secondary);
     border: 1px solid var(--header-border);
-    border-radius: 4px;
+    border-radius: 8px;
     display: none;
-    gap: 2px;
+    gap: 1px;
     padding: 4px;
     z-index: 100;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   }
   .msg-group:hover .msg-actions { display: flex; }
   .msg-action-btn {
     width: 32px;
     height: 32px;
-    border-radius: 4px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     color: var(--text-secondary);
     transition: all 0.1s;
+    font-size: 16px;
   }
   .msg-action-btn:hover { background: var(--bg-channel-hover); color: var(--text-primary); }
 
@@ -783,7 +785,8 @@
     transition: background 0.05s;
   }
   .ctx-item:hover { background: var(--accent); color: white; }
-  .ctx-item.danger:hover { background: var(--red); }
+  .ctx-item.danger { color: var(--red); }
+  .ctx-item.danger:hover { background: var(--red); color: white; }
   .ctx-sep { height: 1px; background: var(--bg-channel-active); margin: 4px 0; }
 
   /* Notification badge pulse */
@@ -6046,7 +6049,7 @@ function renderMessages() {
       ? '<div class="msg-reply-ref" data-jumpto="' + msg.replyTo.idx + '">'
         + '<div class="reply-curve"></div>'
         + '<div class="msg-reply-avatar" style="background:' + replyAuthorColor(msg.replyTo.author, msg.replyTo.uid) + '">' + msg.replyTo.author.slice(0,2).toUpperCase() + '</div>'
-        + '<span class="reply-author" style="color:' + replyAuthorColor(msg.replyTo.author, msg.replyTo.uid) + '">' + msg.replyTo.author + '</span>'
+        + '<span class="reply-author" style="color:#f2f3f5">' + msg.replyTo.author + '</span>'
         + (msg.replyTo.hasImage
             ? '<span class="reply-text" style="font-style:italic;display:flex;align-items:center;gap:3px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>Görsel</span>'
             : '<span class="reply-text">' + (msg.replyTo.text||'(orijinal mesaj silindi)').slice(0,80) + ((msg.replyTo.text||'').length>80?'…':'') + '</span>')
@@ -6059,7 +6062,7 @@ function renderMessages() {
         <div class="msg-avatar" style="background:${avatarBg};cursor:pointer;" data-profile="${safeAuthor}">${avatarText}</div>
         <div class="msg-content">
           <div class="msg-header">
-            <span class="msg-author" style="color:${color};cursor:pointer;" data-profile="${safeAuthor}">${msgDisplayName}</span>
+            <span class="msg-author" style="color:#f2f3f5;cursor:pointer;" data-profile="${safeAuthor}">${msgDisplayName}</span>
             <span class="msg-time">${msg.time}</span>
           </div>
           ${msgBody}
@@ -6217,10 +6220,10 @@ function renderMsgActions(idx, isSelf) {
     ? '<div class="msg-action-btn" title="Düzenle" data-editbtn="' + idx + '"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></div>'
     : '';
   return `<div class="msg-actions">
-    <div class="msg-action-btn" title="Emoji ekle" data-quickreact="${idx}">😊</div>
-    <div class="msg-action-btn" title="Yanıtla" data-reply="${idx}">↩</div>
+    <div class="msg-action-btn" title="Emoji ekle" data-quickreact="${idx}"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/></svg></div>
+    <div class="msg-action-btn" title="Yanıtla" data-reply="${idx}"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></svg></div>
     ${editBtn}
-    <div class="msg-action-btn" title="Daha fazla" data-ctxbtn="${idx}">⋯</div>
+    <div class="msg-action-btn" title="Daha fazla" data-ctxbtn="${idx}"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg></div>
   </div>`;
 }
 
@@ -8176,6 +8179,48 @@ function openDmEmojiPicker(e) {
   }
 }
 
+function openDmMsgEmojiPicker(e) {
+  e.stopPropagation();
+  window._activeInputTarget = document.getElementById('dmChatInput');
+  const picker = document.getElementById('emojiPicker');
+  // Zaten açıksa kapat
+  if (emojiPickerOpen) {
+    emojiPickerOpen = false;
+    picker.style.display = 'none';
+    return;
+  }
+  emojiPickerOpen = true;
+  picker.dataset.reactMode = '0';
+  quickReactMsgIdx = -1;
+  const btn = e.currentTarget;
+  const rect = btn.getBoundingClientRect();
+  // Picker'ı butonun sol üstüne konumlandır
+  picker.style.bottom = '';
+  picker.style.right = '';
+  picker.style.top = '';
+  picker.style.left = '';
+  const pickerH = 420;
+  const pickerW = 420;
+  // Yukarı mı aşağı mı açılacak
+  const spaceAbove = rect.top;
+  const spaceBelow = window.innerHeight - rect.bottom;
+  if (spaceAbove > pickerH || spaceAbove > spaceBelow) {
+    picker.style.bottom = (window.innerHeight - rect.top + 6) + 'px';
+  } else {
+    picker.style.top = (rect.bottom + 6) + 'px';
+  }
+  // Sağa taşma kontrolü
+  let left = rect.left - pickerW + rect.width;
+  if (left < 8) left = 8;
+  if (left + pickerW > window.innerWidth - 8) left = window.innerWidth - pickerW - 8;
+  picker.style.left = left + 'px';
+  picker.style.display = 'flex';
+  renderEmojiCatBar();
+  renderEmojiGrid(currentEmojiCat);
+  switchEmojiTab('emoji');
+  document.getElementById('emojiSearch').value = '';
+}
+
 // ---- ANKET SİSTEMİ ----
 function openPollModal() {
   document.getElementById('pollQuestion').value = '';
@@ -9768,8 +9813,15 @@ function showDeleteMsgModal(msgIdx) {
   document.getElementById('deleteMsgContent').style.display = 'block';
 
   const av = document.getElementById('deleteMsgAvatar');
-  av.textContent = msg.author.slice(0,2).toUpperCase();
-  av.style.background = getColor(msg.author);
+  const msgUser = allOnlineUsers.find(u => u.name === msg.author) || {};
+  const msgAvatarUrl = msgUser.avatarUrl || '';
+  if (msgAvatarUrl) {
+    av.textContent = '';
+    av.style.background = `url(${msgAvatarUrl}) center/cover no-repeat`;
+  } else {
+    av.textContent = msg.author.slice(0,2).toUpperCase();
+    av.style.background = getColor(msg.uid || msg.author);
+  }
   document.getElementById('deleteMsgAuthor').textContent = msg.author;
   document.getElementById('deleteMsgTime').textContent = msg.time || '';
 
@@ -12364,6 +12416,20 @@ function renderDmMessages(msgs, uid, lastSeen) {
     const ts = msg.timestamp ? msg.timestamp.toMillis() : 0;
     const time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}) : '';
     const isFromOther = msg.authorUid !== myUid;
+    const isOwn = msg.authorUid === myUid;
+
+    // safeText en başta tanımlanmalı — dmActions içinde kullanılıyor
+    const safeText = (msg.text||'').replace(/'/g,"\\'").replace(/\n/g,' ');
+
+    // DM hover aksiyon paneli
+    const safeId = (msg.id||'').replace(/'/g,"\\'");
+    const dmEditBtn = isOwn ? `<div class="msg-action-btn" title="Düzenle" onclick="startEditDmMessage('${safeId}','${safeText}')"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></div>` : '';
+    const dmActions = `<div class="msg-actions">
+      <div class="msg-action-btn" title="Emoji ekle" onclick="openDmMsgEmojiPicker(event)"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/></svg></div>
+      <div class="msg-action-btn" title="Yanıtla" onclick="setDmReply('${safeId}','${(msg.author||'').replace(/'/g,"\\'")}','${safeText}')"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></svg></div>
+      ${dmEditBtn}
+      <div class="msg-action-btn" title="Daha fazla" onclick="showDmMsgCtx(event,'${safeId}','${safeText}','${(msg.author||'').replace(/'/g,"\\'")}','${msg.authorUid||''}','${time}','${isOwn}')"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg></div>
+    </div>`;
 
     // Okunmamış ayırıcı
     if (!unreadDividerShown && isFromOther && ts > lastSeen && lastSeen > 0) {
@@ -12386,7 +12452,6 @@ function renderDmMessages(msgs, uid, lastSeen) {
     const avatarUrl   = _cached?.avatarUrl   || _online?.avatarUrl || '';
     const avatarBg    = avatarUrl ? `url(${avatarUrl}) center/cover no-repeat` : color;
     const avatarText  = avatarUrl ? '' : getInitials(displayName);
-    const safeText = (msg.text||'').replace(/'/g,"\'").replace(/\n/g,' ');
 
     // İçerik: gif / resim / dosya / metin
     const dmContent = msg.gif
@@ -12397,23 +12462,36 @@ function renderDmMessages(msgs, uid, lastSeen) {
           ? `<div style="display:flex;align-items:center;gap:10px;background:#2b2d31;border-radius:8px;padding:10px 14px;margin-top:4px;max-width:320px;"><span style="font-size:22px;">📎</span><div><div style="font-size:13px;font-weight:600;color:#f2f3f5;">${msg.fileName||'dosya'}</div><div style="font-size:11px;color:#80848e;">${msg.fileSize||''}</div></div></div>`
           : `<div style="font-size:15px;color:#f2f3f5;line-height:1.5;word-break:break-word;">${formatText(msg.text||'')}</div>`;
 
+    // Reply gösterimi — sunucudaki gibi
+    const dmReplyHtml = msg.replyTo
+      ? `<div style="display:flex;align-items:center;gap:6px;font-size:13px;color:#b5bac1;margin-bottom:3px;padding-left:2px;">
+           <div style="width:28px;height:11px;border-top:2px solid #4e5058;border-left:2px solid #4e5058;border-radius:6px 0 0 0;flex-shrink:0;margin-right:2px;"></div>
+           <div style="width:16px;height:16px;border-radius:50%;background:${getColor(msg.replyTo.authorUid||msg.replyTo.author)};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:white;flex-shrink:0;">${(msg.replyTo.author||'?').slice(0,2).toUpperCase()}</div>
+           <span style="font-weight:600;color:#f2f3f5;flex-shrink:0;">${msg.replyTo.author}</span>
+           <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:300px;">${(msg.replyTo.text||'').slice(0,80)}</span>
+         </div>`
+      : '';
+
     if (isFirst) {
-      html += `<div style="display:flex;align-items:flex-start;gap:14px;padding:6px 0 2px;margin-top:12px;" oncontextmenu="event.preventDefault();showDmMsgCtx(event,'${msg.id}','${safeText}','${(msg.author||'').replace(/'/g,"\'")}','${msg.authorUid||''}','${time}')">
+      html += `<div class="msg-group first-in-group" style="display:flex;align-items:flex-start;gap:14px;padding:6px 16px 2px;margin-top:4px;position:relative;" oncontextmenu="event.preventDefault();showDmMsgCtx(event,'${msg.id}','${safeText}','${(msg.author||'').replace(/'/g,"\'")}','${msg.authorUid||''}','${time}',${isOwn})">
+        ${dmActions}
         <div style="width:42px;height:42px;border-radius:50%;background:${avatarBg};background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:white;flex-shrink:0;">${avatarText}</div>
         <div style="flex:1;min-width:0;">
+          ${dmReplyHtml}
           <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px;">
-            <span style="font-size:15px;font-weight:700;color:${color};">${displayName}</span>
+            <span style="font-size:15px;font-weight:700;color:#f2f3f5;">${displayName}</span>
             <span style="font-size:12px;color:#80848e;">${time}</span>
           </div>
           ${dmContent}
         </div>
       </div>`;
     } else {
-      html += `<div style="display:flex;align-items:flex-start;gap:14px;padding:1px 0;" oncontextmenu="event.preventDefault();showDmMsgCtx(event,'${msg.id}','${safeText}','${(msg.author||'').replace(/'/g,"\'")}','${msg.authorUid||''}','${time}')">
+      html += `<div class="msg-group" style="display:flex;align-items:flex-start;gap:14px;padding:1px 16px;position:relative;" oncontextmenu="event.preventDefault();showDmMsgCtx(event,'${msg.id}','${safeText}','${(msg.author||'').replace(/'/g,"\'")}','${msg.authorUid||''}','${time}',${isOwn})">
+        ${dmActions}
         <div style="width:42px;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
           <span style="font-size:10px;color:#80848e;opacity:0;">${time}</span>
         </div>
-        ${dmContent}
+        <div style="flex:1;min-width:0;">${dmReplyHtml}${dmContent}</div>
       </div>`;
     }
   });
@@ -12440,12 +12518,37 @@ function sendDmMessage() {
   const myName = currentUser.displayName || currentUser.email.split('@')[0];
   const chatId = [myUid, activeDmUid].sort().join('_');
 
-  db.collection('dmChats').doc(chatId).collection('messages').add({
+  const msgData = {
     author: myName,
     authorUid: myUid,
     text: text,
     timestamp: firebase.firestore.FieldValue.serverTimestamp()
-  }).catch(() => showToast('❌ Mesaj gönderilemedi.'));
+  };
+
+  // Reply varsa ekle
+  if (window._dmReplyData) {
+    msgData.replyTo = window._dmReplyData;
+    cancelDmReply();
+  }
+
+  db.collection('dmChats').doc(chatId).collection('messages').add(msgData)
+    .catch(() => showToast('❌ Mesaj gönderilemedi.'));
+}
+
+let _dmReplyData = null;
+
+function setDmReply(msgId, author, text) {
+  window._dmReplyData = { msgId, author, text };
+  const bar = document.getElementById('dmReplyBar');
+  document.getElementById('dmReplyName').textContent = author;
+  bar.style.display = 'flex';
+  document.getElementById('dmChatInput').focus();
+}
+
+function cancelDmReply() {
+  window._dmReplyData = null;
+  const bar = document.getElementById('dmReplyBar');
+  if (bar) bar.style.display = 'none';
 }
 
 function getDmStatusColor(uid) {
@@ -12676,15 +12779,20 @@ function loadDmSidebar() {
   } catch(e) {}
 }
 
-function showDmMsgCtx(e, msgId, text, author, authorUid, time) {
+function showDmMsgCtx(e, msgId, text, author, authorUid, time, isOwn) {
   const existing = document.getElementById('dmMsgCtxMenu');
   if (existing) existing.remove();
   const menu = document.createElement('div');
   menu.id = 'dmMsgCtxMenu';
-  menu.style.cssText = `position:fixed;left:${Math.min(e.clientX,window.innerWidth-180)}px;top:${Math.min(e.clientY,window.innerHeight-100)}px;background:#18191c;border:1px solid #2e3035;border-radius:6px;z-index:999999;padding:4px 0;min-width:170px;box-shadow:0 8px 24px rgba(0,0,0,0.6);`;
+  menu.style.cssText = `position:fixed;left:${Math.min(e.clientX,window.innerWidth-180)}px;top:${Math.min(e.clientY,window.innerHeight-160)}px;background:#18191c;border:1px solid #2e3035;border-radius:6px;z-index:999999;padding:4px 0;min-width:170px;box-shadow:0 8px 24px rgba(0,0,0,0.6);`;
+  const deleteBtn = (isOwn === true || isOwn === 'true')
+    ? `<div onclick="deleteDmMessage('${msgId}');document.getElementById('dmMsgCtxMenu').remove();" style="padding:8px 14px;font-size:14px;color:#f23f43;cursor:pointer;display:flex;align-items:center;gap:8px;border-radius:4px;transition:background .1s;" onmouseover="this.style.background='#f23f43';this.style.color='white'" onmouseout="this.style.background='';this.style.color='#f23f43'">🗑️ Mesajı Sil</div>`
+    : '';
   menu.innerHTML = `
+    <div onclick="setDmReply('${msgId}','${author.replace(/'/g,"\\'")}','${text.replace(/'/g,"\\'")}');document.getElementById('dmMsgCtxMenu').remove();" style="padding:8px 14px;font-size:14px;color:#f2f3f5;cursor:pointer;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='#35373c'" onmouseout="this.style.background=''">↩️ Yanıtla</div>
     <div onclick="pinDmMessage('${msgId}','${text.replace(/'/g,"\\'")}','${author.replace(/'/g,"\\'")}','${authorUid}','${time}')" style="padding:8px 14px;font-size:14px;color:#f2f3f5;cursor:pointer;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='#35373c'" onmouseout="this.style.background=''">📌 Mesajı Sabitle</div>
-    <div onclick="navigator.clipboard.writeText('${text.replace(/'/g,"\\'")}');showToast('📋 Kopyalandı');document.getElementById('dmMsgCtxMenu').remove();" style="padding:8px 14px;font-size:14px;color:#f2f3f5;cursor:pointer;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='#35373c'" onmouseout="this.style.background=''">📋 Kopyala</div>`;
+    <div onclick="navigator.clipboard.writeText('${text.replace(/'/g,"\\'")}');showToast('📋 Kopyalandı');document.getElementById('dmMsgCtxMenu').remove();" style="padding:8px 14px;font-size:14px;color:#f2f3f5;cursor:pointer;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='#35373c'" onmouseout="this.style.background=''">📋 Kopyala</div>
+    ${deleteBtn}`;
   document.body.appendChild(menu);
   setTimeout(() => {
     document.addEventListener('click', function removeDmCtx() {
@@ -12692,6 +12800,132 @@ function showDmMsgCtx(e, msgId, text, author, authorUid, time) {
       document.removeEventListener('click', removeDmCtx);
     });
   }, 50);
+}
+
+function deleteDmMessage(msgId) {
+  if (!activeDmUid || !currentUser) return;
+  document.getElementById('dmMsgCtxMenu')?.remove();
+
+  // Mesaj verisini bul (önizleme için)
+  const chatId = [currentUser.uid, activeDmUid].sort().join('_');
+  const msgRef = db.collection('dmChats').doc(chatId).collection('messages').doc(msgId);
+
+  msgRef.get().then(doc => {
+    const data = doc.exists ? doc.data() : {};
+
+    // Modalı sunucu silme modali gibi aç
+    document.getElementById('deleteChanContent').style.display = 'none';
+    document.getElementById('deleteMsgContent').style.display = 'block';
+
+    const av = document.getElementById('deleteMsgAvatar');
+    const dmAvatarUrl = data.authorUid ? ((_dmUserCache[data.authorUid]?.avatarUrl) || (allOnlineUsers.find(u => u.uid === data.authorUid)?.avatarUrl) || '') : '';
+    if (dmAvatarUrl) {
+      av.textContent = '';
+      av.style.background = `url(${dmAvatarUrl}) center/cover no-repeat`;
+    } else {
+      av.textContent = (data.author || '?').slice(0, 2).toUpperCase();
+      av.style.background = getColor(data.authorUid || data.author || '?');
+    }
+    document.getElementById('deleteMsgAuthor').textContent = data.author || '';
+    document.getElementById('deleteMsgTime').textContent = data.timestamp
+      ? new Date(data.timestamp.toDate()).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
+      : '';
+
+    const preview = document.getElementById('deleteMsgPreview');
+    if (data.gif) {
+      preview.innerHTML = '<img src="' + data.gif + '" style="max-width:200px;max-height:120px;border-radius:6px;">';
+    } else if (data.uploadedImage) {
+      preview.innerHTML = '<img src="' + data.uploadedImage + '" style="max-width:200px;max-height:120px;border-radius:6px;">';
+    } else {
+      preview.textContent = data.text || '(içerik yok)';
+    }
+
+    document.getElementById('deleteMsgConfirmBtn').onclick = () => {
+      closeDeleteConfirmModal();
+      msgRef.delete()
+        .then(() => showToast('🗑️ Mesaj silindi.'))
+        .catch(() => showToast('❌ Silinemedi.'));
+    };
+
+    document.getElementById('deleteConfirmModal').style.display = 'flex';
+  }).catch(() => {
+    // Veri alınamazsa önizlemesiz modal aç
+    document.getElementById('deleteChanContent').style.display = 'none';
+    document.getElementById('deleteMsgContent').style.display = 'block';
+    document.getElementById('deleteMsgAvatar').textContent = '?';
+    document.getElementById('deleteMsgAuthor').textContent = '';
+    document.getElementById('deleteMsgTime').textContent = '';
+    document.getElementById('deleteMsgPreview').textContent = '(içerik yok)';
+
+    document.getElementById('deleteMsgConfirmBtn').onclick = () => {
+      closeDeleteConfirmModal();
+      msgRef.delete()
+        .then(() => showToast('🗑️ Mesaj silindi.'))
+        .catch(() => showToast('❌ Silinemedi.'));
+    };
+
+    document.getElementById('deleteConfirmModal').style.display = 'flex';
+  });
+}
+
+function startEditDmMessage(msgId, currentText) {
+  const input = document.getElementById('dmChatInput');
+  if (!input) return;
+  input.value = currentText;
+  input.focus();
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+  window._dmEditMsgId = msgId;
+
+  // Edit modu göstergesi
+  let editBar = document.getElementById('dmEditBar');
+  if (!editBar) {
+    editBar = document.createElement('div');
+    editBar.id = 'dmEditBar';
+    editBar.style.cssText = 'background:#2e3035;border-radius:8px 8px 0 0;padding:6px 12px;display:flex;align-items:center;justify-content:space-between;font-size:13px;color:#b5bac1;';
+    editBar.innerHTML = `<span>✏️ <b style="color:#f2f3f5;">Mesaj düzenleniyor</b></span><span onclick="cancelDmEdit()" style="cursor:pointer;color:#80848e;font-size:16px;" onmouseover="this.style.color='#f23f43'" onmouseout="this.style.color='#80848e'">✕</span>`;
+    input.closest('div[style*="padding:0 16px"]')?.insertBefore(editBar, input.closest('div[style*="background:#383a40"]'));
+  }
+
+  // Enter ile kaydet
+  input.onkeydown = function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      saveDmEdit();
+    } else if (e.key === 'Escape') {
+      cancelDmEdit();
+    }
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+  };
+}
+
+function saveDmEdit() {
+  const input = document.getElementById('dmChatInput');
+  const newText = input?.value.trim();
+  if (!newText || !window._dmEditMsgId || !activeDmUid || !currentUser) return;
+  const chatId = [currentUser.uid, activeDmUid].sort().join('_');
+  db.collection('dmChats').doc(chatId).collection('messages').doc(window._dmEditMsgId)
+    .update({ text: newText })
+    .then(() => showToast('✅ Mesaj düzenlendi.'))
+    .catch(() => showToast('❌ Düzenlenemedi.'));
+  cancelDmEdit();
+}
+
+function cancelDmEdit() {
+  window._dmEditMsgId = null;
+  const input = document.getElementById('dmChatInput');
+  if (input) {
+    input.value = '';
+    input.style.height = 'auto';
+    // Orijinal keydown'u geri yükle
+    input.onkeydown = function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendDmMessage(); }
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+    };
+  }
+  document.getElementById('dmEditBar')?.remove();
 }
 
 function pinDmMessage(msgId, text, author, authorUid, time) {
@@ -12731,23 +12965,63 @@ function toggleDmPinnedPanel() {
         <div>Mesajlara sağ tıklayarak sabitleyebilirsin.</div></div>`;
       return;
     }
-    list.innerHTML = snap.docs.map(doc => {
-      const d = doc.data();
-      const color = getColor(d.authorUid || d.author);
-      const initials = getInitials(d.author || '?');
-      const safeText = (d.text||'').length > 100 ? d.text.slice(0,100)+'…' : d.text;
-      return `<div style="background:#313338;border-radius:8px;padding:12px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;">
-        <div style="width:36px;height:36px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:white;flex-shrink:0;">${initials}</div>
-        <div style="flex:1;min-width:0;">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
-            <span style="font-weight:700;font-size:14px;color:${color};">${d.author}</span>
-            <span style="font-size:11px;color:#80848e;">${d.time||''}</span>
-          </div>
-          <div style="font-size:13px;color:#dbdee1;word-break:break-word;">${safeText}</div>
+
+    // Her pinlenmiş mesaj için güncel kullanıcı bilgisini Firebase'den çek
+    const docs = snap.docs;
+    list.innerHTML = docs.map(doc => `<div id="dmpin-${doc.id}" style="background:#313338;border-radius:8px;padding:12px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;">
+      <div class="dmpin-av" style="width:36px;height:36px;border-radius:50%;background:#4e5058;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:white;flex-shrink:0;">?</div>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+          <span class="dmpin-name" style="font-weight:700;font-size:14px;color:#f2f3f5;">${doc.data().author||'?'}</span>
+          <span style="font-size:11px;color:#80848e;">${doc.data().time||''}</span>
         </div>
-        <div onclick="unpinDmMessage('${doc.id}')" style="color:#80848e;cursor:pointer;font-size:14px;flex-shrink:0;padding:2px 4px;" title="Sabitlemeyi Kaldır" onmouseover="this.style.color='#f23f43'" onmouseout="this.style.color='#80848e'">✕</div>
-      </div>`;
-    }).join('');
+        <div style="font-size:13px;color:#dbdee1;word-break:break-word;">${((doc.data().text||'').length>100?doc.data().text.slice(0,100)+'…':doc.data().text)||''}</div>
+      </div>
+      <div onclick="unpinDmMessage('${doc.id}')" style="color:#80848e;cursor:pointer;font-size:14px;flex-shrink:0;padding:2px 4px;" title="Sabitlemeyi Kaldır" onmouseover="this.style.color='#f23f43'" onmouseout="this.style.color='#80848e'">✕</div>
+    </div>`).join('');
+
+    // Her kart için Firebase'den güncel isim + avatar çek
+    docs.forEach(doc => {
+      const d = doc.data();
+      const uid = d.authorUid;
+      if (!uid) return;
+      const card = document.getElementById(`dmpin-${doc.id}`);
+      if (!card) return;
+      const avEl = card.querySelector('.dmpin-av');
+      const nameEl = card.querySelector('.dmpin-name');
+
+      // Önce cache'e bak
+      const cached = _dmUserCache[uid];
+      if (cached) {
+        if (cached.avatarUrl) {
+          avEl.textContent = '';
+          avEl.style.background = `url(${cached.avatarUrl}) center/cover no-repeat`;
+        } else {
+          avEl.textContent = getInitials(cached.displayName || d.author || '?');
+          avEl.style.background = getColor(uid);
+        }
+        if (nameEl) nameEl.textContent = cached.displayName || d.author || '?';
+        return;
+      }
+
+      // Firebase'den çek
+      db.collection('users').doc(uid).get().then(udoc => {
+        if (!udoc.exists) return;
+        const u = udoc.data();
+        const name = u.displayName || u.username || d.author || '?';
+        const avatarUrl = u.avatarUrl || '';
+        if (avEl) {
+          if (avatarUrl) {
+            avEl.textContent = '';
+            avEl.style.background = `url(${avatarUrl}) center/cover no-repeat`;
+          } else {
+            avEl.textContent = getInitials(name);
+            avEl.style.background = getColor(uid);
+          }
+        }
+        if (nameEl) nameEl.textContent = name;
+      }).catch(() => {});
+    });
   }).catch(() => {});
 
   // Dışarı tıklayınca kapat
