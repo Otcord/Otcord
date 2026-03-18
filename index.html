@@ -9255,10 +9255,23 @@ function openDmScreen() {
   const homeBtn = document.querySelector('.server-icon.home');
   if (homeBtn) homeBtn.classList.add('active');
   currentServer = 'dm';
-  // Aktif arama varsa ekranı göster — artık dmChatView içinde olduğu için otomatik konumlanır
+  // Aktif arama varsa ekranı göster — dmChatView konumuna göre yeniden yerleştir
   if (activeCallUid) {
     const callScreen = document.getElementById('activeCallScreen');
-    if (callScreen) callScreen.style.display = 'flex';
+    if (callScreen) {
+      callScreen.style.display = 'flex';
+      setTimeout(() => {
+        const dmChat = document.getElementById('dmChatView');
+        if (dmChat) {
+          const rect = dmChat.getBoundingClientRect();
+          callScreen.style.position = 'fixed';
+          callScreen.style.top = rect.top + 'px';
+          callScreen.style.left = rect.left + 'px';
+          callScreen.style.width = rect.width + 'px';
+          callScreen.style.zIndex = '99000';
+        }
+      }, 80);
+    }
     showCallStatusBar();
   }
   const testBar = document.getElementById('testModeBar');
@@ -11182,19 +11195,22 @@ async function showCallingScreen(name, type, remoteAvatarUrl) {
   function _positionScreen() {
     const dmChatView = document.getElementById('dmChatView');
 
-    // activeCallScreen'i dmChatView içine taşı — parent gizlenince otomatik gizlenir
-    if (dmChatView && screen.parentElement !== dmChatView) {
-      dmChatView.insertBefore(screen, dmChatView.firstChild);
+    // activeCallScreen'i body'e geri taşı (başka bir yere taşınmışsa)
+    if (screen.parentElement !== document.body) {
+      document.body.appendChild(screen);
     }
 
-    screen.style.position = 'relative';
-    screen.style.left   = 'auto';
-    screen.style.top    = 'auto';
-    screen.style.right  = 'auto';
-    screen.style.bottom = 'auto';
-    screen.style.width  = '100%';
-    screen.style.height = 'auto';
-    screen.style.zIndex = '10';
+    if (dmChatView) {
+      const rect = dmChatView.getBoundingClientRect();
+      screen.style.position = 'fixed';
+      screen.style.left   = rect.left + 'px';
+      screen.style.top    = rect.top + 'px';
+      screen.style.width  = rect.width + 'px';
+      screen.style.right  = 'auto';
+      screen.style.bottom = 'auto';
+      screen.style.height = 'auto';
+      screen.style.zIndex = '99000';
+    }
   }
 
   // İlk konumlandırma
@@ -11534,9 +11550,6 @@ function cleanupCall() {
 
   document.getElementById('activeCallScreen').style.display = 'none';
   document.getElementById('activeCallBar').style.display = 'none';
-  // activeCallScreen'i body'e geri taşı (dmChatView içine taşınmış olabilir)
-  const _cs = document.getElementById('activeCallScreen');
-  if (_cs && _cs.parentElement !== document.body) document.body.appendChild(_cs);
   document.getElementById('incomingCallScreen').style.display = 'none';
   hideCallStatusBar();
   // Mesaj alanı padding'ini sıfırla
@@ -11896,6 +11909,21 @@ async function startScreenShare() {
       _screenTrackSender = peerConnection.addTrack(screenTrack, _screenStream);
       _renegotiate();
     }
+
+    // Mikrofon audio track'inin aktif olduğunu garantile
+    // Bazı tarayıcılarda getDisplayMedia sonrası mic track muted kalabilir
+    const audioSender = senders.find(s => s.track && s.track.kind === 'audio');
+    if (audioSender && audioSender.track) {
+      audioSender.track.enabled = true;
+    } else if (localStream) {
+      // Audio sender yoksa localStream'den ekle
+      const micTrack = localStream.getAudioTracks()[0];
+      if (micTrack) {
+        micTrack.enabled = true;
+        peerConnection.addTrack(micTrack, localStream);
+        _renegotiate();
+      }
+    }
   }
 
   // Ekran paylaşma butonu aktif görünsün
@@ -11919,6 +11947,16 @@ function stopScreenShare() {
     if (_screenTrackSender) _screenTrackSender.replaceTrack(camTrack).catch(() => {});
   } else {
     setLocalVideoState(null);
+  }
+
+  // Mikrofonu tekrar aktif et
+  if (localStream) {
+    localStream.getAudioTracks().forEach(t => { t.enabled = true; });
+  }
+  if (peerConnection) {
+    peerConnection.getSenders().forEach(s => {
+      if (s.track && s.track.kind === 'audio') s.track.enabled = true;
+    });
   }
 
   const btn = document.getElementById('screenShareBtn');
