@@ -1607,22 +1607,35 @@
         <!-- Mesajlar -->
         <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
           <div style="flex:1;overflow-y:auto;padding:16px 16px 8px;" id="dmChatMessages"></div>
-          <!-- DM Input - sunucudaki gibi tam özellikli -->
-          <div style="padding:0 16px 16px;">
+          <!-- DM Input - sunucudakinin birebir aynısı -->
+          <div style="padding:0 16px 16px;" id="dmInputArea">
             <!-- Reply bar -->
-            <div id="dmReplyBar" style="display:none;background:#2e3035;border-radius:8px 8px 0 0;padding:8px 12px;display:none;align-items:center;justify-content:space-between;font-size:13px;color:#b5bac1;">
+            <div id="dmReplyBar" style="display:none;background:#2e3035;border-radius:8px 8px 0 0;padding:8px 12px;align-items:center;justify-content:space-between;font-size:13px;color:#b5bac1;">
               <span><b id="dmReplyName" style="color:#f2f3f5;"></b> kişisine yanıt veriyorsun</span>
               <span onclick="cancelDmReply()" style="cursor:pointer;color:#80848e;font-size:16px;" onmouseover="this.style.color='#f23f43'" onmouseout="this.style.color='#80848e'">✕</span>
             </div>
-            <div style="background:#383a40;border-radius:8px;display:flex;align-items:flex-end;padding:0 8px;gap:4px;min-height:44px;">
+            <!-- Dosya Önizleme Alanı -->
+            <div id="dmFilePreviewArea" style="display:none;padding:16px 16px 8px;background:#383a40;border-radius:8px 8px 0 0;border:2px solid #4e5058;border-bottom:none;">
+              <div style="font-size:11px;font-weight:700;color:#80848e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Yüklenecek Dosyalar</div>
+              <div id="dmFilePreviewList" style="display:flex;gap:16px;flex-wrap:wrap;padding-top:4px;"></div>
+            </div>
+            <div class="input-box" id="dmInputBox" style="background:#383a40;border-radius:8px;display:flex;align-items:flex-end;padding:0 8px;gap:4px;min-height:44px;">
               <!-- Dosya ekle -->
-              <div class="input-btn" data-tooltip="Dosya Ekle" onclick="document.getElementById('dmFileInput').click()" style="flex-shrink:0;margin-bottom:4px;">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+              <div style="position:relative;flex-shrink:0;">
+                <div class="input-btn" data-tooltip="Dosya Ekle" id="dmFileAddBtn" onclick="toggleDmFileMenu(event)" style="margin-bottom:4px;">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+                </div>
+                <div id="dmFileMenu" style="display:none;position:absolute;bottom:calc(100% + 8px);left:0;background:#111214;border-radius:8px;padding:6px;min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,0.7);z-index:500;">
+                  <div onclick="dmFileMenuAction('dosya')" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:6px;cursor:pointer;font-size:14px;font-weight:500;" onmouseover="this.style.background='#1e1f22'" onmouseout="this.style.background='none'">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#b5bac1"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13z"/></svg>
+                    Bir Dosya Yükle
+                  </div>
+                </div>
+                <input type="file" id="dmFileInput" accept=".jpg,.jpeg,.png,.gif,.webp,.mp4,.pdf,.doc,.docx,.txt,.zip,.rar" multiple style="display:none;" onchange="handleDmFileSelect(event)">
               </div>
-              <input id="dmFileInput" type="file" style="display:none;" onchange="handleDmFileUpload(event)">
               <textarea id="dmChatInput" placeholder="" rows="1"
                 style="flex:1;background:none;border:none;outline:none;color:#f2f3f5;font-size:15px;font-family:inherit;resize:none;padding:11px 4px;line-height:1.375;max-height:120px;"
-                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendDmMessage();}this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';"
+                onkeydown="handleDmInputKeydown(event)"
                 oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';"></textarea>
               <!-- GIF -->
               <div class="input-btn" data-tooltip="GIF" onclick="openDmGifTab(event)" style="flex-shrink:0;margin-bottom:4px;">
@@ -1632,7 +1645,7 @@
               <div class="input-btn" id="dmEmojiPickerBtn" data-tooltip="Emoji" onclick="openDmEmojiPicker(event)" style="flex-shrink:0;margin-bottom:4px;">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/></svg>
               </div>
-              <!-- Gönder butonu (toggle ile gösterilir) -->
+              <!-- Gönder butonu -->
               <div id="dmSendMsgBtn" onclick="sendDmMessage()" data-tooltip="Gönder"
                 style="display:none;width:36px;height:36px;border-radius:6px;background:#1da8e0;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;margin-bottom:4px;transition:background .15s;"
                 onmouseover="this.style.background='#1790bf'" onmouseout="this.style.background='#1da8e0'">
@@ -8655,6 +8668,10 @@ document.addEventListener('click', e => {
     const m = document.getElementById('fileMenu');
     if (m) m.style.display = 'none';
   }
+  if (!e.target.closest('#dmFileAddBtn') && !e.target.closest('#dmFileMenu')) {
+    const m = document.getElementById('dmFileMenu');
+    if (m) m.style.display = 'none';
+  }
 });
 
 // ---- ARAMA SİSTEMİ ----
@@ -12539,6 +12556,45 @@ function renderDmMessages(msgs, uid, lastSeen) {
 function sendDmMessage() {
   const input = document.getElementById('dmChatInput');
   const text = input.value.trim();
+
+  // Dosya varsa önce onları gönder
+  if (pendingDmFiles.length > 0) {
+    const filesToSend = [...pendingDmFiles];
+    pendingDmFiles = [];
+    renderDmFilePreview();
+
+    const myUid = currentUser.uid;
+    const myName = currentUser.displayName || currentUser.email.split('@')[0];
+    const chatId = [myUid, activeDmUid].sort().join('_');
+
+    filesToSend.forEach(f => {
+      showToast('⬆️ Yükleniyor...');
+      uploadToCloudinary(f._rawFile).then(url => {
+        const msg = {
+          author: myName, authorUid: myUid,
+          text: text || '',
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          fileName: f.fileName, fileSize: f.fileSize, isSpoiler: f.isSpoiler || false
+        };
+        if (f.isImage)      msg.uploadedImage = url;
+        else if (f.isVideo) msg.uploadedVideo = url;
+        else                { msg.uploadedFile = true; msg.fileType = f.fileType; msg.fileUrl = url; }
+        if (window._dmReplyData) { msg.replyTo = window._dmReplyData; cancelDmReply(); }
+        return db.collection('dmChats').doc(chatId).collection('messages').add(msg);
+      }).then(() => {
+        showToast('✅ Gönderildi!');
+        markDmAsRead(activeDmUid);
+        _dmActiveLastSeen = Date.now();
+        _dmDividerScrolled = false;
+        setTimeout(() => { const c = document.getElementById('dmChatMessages'); if (c) c.scrollTop = c.scrollHeight; }, 100);
+      }).catch(err => showToast('❌ ' + (err.message || 'Yükleme başarısız')));
+    });
+
+    input.value = '';
+    input.style.height = 'auto';
+    return;
+  }
+
   if (!text || !activeDmUid || !currentUser) return;
   input.value = '';
   input.style.height = 'auto';
@@ -12548,25 +12604,19 @@ function sendDmMessage() {
   const chatId = [myUid, activeDmUid].sort().join('_');
 
   const msgData = {
-    author: myName,
-    authorUid: myUid,
+    author: myName, authorUid: myUid,
     text: text,
     timestamp: firebase.firestore.FieldValue.serverTimestamp()
   };
 
-  // Reply varsa ekle
-  if (window._dmReplyData) {
-    msgData.replyTo = window._dmReplyData;
-    cancelDmReply();
-  }
+  if (window._dmReplyData) { msgData.replyTo = window._dmReplyData; cancelDmReply(); }
 
   db.collection('dmChats').doc(chatId).collection('messages').add(msgData)
     .then(() => {
-      // Mesaj gönderilince hemen en alta in
-      setTimeout(() => {
-        const c = document.getElementById('dmChatMessages');
-        if (c) c.scrollTop = c.scrollHeight;
-      }, 100);
+      markDmAsRead(activeDmUid);
+      _dmActiveLastSeen = Date.now();
+      _dmDividerScrolled = false;
+      setTimeout(() => { const c = document.getElementById('dmChatMessages'); if (c) c.scrollTop = c.scrollHeight; }, 100);
     })
     .catch(() => showToast('❌ Mesaj gönderilemedi.'));
 }
@@ -12787,10 +12837,131 @@ function cancelDmReply() {
   document.getElementById('dmReplyBar').style.display = 'none';
 }
 
-function handleDmFileUpload(e) {
+// =============================================
+// DM DOSYA YÜKLEME — Sunucudakinin birebir aynısı
+// =============================================
+let pendingDmFiles = [];
+
+function toggleDmFileMenu(e) {
+  e.stopPropagation();
+  const menu = document.getElementById('dmFileMenu');
+  menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+
+function dmFileMenuAction(type) {
+  document.getElementById('dmFileMenu').style.display = 'none';
+  if (type === 'dosya') document.getElementById('dmFileInput').click();
+}
+
+function handleDmFileSelect(e) {
   const files = Array.from(e.target.files);
   e.target.value = '';
-  if (!files.length || !activeDmUid || !currentUser) return;
+  if (!files.length) return;
+  files.forEach(file => {
+    const isImage = file.type.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(file.name);
+    const isVideo = file.type.startsWith('video/') || /\.mp4$/i.test(file.name);
+    const reader = new FileReader();
+    reader.onload = ev => {
+      pendingDmFiles.push({
+        dataUrl: ev.target.result,
+        fileName: file.name,
+        fileSize: formatFileSize(file.size),
+        fileType: file.name.split('.').pop().toUpperCase(),
+        isImage, isVideo, isSpoiler: false,
+        _rawFile: file
+      });
+      renderDmFilePreview();
+    };
+    if (isImage || isVideo) reader.readAsDataURL(file);
+    else {
+      pendingDmFiles.push({
+        dataUrl: null, fileName: file.name,
+        fileSize: formatFileSize(file.size),
+        fileType: file.name.split('.').pop().toUpperCase(),
+        isImage: false, isVideo: false, isSpoiler: false,
+        _rawFile: file
+      });
+      renderDmFilePreview();
+    }
+  });
+}
+
+function renderDmFilePreview() {
+  const area = document.getElementById('dmFilePreviewArea');
+  const list = document.getElementById('dmFilePreviewList');
+  const inputBox = document.getElementById('dmInputBox');
+  if (!pendingDmFiles.length) {
+    area.style.display = 'none';
+    list.innerHTML = '';
+    if (inputBox) inputBox.style.borderRadius = '8px';
+    return;
+  }
+  area.style.display = 'block';
+  if (inputBox) inputBox.style.borderRadius = '0 0 8px 8px';
+  list.innerHTML = pendingDmFiles.map((f, i) => {
+    if (f.isImage) {
+      return `<div class="file-preview-card" data-idx="${i}">
+        <div class="fp-actions">
+          <div class="fp-btn" title="Spoiler" data-dmspoiler="${i}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="${f.isSpoiler ? '#00a8fc' : '#b5bac1'}"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+          </div>
+          <div class="fp-btn danger" title="Sil" data-dmdelfile="${i}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f23f43"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+          </div>
+        </div>
+        <div class="fp-img-wrap ${f.isSpoiler ? 'spoiler' : ''}">
+          <img src="${f.dataUrl}">
+          ${f.isSpoiler ? '<div class="fp-spoiler-label"><span>SPOILER</span></div>' : ''}
+        </div>
+        <div class="fp-name">${f.fileName}</div>
+      </div>`;
+    } else {
+      return `<div class="file-preview-card" data-idx="${i}">
+        <div class="fp-actions">
+          <div class="fp-btn danger" title="Sil" data-dmdelfile="${i}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f23f43"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+          </div>
+        </div>
+        <div class="fp-img-wrap" style="display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;">
+          <div style="font-size:36px;">${f.isVideo ? '🎬' : '📎'}</div>
+          <div style="font-size:11px;color:#80848e;">${f.fileType}</div>
+        </div>
+        <div class="fp-name">${f.fileName}</div>
+      </div>`;
+    }
+  }).join('');
+
+  list.querySelectorAll('[data-dmspoiler]').forEach(el => {
+    el.addEventListener('click', e => { e.stopPropagation(); toggleDmSpoiler(parseInt(el.dataset.dmspoiler)); });
+  });
+  list.querySelectorAll('[data-dmdelfile]').forEach(el => {
+    el.addEventListener('click', e => { e.stopPropagation(); removeDmFile(parseInt(el.dataset.dmdelfile)); });
+  });
+}
+
+function toggleDmSpoiler(idx) {
+  pendingDmFiles[idx].isSpoiler = !pendingDmFiles[idx].isSpoiler;
+  renderDmFilePreview();
+}
+
+function removeDmFile(idx) {
+  pendingDmFiles.splice(idx, 1);
+  renderDmFilePreview();
+}
+
+function handleDmInputKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendDmMessage();
+  }
+  const inp = document.getElementById('dmChatInput');
+  if (inp) { inp.style.height = 'auto'; inp.style.height = Math.min(inp.scrollHeight, 120) + 'px'; }
+}
+
+// Eski handleDmFileUpload — artık handleDmFileSelect kullanılıyor
+function handleDmFileUpload(e) {
+  handleDmFileSelect(e);
+}
 
   const myUid = currentUser.uid;
   const myName = currentUser.displayName || currentUser.email.split('@')[0];
