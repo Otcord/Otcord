@@ -1708,8 +1708,8 @@
   <div style="display:flex;gap:4px;padding:8px;background:#111214;" id="callVideoArea">
     <!-- Kendi taraf (sol) -->
     <div style="flex:1;border-radius:12px;overflow:hidden;position:relative;aspect-ratio:16/9;background:#2b2d31;">
-      <video id="localVideo" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;display:none;position:absolute;inset:0;"></video>
-      <div id="localAvatar" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;">
+      <video id="localVideo" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;display:none;"></video>
+      <div id="localAvatar" style="position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:#2b2d31;">
         <div id="localAvatarImg" style="width:80px;height:80px;border-radius:50%;background:#1da8e0;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:white;flex-shrink:0;overflow:hidden;"></div>
         <div id="localAvatarName" style="font-size:13px;font-weight:600;color:#f2f3f5;"></div>
       </div>
@@ -11021,20 +11021,7 @@ async function startCall(type) {
 
   // Uzak stream gelince
   peerConnection.ontrack = e => {
-    const remoteVideo = document.getElementById('remoteVideo');
-    if (remoteVideo) remoteVideo.srcObject = e.streams[0];
-    const hasVideo = e.streams[0]?.getVideoTracks().length > 0;
-    if (hasVideo) {
-      document.getElementById('remoteAvatar').style.display = 'none';
-      if (remoteVideo) remoteVideo.style.display = 'block';
-      showRemoteVideoInProfile(e.streams[0]);
-      // Karşı taraf kamerayı kapatınca avatar göster
-      e.streams[0].getVideoTracks().forEach(t => {
-        t.onmute   = () => { if(remoteVideo) remoteVideo.style.display='none'; document.getElementById('remoteAvatar').style.display='flex'; hideRemoteVideoInProfile(); };
-        t.onunmute = () => { if(remoteVideo) remoteVideo.style.display='block'; document.getElementById('remoteAvatar').style.display='none'; showRemoteVideoInProfile(e.streams[0]); };
-        t.onended  = () => { if(remoteVideo) remoteVideo.style.display='none'; document.getElementById('remoteAvatar').style.display='flex'; hideRemoteVideoInProfile(); };
-      });
-    }
+    _handleRemoteTrack(e);
     document.getElementById('callStatusText').textContent = '';
   };
 
@@ -11095,6 +11082,10 @@ async function startCall(type) {
       if (!window._extraCallListeners) window._extraCallListeners = [];
       window._extraCallListeners.push(calleeCandidatesUnsub);
       showActiveCallScreen();
+      _listenReAnswer(docId);
+    }
+    if (data.reOffer && data.reOfferFrom && data.reOfferFrom !== currentUser.uid) {
+      _handleReOffer(data.reOffer, docId, 'callee');
     }
     if (data.status === 'ended') {
       cleanupCall();
@@ -11225,8 +11216,9 @@ async function showCallingScreen(name, type, remoteAvatarUrl) {
   const localAv  = document.getElementById('localAvatarImg');
   const localNm  = document.getElementById('localAvatarName');
   const localAvatarDiv = document.getElementById('localAvatar');
-  localAvatarDiv.style.display = 'flex';
-  document.getElementById('localVideo').style.display = 'none';
+
+  // Önce her zaman avatar göster, video temizle
+  setLocalVideoState(null);
 
   if (currentUser) {
     const myName = currentUser.displayName || currentUser.email.split('@')[0];
@@ -11249,10 +11241,7 @@ async function showCallingScreen(name, type, remoteAvatarUrl) {
   // Video butonu her zaman göster
   document.getElementById('callVideoBtn').style.display = 'flex';
   if (type === 'video' && localStream) {
-    const localVideo = document.getElementById('localVideo');
-    localVideo.srcObject = localStream;
-    localVideo.style.display = 'block';
-    localAvatarDiv.style.display = 'none';
+    setLocalVideoState(localStream);
   }
 
 }
@@ -11400,19 +11389,7 @@ async function acceptCall() {
   localStream.getTracks().forEach(t => peerConnection.addTrack(t, localStream));
 
   peerConnection.ontrack = e => {
-    const remoteVideo = document.getElementById('remoteVideo');
-    if (remoteVideo) remoteVideo.srcObject = e.streams[0];
-    const hasVideo = e.streams[0]?.getVideoTracks().length > 0;
-    if (hasVideo) {
-      document.getElementById('remoteAvatar').style.display = 'none';
-      if (remoteVideo) remoteVideo.style.display = 'block';
-      showRemoteVideoInProfile(e.streams[0]);
-      e.streams[0].getVideoTracks().forEach(t => {
-        t.onmute   = () => { if(remoteVideo) remoteVideo.style.display='none'; document.getElementById('remoteAvatar').style.display='flex'; hideRemoteVideoInProfile(); };
-        t.onunmute = () => { if(remoteVideo) remoteVideo.style.display='block'; document.getElementById('remoteAvatar').style.display='none'; showRemoteVideoInProfile(e.streams[0]); };
-        t.onended  = () => { if(remoteVideo) remoteVideo.style.display='none'; document.getElementById('remoteAvatar').style.display='flex'; hideRemoteVideoInProfile(); };
-      });
-    }
+    _handleRemoteTrack(e);
   };
 
   peerConnection.onicecandidate = e => {
@@ -11448,7 +11425,12 @@ async function acceptCall() {
   callSignalListener = db.collection('calls').doc(data.docId).onSnapshot(snap => {
     const d = snap.data();
     if (d?.status === 'ended') cleanupCall();
+    // Karşı taraf yeni track ekleyince (kamera/ekran) renegotiation
+    if (d?.reOffer && d?.reOfferFrom && d.reOfferFrom !== currentUser.uid) {
+      _handleReOffer(d.reOffer, data.docId, 'caller');
+    }
   });
+  _listenReAnswer(data.docId);
 
   // Önce DM sohbetini set et, sonra ekranı aç — doğru kişide açılsın
   openDmChat(data.callerUid, data.callerName, data.callerAvatar || '');
@@ -11508,12 +11490,13 @@ function cleanupCall() {
 
   const remoteVideo = document.getElementById('remoteVideo');
   if (remoteVideo) remoteVideo.srcObject = null;
-  const localVideo = document.getElementById('localVideo');
-  if (localVideo) { localVideo.srcObject = null; localVideo.style.display = 'none'; }
+  setLocalVideoState(null);
   document.getElementById('remoteAvatar').style.display = 'flex';
 
   // Profil paneli video önizlemesini temizle
   hideRemoteVideoInProfile();
+  _remoteMediaStream = null;
+  _lastReOfferSdp = null;
 
   document.getElementById('activeCallScreen').style.display = 'none';
   document.getElementById('activeCallBar').style.display = 'none';
@@ -11698,6 +11681,53 @@ let _screenTrackSender = null; // RTPSender
 // ---- UZAK VİDEO: PROFİL PANELİ + TAM EKRAN ----
 let _remoteVideoStream = null;
 
+// ---- UZAK TRACK YÖNETİCİSİ ----
+// Her ontrack event'inde çağrılır. Ses ve video track'lerini ayrı yönetir.
+let _remoteMediaStream = null; // Uzak MediaStream (tüm track'ler burada)
+
+function _handleRemoteTrack(e) {
+  const remoteVideo = document.getElementById('remoteVideo');
+
+  // İlk track geldiğinde stream'i kur
+  if (!_remoteMediaStream) {
+    _remoteMediaStream = e.streams[0] || new MediaStream();
+  }
+
+  // e.streams[0] varsa kullan (aynı stream referansı güncelleniyor olabilir)
+  if (e.streams && e.streams[0]) {
+    _remoteMediaStream = e.streams[0];
+  } else if (e.track) {
+    // Stream yoksa track'i manuel ekle
+    _remoteMediaStream.addTrack(e.track);
+  }
+
+  // remoteVideo'ya her zaman güncel stream'i bağla
+  if (remoteVideo) remoteVideo.srcObject = _remoteMediaStream;
+
+  // Video track kontrolü
+  const _updateVideoUI = () => {
+    const hasVideo = _remoteMediaStream.getVideoTracks().some(t => t.readyState === 'live' && !t.muted);
+    const remoteAvatar = document.getElementById('remoteAvatar');
+    if (hasVideo) {
+      if (remoteVideo) remoteVideo.style.display = 'block';
+      if (remoteAvatar) remoteAvatar.style.display = 'none';
+      showRemoteVideoInProfile(_remoteMediaStream);
+    } else {
+      if (remoteVideo) remoteVideo.style.display = 'none';
+      if (remoteAvatar) remoteAvatar.style.display = 'flex';
+      hideRemoteVideoInProfile();
+    }
+  };
+
+  // Gelen track video ise event'lerini bağla
+  if (e.track.kind === 'video') {
+    e.track.onmute   = () => _updateVideoUI();
+    e.track.onunmute = () => _updateVideoUI();
+    e.track.onended  = () => _updateVideoUI();
+    _updateVideoUI();
+  }
+}
+
 function showRemoteVideoInProfile(stream) {
   _remoteVideoStream = stream;
   const box = document.getElementById('dmProfileVideoBox');
@@ -11815,9 +11845,7 @@ async function startScreenShare() {
   if (!screenTrack) { showToast('❌ Ekran track alınamadı.'); return; }
 
   // Kendi localVideo'da göster
-  const localVideo = document.getElementById('localVideo');
-  if (localVideo) { localVideo.srcObject = _screenStream; localVideo.style.display = 'block'; }
-  document.getElementById('localAvatar').style.display = 'none';
+  setLocalVideoState(_screenStream);
 
   // PeerConnection'a ekle/değiştir
   if (peerConnection) {
@@ -11827,7 +11855,9 @@ async function startScreenShare() {
       videoSender.replaceTrack(screenTrack);
       _screenTrackSender = videoSender;
     } else {
+      // Sesli aramdayken ekran paylaşımı — yeni track ekle ve renegotiation yap
       _screenTrackSender = peerConnection.addTrack(screenTrack, _screenStream);
+      _renegotiate();
     }
   }
 
@@ -11846,17 +11876,12 @@ function stopScreenShare() {
     _screenStream = null;
   }
 
-  // Kameraya veya avatar'a geri dön
-  const localVideo = document.getElementById('localVideo');
   const camTrack = localStream ? localStream.getVideoTracks()[0] : null;
   if (camTrack && camTrack.enabled) {
-    if (localVideo) { localVideo.srcObject = localStream; localVideo.style.display = 'block'; }
-    document.getElementById('localAvatar').style.display = 'none';
-    // PeerConnection'daki track'i geri kameraya al
+    setLocalVideoState(localStream);
     if (_screenTrackSender) _screenTrackSender.replaceTrack(camTrack).catch(() => {});
   } else {
-    if (localVideo) localVideo.style.display = 'none';
-    document.getElementById('localAvatar').style.display = 'flex';
+    setLocalVideoState(null);
   }
 
   const btn = document.getElementById('screenShareBtn');
@@ -11865,26 +11890,53 @@ function stopScreenShare() {
   showToast('🖥️ Ekran paylaşımı durduruldu.');
 }
 
+// Merkezi local video/avatar yönetimi
+function setLocalVideoState(stream) {
+  const localVideo  = document.getElementById('localVideo');
+  const localAvatar = document.getElementById('localAvatar');
+  if (!localVideo || !localAvatar) return;
+
+  // Her zaman önce videoyu durdur ve temizle
+  localVideo.pause();
+  localVideo.srcObject = null;
+  localVideo.load();
+
+  if (stream) {
+    localAvatar.style.display = 'none';    // avatarı kapat (z-index:2 olduğu için mutlaka kapatmalı)
+    localVideo.style.zIndex   = '3';       // videoyu avatarın üstüne al
+    localVideo.style.display  = 'block';
+    localVideo.srcObject      = stream;
+    localVideo.play().catch(() => {});
+  } else {
+    localVideo.style.display  = 'none';
+    localVideo.style.zIndex   = '1';
+    localAvatar.style.display = 'flex';
+    localAvatar.style.zIndex  = '2';
+  }
+}
+
 function toggleCallVideo() {
   const btn = document.getElementById('callVideoBtn');
   const track = localStream ? localStream.getVideoTracks()[0] : null;
 
-  // Video track yoksa (sesli aramada) kamerayı aç ve stream'e ekle
+  // Video track yoksa (sesli aramada) kamerayı aç
   if (!track) {
     navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
       const videoTrack = stream.getVideoTracks()[0];
       if (!videoTrack) { showToast('❌ Kamera bulunamadı.'); return; }
-      // Mevcut stream'e video track ekle
+
       if (localStream) {
         localStream.addTrack(videoTrack);
       } else {
         localStream = stream;
       }
-      // PeerConnection'a da ekle
-      if (peerConnection) peerConnection.addTrack(videoTrack, localStream);
-      const localVideo = document.getElementById('localVideo');
-      if (localVideo) { localVideo.srcObject = localStream; localVideo.style.display = 'block'; }
-      document.getElementById('localAvatar').style.display = 'none';
+
+      if (peerConnection) {
+        peerConnection.addTrack(videoTrack, localStream);
+        _renegotiate();
+      }
+
+      setLocalVideoState(localStream);
       btn.style.background = '#2b2d31'; btn.dataset.off = '0';
     }).catch(e => {
       console.error(e);
@@ -11892,12 +11944,63 @@ function toggleCallVideo() {
     });
     return;
   }
+
   track.enabled = !track.enabled;
   btn.dataset.off = track.enabled ? '0' : '1';
   btn.style.background = track.enabled ? '#2b2d31' : '#f23f43';
-  const localVideo = document.getElementById('localVideo');
-  if (!track.enabled) { localVideo.style.display = 'none'; document.getElementById('localAvatar').style.display = 'flex'; }
-  else { localVideo.style.display = 'block'; document.getElementById('localAvatar').style.display = 'none'; }
+
+  if (!track.enabled) {
+    setLocalVideoState(null);   // avatar göster, video temizle
+  } else {
+    setLocalVideoState(localStream);  // video yeniden bağla
+  }
+}
+
+// PeerConnection renegotiation — sesli aramada kamera/ekran paylaşımı eklenince yeni offer yolla
+async function _renegotiate() {
+  if (!peerConnection || !activeCallUid || !currentUser) return;
+  try {
+    const offer = await peerConnection.createOffer();
+    await peerConnection.setLocalDescription(offer);
+    const docId = getCallDocId(currentUser.uid, activeCallUid);
+    await db.collection('calls').doc(docId).update({
+      reOffer: { type: offer.type, sdp: offer.sdp },
+      reOfferFrom: currentUser.uid,
+      reOfferAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch(e) { console.error('renegotiate error', e); }
+}
+
+// Karşı taraftan gelen reOffer'ı kabul et ve reAnswer gönder
+let _lastReOfferSdp = null;
+async function _handleReOffer(reOffer, docId, mySide) {
+  if (!peerConnection) return;
+  // Aynı offer'ı tekrar işleme
+  if (_lastReOfferSdp === reOffer.sdp) return;
+  _lastReOfferSdp = reOffer.sdp;
+  try {
+    await peerConnection.setRemoteDescription(new RTCSessionDescription(reOffer));
+    const answer = await peerConnection.createAnswer();
+    await peerConnection.setLocalDescription(answer);
+    await db.collection('calls').doc(docId).update({
+      reAnswer: { type: answer.type, sdp: answer.sdp },
+      reAnswerFrom: currentUser.uid
+    });
+  } catch(e) { console.error('handleReOffer error', e); }
+}
+
+// reAnswer'ı dinle — caller veya callee olarak kendi reOffer'ımıza gelen cevabı al
+function _listenReAnswer(docId) {
+  db.collection('calls').doc(docId).onSnapshot(snap => {
+    const d = snap.data();
+    if (d?.reAnswer && d?.reAnswerFrom && d.reAnswerFrom !== currentUser?.uid) {
+      if (!peerConnection) return;
+      // Sadece pending offer varsa uygula
+      if (peerConnection.signalingState === 'have-local-offer') {
+        peerConnection.setRemoteDescription(new RTCSessionDescription(d.reAnswer)).catch(() => {});
+      }
+    }
+  });
 }
 let activeDmUid = null;
 let activeDmName = null;
