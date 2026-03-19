@@ -11918,28 +11918,40 @@ async function startScreenShare() {
   if (peerConnection) {
     const senders = peerConnection.getSenders();
     const videoSender = senders.find(s => s.track && s.track.kind === 'video');
+    const audioSender = senders.find(s => s.track && s.track.kind === 'audio');
+
     if (videoSender) {
+      // Kameralı aramada — sadece video track'i ekranla değiştir, audio dokunma
       videoSender.replaceTrack(screenTrack);
       _screenTrackSender = videoSender;
+      // Audio'yu garantile
+      if (audioSender && audioSender.track) audioSender.track.enabled = true;
+      if (localStream) localStream.getAudioTracks().forEach(t => { t.enabled = true; });
     } else {
-      // Sesli aramdayken ekran paylaşımı — yeni track ekle ve renegotiation yap
-      _screenTrackSender = peerConnection.addTrack(screenTrack, _screenStream);
-      _renegotiate();
-    }
+      // Sesli aramada — mic audio'yu da içeren birleşik stream oluştur
+      const micTrack = localStream ? localStream.getAudioTracks()[0] : null;
 
-    // Mikrofon audio track'inin aktif olduğunu garantile
-    // Bazı tarayıcılarda getDisplayMedia sonrası mic track muted kalabilir
-    const audioSender = senders.find(s => s.track && s.track.kind === 'audio');
-    if (audioSender && audioSender.track) {
-      audioSender.track.enabled = true;
-    } else if (localStream) {
-      // Audio sender yoksa localStream'den ekle
-      const micTrack = localStream.getAudioTracks()[0];
-      if (micTrack) {
+      if (micTrack && audioSender) {
+        // Audio sender zaten var — sadece video track ekle
+        _screenTrackSender = peerConnection.addTrack(screenTrack, localStream);
         micTrack.enabled = true;
+        audioSender.track.enabled = true;
+      } else if (micTrack) {
+        // Audio sender yok — hem video hem audio ekle, aynı stream referansında
+        _screenTrackSender = peerConnection.addTrack(screenTrack, localStream);
         peerConnection.addTrack(micTrack, localStream);
-        _renegotiate();
+      } else {
+        // Mic yoksa sadece ekranı ekle
+        _screenTrackSender = peerConnection.addTrack(screenTrack, localStream || _screenStream);
       }
+
+      _renegotiate().then(() => {
+        // Renegotiation sonrası audio'nun aktif kaldığını garantile
+        if (localStream) localStream.getAudioTracks().forEach(t => { t.enabled = true; });
+        if (peerConnection) peerConnection.getSenders().forEach(s => {
+          if (s.track && s.track.kind === 'audio') s.track.enabled = true;
+        });
+      });
     }
   }
 
@@ -12091,7 +12103,10 @@ function _setRemoteVideoMuted(muted) {
 async function _renegotiate() {
   if (!peerConnection || !activeCallUid || !currentUser) return;
   try {
-    const offer = await peerConnection.createOffer();
+    const offer = await peerConnection.createOffer({
+      offerToReceiveAudio: true,
+      offerToReceiveVideo: true
+    });
     await peerConnection.setLocalDescription(offer);
     const docId = getCallDocId(currentUser.uid, activeCallUid);
     await db.collection('calls').doc(docId).update({
