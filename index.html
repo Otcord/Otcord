@@ -1624,9 +1624,9 @@ const TRON_BASIC_LOGO_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAVMAA
       <div id="voiceParticipants" style="display:flex;flex:1;gap:4px;padding:8px;width:100%;box-sizing:border-box;flex-wrap:wrap;align-items:stretch;"></div>
       <div class="voice-controls-bar" style="display:flex;align-items:center;justify-content:center;gap:16px;padding:12px 16px 14px;">
         <!-- Kamera -->
-        <div id="voiceCamBtn" onclick="toggleVoiceCam()" data-off="0"
-          style="width:44px;height:44px;border-radius:50%;background:#2b2d31;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s;" title="Kamera">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+        <div id="voiceCamBtn" onclick="toggleVoiceCam()" data-off="1"
+          style="width:44px;height:44px;border-radius:50%;background:#f23f43;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s;" title="Kamera">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M21 6.5l-4-4-2.57 2.57L5.5 0 4.08 1.41 22 19.34 23.41 17.92l-4.42-4.42L21 11.5V6.5zM3.27 2L2 3.27 4.23 5.5C3 5.83 2 6.79 2 8v12c0 1.1.9 2 2 2h14c.35 0 .68-.1.96-.26L20.73 24 22 22.73 3.27 2z"/></svg>
         </div>
         <!-- Mikrofon -->
         <div id="voiceMicBtn" onclick="toggleVoiceMic()" data-muted="0"
@@ -6535,6 +6535,332 @@ document.getElementById('addChannelModal').addEventListener('click', function(e)
 // Firebase kullanıcısı girecek
 const voiceParticipantsList = [];
 
+// ---- SES KANALI WebRTC MESH ----
+// uid -> { pc: RTCPeerConnection, stream: MediaStream, unsub: Function }
+const _vcPeers = {};
+let _vcLocalStream = null; // mikrofon stream'i (ses kanalı için)
+
+async function _vcGetLocalStream() {
+  if (_vcLocalStream && _vcLocalStream.getTracks().some(t => t.readyState === 'live')) {
+    return _vcLocalStream;
+  }
+  try {
+    _vcLocalStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+  } catch(e) {
+    console.warn('VC mic access denied', e);
+    _vcLocalStream = new MediaStream();
+  }
+  return _vcLocalStream;
+}
+
+// Kamera veya ekran track'ini tüm peer bağlantılarına ekle / değiştir
+function _vcAddVideoToPeers(videoTrack) {
+  Object.values(_vcPeers).forEach(peer => {
+    if (!peer.pc) return;
+    const senders = peer.pc.getSenders();
+    const videoSender = senders.find(s => s.track && s.track.kind === 'video');
+    if (videoSender) {
+      videoSender.replaceTrack(videoTrack).catch(e => {
+        console.warn('replaceTrack err, addTrack ile deneniyor', e);
+        peer.pc.addTrack(videoTrack, _vcLocalStream || new MediaStream([videoTrack]));
+        _vcRenegotiateWith(peer.pc, peer.remoteUid);
+      });
+    } else {
+      peer.pc.addTrack(videoTrack, _vcLocalStream || new MediaStream([videoTrack]));
+      _vcRenegotiateWith(peer.pc, peer.remoteUid);
+    }
+  });
+}
+
+function _vcRemoveVideoFromPeers() {
+  Object.values(_vcPeers).forEach(peer => {
+    if (!peer.pc) return;
+    const senders = peer.pc.getSenders();
+    const videoSender = senders.find(s => s.track && s.track.kind === 'video');
+    if (videoSender) {
+      try { peer.pc.removeTrack(videoSender); } catch(e) {}
+      _vcRenegotiateWith(peer.pc, peer.remoteUid);
+    }
+  });
+}
+
+// DM'deki _renegotiate() mantığının sunucu versiyonu
+// Firestore calls dokümanı yerine voiceChannels/signaling koleksiyonu kullanılır
+async function _vcRenegotiateWith(pc, remoteUid) {
+  if (!pc || !currentUser || !window._currentVoiceChannelId) return;
+  if (pc.signalingState !== 'stable') {
+    await new Promise(r => setTimeout(r, 300));
+    if (pc.signalingState !== 'stable') return;
+  }
+  try {
+    const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
+    await pc.setLocalDescription(offer);
+    // Her renegotiation için benzersiz doküman (renego_ prefix + timestamp)
+    // Bu sayede onSnapshot'ta 'added' tetiklenir, 'modified' değil
+    const docId = 'renego_' + currentUser.uid + '_' + remoteUid + '_' + Date.now();
+    await db.collection('voiceChannels').doc(window._currentVoiceChannelId)
+      .collection('signaling').doc(docId).set({
+        offer: { type: offer.type, sdp: offer.sdp },
+        from: currentUser.uid,
+        to: remoteUid,
+        renego: true,
+        at: firebase.firestore.FieldValue.serverTimestamp()
+      });
+  } catch(e) { console.warn('vc renegotiate err', e); }
+}
+
+// Ortak sinyal dinleyici kurucusu - hem _vcConnectToPeer hem _vcListenForOffer kullanır
+function _vcSetupSignaling(pc, remoteUid, remoteStream) {
+  const myUid = currentUser.uid;
+  const chanId = window._currentVoiceChannelId;
+
+  const unsub = db.collection('voiceChannels').doc(chanId)
+    .collection('signaling')
+    .where('from', '==', remoteUid)
+    .where('to', '==', myUid)
+    .onSnapshot(async snap => {
+      for (const change of snap.docChanges()) {
+        if (change.type !== 'added') continue;
+        const d = change.doc.data();
+
+        // ICE candidate
+        if (d.type === 'ice' && d.candidate) {
+          try { await pc.addIceCandidate(new RTCIceCandidate(d.candidate)); } catch(e) {}
+          change.doc.ref.delete().catch(() => {});
+          continue;
+        }
+
+        // Offer geldi (ilk bağlantı veya renegotiation)
+        if (d.offer) {
+          try {
+            // Eğer biz de offer göndermişsek (glare durumu) — UID karşılaştırmasıyla çöz
+            if (pc.signalingState === 'have-local-offer') {
+              if (myUid > remoteUid) {
+                // Biz rollback yapıp karşının offer'ını kabul edelim
+                await pc.setLocalDescription({ type: 'rollback' });
+              } else {
+                // Karşı taraf bizim offer'ımızı kabul edecek, bunu yoksay
+                continue;
+              }
+            }
+            await pc.setRemoteDescription(new RTCSessionDescription(d.offer));
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            // Timestamp'li ID → her seferinde 'added' tetiklenir
+            const ansDocId = myUid + '_' + remoteUid + '_ans_' + Date.now();
+            await db.collection('voiceChannels').doc(chanId)
+              .collection('signaling').doc(ansDocId).set({
+                answer: { type: answer.type, sdp: answer.sdp },
+                from: myUid,
+                to: remoteUid,
+                at: firebase.firestore.FieldValue.serverTimestamp()
+              });
+          } catch(e) { console.warn('vc handle offer err', e); }
+          continue;
+        }
+
+        // Answer geldi (biz offer göndermiştik)
+        if (d.answer) {
+          try {
+            if (pc.signalingState === 'have-local-offer') {
+              await pc.setRemoteDescription(new RTCSessionDescription(d.answer));
+            }
+          } catch(e) { console.warn('vc handle answer err', e); }
+          continue;
+        }
+      }
+    });
+
+  return unsub;
+}
+
+async function _vcConnectToPeer(remoteUid) {
+  if (_vcPeers[remoteUid]) return;
+  const localStream = await _vcGetLocalStream();
+
+  const pc = new RTCPeerConnection(typeof STUN_SERVERS !== 'undefined' ? STUN_SERVERS : {
+    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+  });
+
+  const remoteStream = new MediaStream();
+  _vcPeers[remoteUid] = { pc, remoteStream, remoteUid };
+
+  localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+
+  // Kamera veya ekran açıksa video track'ini de ekle
+  const activeCamTrack = typeof _voiceCamStream !== 'undefined' && _voiceCamStream?.getVideoTracks().find(t => t.readyState === 'live');
+  const activeScreenTrack = typeof _screenStream !== 'undefined' && _screenStream?.getVideoTracks().find(t => t.readyState === 'live');
+  const activeVideoTrack = activeScreenTrack || activeCamTrack;
+  if (activeVideoTrack) pc.addTrack(activeVideoTrack, localStream);
+
+  // DM _handleRemoteTrack mantığı
+  pc.ontrack = e => {
+    const stream = e.streams && e.streams[0] ? e.streams[0] : remoteStream;
+    if (e.streams && e.streams[0]) {
+      _vcPeers[remoteUid].remoteStream = stream;
+    } else {
+      if (!remoteStream.getTracks().find(t => t.id === e.track.id)) remoteStream.addTrack(e.track);
+    }
+    _updatePeerVideoCard(remoteUid, stream);
+    // Track kapatılınca kartı temizle (mute, ended)
+    if (e.track.kind === 'video') {
+      e.track.onmute   = () => _updatePeerVideoCard(remoteUid, stream);
+      e.track.onunmute = () => _updatePeerVideoCard(remoteUid, stream);
+      e.track.onended  = () => _updatePeerVideoCard(remoteUid, stream);
+    }
+    // Stream'den track kaldırılınca (removeTrack + renegotiation sonrası)
+    stream.onremovetrack = () => _updatePeerVideoCard(remoteUid, stream);
+  };
+
+  pc.onicecandidate = e => {
+    if (!e.candidate) return;
+    db.collection('voiceChannels').doc(window._currentVoiceChannelId)
+      .collection('signaling').doc(currentUser.uid + '_' + remoteUid + '_ice_' + Date.now())
+      .set({ candidate: e.candidate.toJSON(), from: currentUser.uid, to: remoteUid, type: 'ice', at: firebase.firestore.FieldValue.serverTimestamp() }).catch(() => {});
+  };
+
+  pc.onconnectionstatechange = () => {
+    if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+      _vcDisconnectPeer(remoteUid);
+    } else if (pc.connectionState === 'connected') {
+      // Bağlantı kurulunca aktif video varsa renegotiation ile karşı tarafa bildir
+      const activeCam = typeof _voiceCamStream !== 'undefined' && _voiceCamStream?.getVideoTracks().find(t => t.readyState === 'live');
+      const activeScr = typeof _screenStream !== 'undefined' && _screenStream?.getVideoTracks().find(t => t.readyState === 'live');
+      if (activeCam || activeScr) {
+        setTimeout(() => _vcRenegotiateWith(pc, remoteUid), 500);
+      }
+    }
+  };
+
+  // Ortak sinyal dinleyiciyi kur (offer, answer, ice hepsini yakalar)
+  const unsub = _vcSetupSignaling(pc, remoteUid, remoteStream);
+  _vcPeers[remoteUid].unsub = unsub;
+
+  // Offer oluştur ve gönder
+  try {
+    const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
+    await pc.setLocalDescription(offer);
+    await db.collection('voiceChannels').doc(window._currentVoiceChannelId)
+      .collection('signaling').doc(currentUser.uid + '_' + remoteUid + '_' + Date.now()).set({
+        offer: { type: offer.type, sdp: offer.sdp },
+        from: currentUser.uid,
+        to: remoteUid,
+        at: firebase.firestore.FieldValue.serverTimestamp()
+      });
+  } catch(e) { console.warn('vc offer err', e); }
+}
+
+async function _vcListenForOffer(remoteUid) {
+  if (_vcPeers[remoteUid]) return;
+  if (!currentUser || !window._currentVoiceChannelId) return;
+  const localStream = await _vcGetLocalStream();
+
+  const pc = new RTCPeerConnection(typeof STUN_SERVERS !== 'undefined' ? STUN_SERVERS : { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+  const remoteStream = new MediaStream();
+  _vcPeers[remoteUid] = { pc, remoteStream, remoteUid };
+
+  localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+
+  const activeCamTrack = typeof _voiceCamStream !== 'undefined' && _voiceCamStream?.getVideoTracks().find(t => t.readyState === 'live');
+  const activeScreenTrack = typeof _screenStream !== 'undefined' && _screenStream?.getVideoTracks().find(t => t.readyState === 'live');
+  const activeVideoTrack = activeScreenTrack || activeCamTrack;
+  if (activeVideoTrack) pc.addTrack(activeVideoTrack, localStream);
+
+  // DM _handleRemoteTrack mantığı
+  pc.ontrack = e => {
+    const stream = e.streams && e.streams[0] ? e.streams[0] : remoteStream;
+    if (e.streams && e.streams[0]) {
+      _vcPeers[remoteUid].remoteStream = stream;
+    } else {
+      if (!remoteStream.getTracks().find(t => t.id === e.track.id)) remoteStream.addTrack(e.track);
+    }
+    _updatePeerVideoCard(remoteUid, stream);
+    // Track kapatılınca kartı temizle (mute, ended)
+    if (e.track.kind === 'video') {
+      e.track.onmute   = () => _updatePeerVideoCard(remoteUid, stream);
+      e.track.onunmute = () => _updatePeerVideoCard(remoteUid, stream);
+      e.track.onended  = () => _updatePeerVideoCard(remoteUid, stream);
+    }
+    // Stream'den track kaldırılınca (removeTrack + renegotiation sonrası)
+    stream.onremovetrack = () => _updatePeerVideoCard(remoteUid, stream);
+  };
+
+  pc.onicecandidate = e => {
+    if (!e.candidate) return;
+    db.collection('voiceChannels').doc(window._currentVoiceChannelId)
+      .collection('signaling').doc(currentUser.uid + '_' + remoteUid + '_ice_' + Date.now())
+      .set({ candidate: e.candidate.toJSON(), from: currentUser.uid, to: remoteUid, type: 'ice', at: firebase.firestore.FieldValue.serverTimestamp() }).catch(() => {});
+  };
+
+  pc.onconnectionstatechange = () => {
+    if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+      _vcDisconnectPeer(remoteUid);
+    } else if (pc.connectionState === 'connected') {
+      // Bağlantı kurulunca aktif video varsa renegotiation ile karşı tarafa bildir
+      const activeCam = typeof _voiceCamStream !== 'undefined' && _voiceCamStream?.getVideoTracks().find(t => t.readyState === 'live');
+      const activeScr = typeof _screenStream !== 'undefined' && _screenStream?.getVideoTracks().find(t => t.readyState === 'live');
+      if (activeCam || activeScr) {
+        setTimeout(() => _vcRenegotiateWith(pc, remoteUid), 500);
+      }
+    }
+  };
+
+  // Ortak sinyal dinleyiciyi kur — hem ilk offer hem renego offer hem answer yakalar
+  const unsub = _vcSetupSignaling(pc, remoteUid, remoteStream);
+  _vcPeers[remoteUid].unsub = unsub;
+}
+
+
+function _vcDisconnectPeer(remoteUid) {
+  const peer = _vcPeers[remoteUid];
+  if (!peer) return;
+  if (peer.unsub) peer.unsub();
+  if (peer.unsubAns) peer.unsubAns();
+  if (peer.pc) { try { peer.pc.close(); } catch(e) {} }
+  // Karşı tarafın kartındaki video'yu temizle
+  const card = document.querySelector('#voiceParticipants > div[data-uid="' + remoteUid + '"]');
+  if (card) {
+    const vid = card.querySelector('video.vc-remote-video');
+    if (vid) { vid.srcObject = null; vid.remove(); }
+  }
+  delete _vcPeers[remoteUid];
+}
+
+function _vcDisconnectAll() {
+  Object.keys(_vcPeers).forEach(uid => _vcDisconnectPeer(uid));
+  if (_vcLocalStream) {
+    _vcLocalStream.getTracks().forEach(t => t.stop());
+    _vcLocalStream = null;
+  }
+}
+function _updatePeerVideoCard(remoteUid, stream) {
+  const card = document.querySelector('#voiceParticipants > div[data-uid="' + remoteUid + '"]');
+  if (!card) return;
+  const hasVideo = stream && stream.getVideoTracks().some(t => t.readyState === 'live');
+  let vid = card.querySelector('video.vc-remote-video');
+  if (hasVideo) {
+    if (!vid) {
+      vid = document.createElement('video');
+      vid.className = 'vc-remote-video';
+      vid.autoplay = true;
+      vid.playsInline = true;
+      vid.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:4;border-radius:12px;';
+      card.style.position = 'relative';
+      card.appendChild(vid);
+    }
+    vid.srcObject = stream;
+    vid.play().catch(() => {});
+  } else if (vid) {
+    vid.srcObject = null;
+    vid.remove();
+  }
+}
+
+// UID'i küçük olan (offer bekleyen) taraf için dinleyici
+
+
+
+
 
 
 // Ses kanalı - konuşma tespiti
@@ -6627,7 +6953,7 @@ function startVoiceSidebarTimer(chId, startTime) {
     const timerEl = document.getElementById('vct_' + chId);
     if (timerEl) {
       function tickCont() {
-        const elapsed = Math.floor((Date.now() - _vcSidebarStart) / 1000);
+        const elapsed = Math.max(0, Math.floor((Date.now() - _vcSidebarStart) / 1000));
         const m = Math.floor(elapsed / 60);
         const s = elapsed % 60;
         timerEl.textContent = m + ':' + String(s).padStart(2,'0');
@@ -6639,13 +6965,13 @@ function startVoiceSidebarTimer(chId, startTime) {
     return;
   }
   stopVoiceSidebarTimer();
-  _vcSidebarStart = startTime || Date.now();
+  _vcSidebarStart = Math.min(startTime || Date.now(), Date.now());
   const timerEl = document.getElementById('vct_' + chId);
   if (!timerEl) return;
   function tick() {
     const el = document.getElementById('vct_' + chId);
     if (!el) return;
-    const elapsed = Math.floor((Date.now() - _vcSidebarStart) / 1000);
+    const elapsed = Math.max(0, Math.floor((Date.now() - _vcSidebarStart) / 1000));
     const m = Math.floor(elapsed / 60);
     const s = elapsed % 60;
     el.textContent = m + ':' + String(s).padStart(2,'0');
@@ -6743,22 +7069,89 @@ function renderVoiceChannel() {
       </div>
     </div>`;
   }).join('');
+
+  // Kartlar yeniden çizildi — kendi video stream'ini ve uzak peer video'larını yeniden uygula
+  requestAnimationFrame(() => {
+    // Kendi kartı: kamera veya ekran aktifse göster
+    const activeScreenTrack = typeof _screenStream !== 'undefined' && _screenStream?.getVideoTracks().some(t => t.readyState === 'live');
+    const activeCamTrack = typeof _voiceCamStream !== 'undefined' && _voiceCamStream?.getVideoTracks().some(t => t.readyState === 'live');
+    if (activeScreenTrack) _setVoiceCardVideo(_screenStream);
+    else if (activeCamTrack) _setVoiceCardVideo(_voiceCamStream);
+
+    // Uzak peer kartları: aktif stream varsa video göster
+    Object.entries(_vcPeers).forEach(([uid, peer]) => {
+      if (peer.remoteStream) _updatePeerVideoCard(uid, peer.remoteStream);
+    });
+  });
+}
+
+// Ses kanalı için lokal kamera stream'i
+let _voiceCamStream = null;
+
+// Kendi ses kanalı kartına video elemanı inject eder (kamera veya ekran paylaşımı)
+function _setVoiceCardVideo(stream) {
+  const myUid = currentUser?.uid;
+  if (!myUid) return;
+  const card = document.querySelector('#voiceParticipants > div[data-uid="' + myUid + '"]');
+  if (!card) return;
+
+  // Önceki video elemanını temizle
+  const oldVid = card.querySelector('video.vc-local-video');
+  if (oldVid) { try { oldVid.srcObject = null; } catch(e){} oldVid.remove(); }
+
+  if (stream && stream.getVideoTracks().length > 0) {
+    const vid = document.createElement('video');
+    vid.className = 'vc-local-video';
+    vid.autoplay = true;
+    vid.playsInline = true;
+    vid.muted = true;
+    vid.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:4;border-radius:12px;';
+    vid.srcObject = stream;
+    card.style.position = 'relative';
+    card.appendChild(vid);
+    vid.play().catch(() => {});
+  }
 }
 
 function toggleVoiceCam() {
   const btn = document.getElementById('voiceCamBtn');
   if (!btn) return;
   const camOff = btn.getAttribute('data-off') === '1';
+
   if (!camOff) {
+    // Kamerayı kapat
     btn.setAttribute('data-off', '1');
     btn.style.background = '#f23f43';
     btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M21 6.5l-4-4-2.57 2.57L5.5 0 4.08 1.41 22 19.34 23.41 17.92l-4.42-4.42L21 11.5V6.5zM3.27 2L2 3.27 4.23 5.5C3 5.83 2 6.79 2 8v12c0 1.1.9 2 2 2h14c.35 0 .68-.1.96-.26L20.73 24 22 22.73 3.27 2z"/></svg>`;
+    if (_voiceCamStream) {
+      _voiceCamStream.getTracks().forEach(t => t.stop());
+      _voiceCamStream = null;
+    }
+    _setVoiceCardVideo(null);
+    // WebRTC: video track'ini peer bağlantılarından kaldır
+    if (window._currentVoiceChannelId) _vcRemoveVideoFromPeers();
     showToast('📷 Kamera kapatıldı');
   } else {
-    btn.setAttribute('data-off', '0');
-    btn.style.background = '#2b2d31';
-    btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>`;
-    showToast('📷 Kamera açıldı');
+    // Kamerayı aç
+    navigator.mediaDevices.getUserMedia({ video: true, audio: false }).then(stream => {
+      _voiceCamStream = stream;
+      btn.setAttribute('data-off', '0');
+      btn.style.background = '#2b2d31';
+      btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>`;
+      // Eğer ekran paylaşımı aktifse kamerayı gösterme (ekranı önceliklendir)
+      if (!_screenStream) {
+        _setVoiceCardVideo(stream);
+      }
+      // WebRTC: video track'ini tüm peer bağlantılarına gönder
+      if (window._currentVoiceChannelId) {
+        const vt = stream.getVideoTracks()[0];
+        if (vt) _vcAddVideoToPeers(vt);
+      }
+      showToast('📷 Kamera açıldı');
+    }).catch(e => {
+      console.error(e);
+      showToast('❌ Kamera izni verilmedi veya kamera bulunamadı.');
+    });
   }
 }
 
@@ -6837,6 +7230,24 @@ function leaveVoiceChannel() {
   window._currentVoiceChannelId = null;
   window._voiceStartTime = null;
   stopVoiceSpeakingDetection();
+  // Kamerayı kapat
+  if (typeof _voiceCamStream !== 'undefined' && _voiceCamStream) {
+    _voiceCamStream.getTracks().forEach(t => t.stop());
+    _voiceCamStream = null;
+  }
+  const camBtn = document.getElementById('voiceCamBtn');
+  if (camBtn) {
+    camBtn.setAttribute('data-off', '1');
+    camBtn.style.background = '#f23f43';
+  }
+  // Ekran paylaşımını kapat
+  if (typeof _screenStream !== 'undefined' && _screenStream) {
+    _screenStream.getTracks().forEach(t => t.stop());
+    _screenStream = null;
+  }
+  if (typeof _screenTrackSender !== 'undefined') _screenTrackSender = null;
+  // WebRTC bağlantılarını kapat
+  _vcDisconnectAll();
   // Sidebar'daki sayaç yazısını ve katılımcı listesini temizle
   document.querySelectorAll('[id^="vct_"]').forEach(el => { el.textContent = ''; });
   document.querySelectorAll('[id^="vcp_"]').forEach(el => { el.innerHTML = ''; });
@@ -6921,6 +7332,25 @@ function scheduleVoiceJoin() {
             .update({ channelStartTime: firebase.firestore.FieldValue.delete() }).catch(() => {});
         }
         renderVoiceChannel();
+
+        // WebRTC: Yeni katılımcılara bağlan, ayrılanlara bağlantıyı kes
+        const myUid = currentUser?.uid;
+        const currentUids = voiceParticipantsList.map(p => p.uid).filter(uid => uid && uid !== myUid);
+        // Ayrılanlara bağlantıyı kes
+        Object.keys(_vcPeers).forEach(uid => {
+          if (!currentUids.includes(uid)) _vcDisconnectPeer(uid);
+        });
+        // Yeni katılanlara bağlan
+        currentUids.forEach(uid => {
+          if (_vcPeers[uid]) return; // zaten var
+          if (myUid > uid) {
+            // Ben offer gönderiyorum
+            _vcConnectToPeer(uid);
+          } else {
+            // Karşı taraf offer gönderecek — onun için dinleyici kur
+            _vcListenForOffer(uid);
+          }
+        });
       } else {
         // Sadece badge güncelle
         voiceParticipantsList.forEach(p => {
@@ -6948,7 +7378,7 @@ function scheduleVoiceJoin() {
   if (window._voiceTimer) clearInterval(window._voiceTimer);
   window._voiceTimer = setInterval(() => {
     if (!window._voiceStartTime) return;
-    const elapsed = Math.floor((Date.now() - window._voiceStartTime) / 1000);
+    const elapsed = Math.max(0, Math.floor((Date.now() - window._voiceStartTime) / 1000));
     const m = Math.floor(elapsed / 60);
     const s = elapsed % 60;
     const timeStr = m + ':' + String(s).padStart(2, '0');
@@ -6970,9 +7400,11 @@ function scheduleVoiceJoin() {
       const newStart = data.channelStartTime.toMillis ? data.channelStartTime.toMillis() : null;
       if (!newStart) return;
       // Eğer startTime değiştiyse (yeni biri girdi) sayacı sıfırla
+      // Server saati ile local saat farkını tolere et: asla negatif elapsed olmasın
+      const clampedStart = Math.min(newStart, Date.now());
       if (newStart !== window._voiceStartTime) {
-        window._voiceStartTime = newStart;
-        _vcSidebarStart = newStart;
+        window._voiceStartTime = clampedStart;
+        _vcSidebarStart = clampedStart;
       }
     });
 
@@ -14252,6 +14684,15 @@ async function startScreenShare() {
   // Ekran paylaşma butonu aktif görünsün
   const btn = document.getElementById('screenShareBtn');
   if (btn) btn.style.background = '#00a8fc';
+  const voiceScreenBtn = document.getElementById('voiceScreenBtn');
+  if (voiceScreenBtn) voiceScreenBtn.style.background = '#00a8fc';
+
+  // Ses kanalındaysa kendi kartında ekranı göster
+  if (window._currentVoiceChannelId && typeof _setVoiceCardVideo === 'function') {
+    _setVoiceCardVideo(_screenStream);
+    // WebRTC: ekran track'ini tüm peer'lara gönder
+    if (screenTrack) _vcAddVideoToPeers(screenTrack);
+  }
 
   // Paylaşım bitince (tarayıcı durdurma butonu) temizle
   screenTrack.onended = () => stopScreenShare();
@@ -14284,6 +14725,22 @@ function stopScreenShare() {
 
   const btn = document.getElementById('screenShareBtn');
   if (btn) btn.style.background = '#2b2d31';
+  const voiceScreenBtn = document.getElementById('voiceScreenBtn');
+  if (voiceScreenBtn) voiceScreenBtn.style.background = '#2b2d31';
+
+  // Ses kanalındaysa: ekran bittikten sonra kamera açıksa onu göster, yoksa video kaldır
+  if (window._currentVoiceChannelId && typeof _setVoiceCardVideo === 'function') {
+    if (_voiceCamStream && _voiceCamStream.getVideoTracks().some(t => t.readyState === 'live')) {
+      _setVoiceCardVideo(_voiceCamStream);
+      // WebRTC: kamera track'ine geri dön
+      const camVt = _voiceCamStream.getVideoTracks()[0];
+      if (camVt) _vcAddVideoToPeers(camVt);
+    } else {
+      _setVoiceCardVideo(null);
+      _vcRemoveVideoFromPeers();
+    }
+  }
+
   _screenTrackSender = null;
 
   // Karşı tarafa video durumunu bildir
@@ -14308,14 +14765,16 @@ function setLocalVideoState(stream) {
   // Önce videoyu durdur
   try { localVideo.pause(); } catch(e) {}
 
-  if (stream) {
+  // Stream varsa VE aktif video track içeriyorsa göster
+  const hasActiveVideo = stream && stream.getVideoTracks().some(t => t.readyState === 'live' && t.enabled);
+  if (hasActiveVideo) {
     localAvatar.style.display = 'none';
     localVideo.style.zIndex   = '3';
     localVideo.style.display  = 'block';
     localVideo.srcObject      = stream;
     localVideo.play().catch(() => {});
   } else {
-    localVideo.srcObject      = null;   // load() yerine sadece null — file:// uyumlu
+    localVideo.srcObject      = null;
     localVideo.style.display  = 'none';
     localVideo.style.zIndex   = '1';
     localAvatar.style.display = 'flex';
@@ -14327,8 +14786,12 @@ function toggleCallVideo() {
   const btn = document.getElementById('callVideoBtn');
   const track = localStream ? localStream.getVideoTracks()[0] : null;
 
-  // Video track yoksa (sesli aramada) kamerayı aç
-  if (!track) {
+  // Video track yoksa VEYA track ended ise (sesli aramada ya da önceden durdurulmuş) — kamerayı aç
+  if (!track || track.readyState === 'ended') {
+    // Ended track'i temizle
+    if (track && track.readyState === 'ended' && localStream) {
+      localStream.removeTrack(track);
+    }
     navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
       const videoTrack = stream.getVideoTracks()[0];
       if (!videoTrack) { showToast('❌ Kamera bulunamadı.'); return; }
@@ -14340,12 +14803,27 @@ function toggleCallVideo() {
       }
 
       if (peerConnection) {
-        peerConnection.addTrack(videoTrack, localStream);
-        _renegotiate();
+        // Eğer daha önce video sender varsa replaceTrack, yoksa addTrack
+        const videoSender = peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
+        if (videoSender) {
+          videoSender.replaceTrack(videoTrack);
+        } else {
+          peerConnection.addTrack(videoTrack, localStream);
+          _renegotiate();
+        }
       }
 
       setLocalVideoState(localStream);
       btn.style.background = '#2b2d31'; btn.dataset.off = '0';
+
+      // Karşı tarafa kamera açıldığını bildir
+      if (activeCallUid && currentUser) {
+        const docId = getCallDocId(currentUser.uid, activeCallUid);
+        db.collection('calls').doc(docId).update({
+          videoMuted: false,
+          videoMutedBy: currentUser.uid
+        }).catch(() => {});
+      }
     }).catch(e => {
       console.error(e);
       showToast('❌ Kamera izni verilmedi veya kamera bulunamadı.');
