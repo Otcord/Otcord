@@ -6369,9 +6369,12 @@ function switchChannel(id, name, topic, type) {
     // Reset to just self when entering
     voiceParticipantsList.length = 0;
     voiceParticipantsList.push({ name: getMyVoiceName(), uid: currentUser?.uid, muted: voiceMicMuted, avatarUrl: allOnlineUsers.find(u=>u.uid===currentUser?.uid)?.avatarUrl||'', joinedAt: Date.now() });
-    startVoiceSpeakingDetection();
     renderVoiceChannel();
-    scheduleVoiceJoin();
+    // Önce mikrofonu al, sonra kanala gir - race condition önlemi
+    _vcGetLocalStream().then(() => {
+      startVoiceSpeakingDetection();
+      scheduleVoiceJoin();
+    });
   } else {
     document.getElementById('voiceChannelView').style.display = 'none';
     document.getElementById('textChannelView').style.display = 'flex';
@@ -6540,17 +6543,26 @@ const voiceParticipantsList = [];
 const _vcPeers = {};
 let _vcLocalStream = null; // mikrofon stream'i (ses kanalı için)
 
+let _vcLocalStreamPromise = null;
 async function _vcGetLocalStream() {
   if (_vcLocalStream && _vcLocalStream.getTracks().some(t => t.readyState === 'live')) {
     return _vcLocalStream;
   }
-  try {
-    _vcLocalStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-  } catch(e) {
-    console.warn('VC mic access denied', e);
-    _vcLocalStream = new MediaStream();
-  }
-  return _vcLocalStream;
+  // Eş zamanlı çağrılar tek getUserMedia açsın
+  if (_vcLocalStreamPromise) return _vcLocalStreamPromise;
+  _vcLocalStreamPromise = navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+    .then(stream => {
+      _vcLocalStream = stream;
+      _vcLocalStreamPromise = null;
+      return stream;
+    })
+    .catch(e => {
+      console.warn('VC mic access denied', e);
+      _vcLocalStreamPromise = null;
+      _vcLocalStream = new MediaStream();
+      return _vcLocalStream;
+    });
+  return _vcLocalStreamPromise;
 }
 
 // Kamera veya ekran track'ini tüm peer bağlantılarına ekle / değiştir
@@ -6560,11 +6572,14 @@ function _vcAddVideoToPeers(videoTrack) {
     const senders = peer.pc.getSenders();
     const videoSender = senders.find(s => s.track && s.track.kind === 'video');
     if (videoSender) {
-      videoSender.replaceTrack(videoTrack).catch(e => {
-        console.warn('replaceTrack err, addTrack ile deneniyor', e);
-        peer.pc.addTrack(videoTrack, _vcLocalStream || new MediaStream([videoTrack]));
-        _vcRenegotiateWith(peer.pc, peer.remoteUid);
-      });
+      // replaceTrack yap ve her durumda renegotiation gönder
+      videoSender.replaceTrack(videoTrack)
+        .then(() => _vcRenegotiateWith(peer.pc, peer.remoteUid))
+        .catch(e => {
+          console.warn('replaceTrack err, addTrack ile deneniyor', e);
+          peer.pc.addTrack(videoTrack, _vcLocalStream || new MediaStream([videoTrack]));
+          _vcRenegotiateWith(peer.pc, peer.remoteUid);
+        });
     } else {
       peer.pc.addTrack(videoTrack, _vcLocalStream || new MediaStream([videoTrack]));
       _vcRenegotiateWith(peer.pc, peer.remoteUid);
@@ -6677,6 +6692,8 @@ function _vcSetupSignaling(pc, remoteUid, remoteStream) {
 async function _vcConnectToPeer(remoteUid) {
   if (_vcPeers[remoteUid]) return;
   const localStream = await _vcGetLocalStream();
+  // await sonrası tekrar kontrol - race condition önlemi
+  if (_vcPeers[remoteUid]) return;
 
   const pc = new RTCPeerConnection(typeof STUN_SERVERS !== 'undefined' ? STUN_SERVERS : {
     iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
@@ -6685,7 +6702,7 @@ async function _vcConnectToPeer(remoteUid) {
   const remoteStream = new MediaStream();
   _vcPeers[remoteUid] = { pc, remoteStream, remoteUid };
 
-  localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+  localStream.getAudioTracks().forEach(t => pc.addTrack(t, localStream));
 
   // Kamera veya ekran açıksa video track'ini de ekle
   const activeCamTrack = typeof _voiceCamStream !== 'undefined' && _voiceCamStream?.getVideoTracks().find(t => t.readyState === 'live');
@@ -6701,14 +6718,29 @@ async function _vcConnectToPeer(remoteUid) {
     } else {
       if (!remoteStream.getTracks().find(t => t.id === e.track.id)) remoteStream.addTrack(e.track);
     }
+    // Ses track'i geldiyse audio element ile oynat
+    if (e.track.kind === 'audio') {
+      let audioEl = document.getElementById('vc-audio-' + remoteUid);
+      if (!audioEl) {
+        audioEl = document.createElement('audio');
+        audioEl.id = 'vc-audio-' + remoteUid;
+        audioEl.autoplay = true;
+        audioEl.muted = voiceDeafened;
+        audioEl.style.display = 'none';
+        document.body.appendChild(audioEl);
+      }
+      // Sadece audio track'lerini içeren temiz bir stream ver
+      const audioStream = new MediaStream([e.track]);
+      audioEl.srcObject = audioStream;
+      audioEl.play().catch(() => {});
+    }
+    // Video track güncelleme
     _updatePeerVideoCard(remoteUid, stream);
-    // Track kapatılınca kartı temizle (mute, ended)
     if (e.track.kind === 'video') {
       e.track.onmute   = () => _updatePeerVideoCard(remoteUid, stream);
       e.track.onunmute = () => _updatePeerVideoCard(remoteUid, stream);
       e.track.onended  = () => _updatePeerVideoCard(remoteUid, stream);
     }
-    // Stream'den track kaldırılınca (removeTrack + renegotiation sonrası)
     stream.onremovetrack = () => _updatePeerVideoCard(remoteUid, stream);
   };
 
@@ -6723,7 +6755,6 @@ async function _vcConnectToPeer(remoteUid) {
     if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
       _vcDisconnectPeer(remoteUid);
     } else if (pc.connectionState === 'connected') {
-      // Bağlantı kurulunca aktif video varsa renegotiation ile karşı tarafa bildir
       const activeCam = typeof _voiceCamStream !== 'undefined' && _voiceCamStream?.getVideoTracks().find(t => t.readyState === 'live');
       const activeScr = typeof _screenStream !== 'undefined' && _screenStream?.getVideoTracks().find(t => t.readyState === 'live');
       if (activeCam || activeScr) {
@@ -6754,12 +6785,14 @@ async function _vcListenForOffer(remoteUid) {
   if (_vcPeers[remoteUid]) return;
   if (!currentUser || !window._currentVoiceChannelId) return;
   const localStream = await _vcGetLocalStream();
+  // await sonrası tekrar kontrol - race condition önlemi
+  if (_vcPeers[remoteUid]) return;
 
   const pc = new RTCPeerConnection(typeof STUN_SERVERS !== 'undefined' ? STUN_SERVERS : { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
   const remoteStream = new MediaStream();
   _vcPeers[remoteUid] = { pc, remoteStream, remoteUid };
 
-  localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+  localStream.getAudioTracks().forEach(t => pc.addTrack(t, localStream));
 
   const activeCamTrack = typeof _voiceCamStream !== 'undefined' && _voiceCamStream?.getVideoTracks().find(t => t.readyState === 'live');
   const activeScreenTrack = typeof _screenStream !== 'undefined' && _screenStream?.getVideoTracks().find(t => t.readyState === 'live');
@@ -6774,14 +6807,29 @@ async function _vcListenForOffer(remoteUid) {
     } else {
       if (!remoteStream.getTracks().find(t => t.id === e.track.id)) remoteStream.addTrack(e.track);
     }
+    // Ses track'i geldiyse audio element ile oynat
+    if (e.track.kind === 'audio') {
+      let audioEl = document.getElementById('vc-audio-' + remoteUid);
+      if (!audioEl) {
+        audioEl = document.createElement('audio');
+        audioEl.id = 'vc-audio-' + remoteUid;
+        audioEl.autoplay = true;
+        audioEl.muted = voiceDeafened;
+        audioEl.style.display = 'none';
+        document.body.appendChild(audioEl);
+      }
+      // Sadece audio track'lerini içeren temiz bir stream ver
+      const audioStream = new MediaStream([e.track]);
+      audioEl.srcObject = audioStream;
+      audioEl.play().catch(() => {});
+    }
+    // Video track güncelleme
     _updatePeerVideoCard(remoteUid, stream);
-    // Track kapatılınca kartı temizle (mute, ended)
     if (e.track.kind === 'video') {
       e.track.onmute   = () => _updatePeerVideoCard(remoteUid, stream);
       e.track.onunmute = () => _updatePeerVideoCard(remoteUid, stream);
       e.track.onended  = () => _updatePeerVideoCard(remoteUid, stream);
     }
-    // Stream'den track kaldırılınca (removeTrack + renegotiation sonrası)
     stream.onremovetrack = () => _updatePeerVideoCard(remoteUid, stream);
   };
 
@@ -6796,7 +6844,6 @@ async function _vcListenForOffer(remoteUid) {
     if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
       _vcDisconnectPeer(remoteUid);
     } else if (pc.connectionState === 'connected') {
-      // Bağlantı kurulunca aktif video varsa renegotiation ile karşı tarafa bildir
       const activeCam = typeof _voiceCamStream !== 'undefined' && _voiceCamStream?.getVideoTracks().find(t => t.readyState === 'live');
       const activeScr = typeof _screenStream !== 'undefined' && _screenStream?.getVideoTracks().find(t => t.readyState === 'live');
       if (activeCam || activeScr) {
@@ -6823,6 +6870,9 @@ function _vcDisconnectPeer(remoteUid) {
     const vid = card.querySelector('video.vc-remote-video');
     if (vid) { vid.srcObject = null; vid.remove(); }
   }
+  // Audio elementini temizle
+  const audioEl = document.getElementById('vc-audio-' + remoteUid);
+  if (audioEl) { audioEl.srcObject = null; audioEl.remove(); }
   delete _vcPeers[remoteUid];
 }
 
@@ -6878,7 +6928,8 @@ function startVoiceSpeakingDetection() {
   const _allVctEls = document.querySelectorAll('[id^="vct_"]');
   _allVctEls.forEach(el => { el.textContent = ''; });
   if (!navigator.mediaDevices) return;
-  navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(stream => {
+  // _vcLocalStream ile aynı stream'i kullan - ayrı getUserMedia açmıyoruz
+  _vcGetLocalStream().then(stream => {
     _voiceSpeakingStream = stream;
     _voiceAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
     _voiceAnalyser = _voiceAudioCtx.createAnalyser();
@@ -6991,7 +7042,8 @@ function stopVoiceSpeakingDetection() {
   if (_voiceSpeakingInterval) { clearInterval(_voiceSpeakingInterval); _voiceSpeakingInterval = null; }
   if (_voiceAnalyser) { _voiceAnalyser.disconnect(); _voiceAnalyser = null; }
   if (_voiceAudioCtx) { _voiceAudioCtx.close(); _voiceAudioCtx = null; }
-  if (_voiceSpeakingStream) { _voiceSpeakingStream.getTracks().forEach(t => t.stop()); _voiceSpeakingStream = null; }
+  // _voiceSpeakingStream artık _vcLocalStream ile aynı - durdurmuyoruz
+  _voiceSpeakingStream = null;
 }
 
 
@@ -7180,6 +7232,10 @@ function toggleVoiceMic() {
       showToast('🎤 Mikrofon açıldı');
     }
   }
+  // _vcLocalStream'deki audio track'i gerçekten mute/unmute et
+  if (_vcLocalStream) {
+    _vcLocalStream.getAudioTracks().forEach(t => { t.enabled = !voiceMicMuted; });
+  }
   updateAvatarBadge();
   updateMyMuteBadgeInVC();
   // Firestore'a mute durumu yaz (diğer katılımcılar görsün)
@@ -7210,6 +7266,8 @@ function toggleVoiceDeaf() {
       showToast('🔊 Ses açıldı');
     }
   }
+  // Karşıdan gelen sesleri mute/unmute et
+  document.querySelectorAll('audio[id^="vc-audio-"]').forEach(a => { a.muted = voiceDeafened; });
   updateAvatarBadge();
   updateMyMuteBadgeInVC();
 }
@@ -7248,6 +7306,8 @@ function leaveVoiceChannel() {
   if (typeof _screenTrackSender !== 'undefined') _screenTrackSender = null;
   // WebRTC bağlantılarını kapat
   _vcDisconnectAll();
+  // Kalan tüm vc-audio elementlerini temizle
+  document.querySelectorAll('audio[id^="vc-audio-"]').forEach(a => { a.srcObject = null; a.remove(); });
   // Sidebar'daki sayaç yazısını ve katılımcı listesini temizle
   document.querySelectorAll('[id^="vct_"]').forEach(el => { el.textContent = ''; });
   document.querySelectorAll('[id^="vcp_"]').forEach(el => { el.innerHTML = ''; });
