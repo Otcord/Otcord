@@ -7831,27 +7831,35 @@ function renderFileAttachment(msg) {
 }
 
 function renderPoll(p, msgIdx) {
-  const total = p.votes.reduce((a,b) => a+b, 0);
+  const myUid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
+  const myVotes = (p.userVotes && myUid && p.userVotes[myUid]) ? p.userVotes[myUid] : [];
+  const total = p.votes ? p.votes.reduce((a,b) => a+b, 0) : 0;
   const hours = p.duration || 24;
+  // Toplam oy varsa yüzdeleri göster (sadece kendi oyuna bağlama)
+  const showResults = total > 0;
   const answersHtml = p.answers.map((ans, ai) => {
-    const isVoted = p.userVotes.includes(ai);
-    const pct = total > 0 ? Math.round(p.votes[ai] / total * 100) : 0;
+    const isVoted = myVotes.includes(ai);
+    const pct = total > 0 ? Math.round((p.votes[ai] || 0) / total * 100) : 0;
     const border = isVoted ? 'border:1.5px solid #00a8fc;' : 'border:1.5px solid #3f4147;';
     const radioColor = isVoted ? '#00a8fc' : '#80848e';
-    const radioInner = isVoted
-      ? '<circle cx="10" cy="10" r="6" fill="#00a8fc"/>'
-      : '';
+    const radioInner = isVoted ? '<circle cx="10" cy="10" r="6" fill="#00a8fc"/>' : '';
     return '<div data-poll-vote="' + msgIdx + '" data-answer-idx="' + ai + '" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:8px;margin-bottom:6px;cursor:pointer;background:#2b2d31;' + border + 'transition:border-color .15s;position:relative;overflow:hidden;">'
-      + (total > 0 && p.userVotes.length > 0
+      + (showResults
         ? '<div style="position:absolute;left:0;top:0;bottom:0;width:' + pct + '%;background:' + (isVoted ? 'rgba(88,101,242,0.2)' : 'rgba(255,255,255,0.04)') + ';transition:width .3s;pointer-events:none;"></div>'
         : '')
-      + '<span style="font-size:14px;font-weight:500;position:relative;">' + ans + (total > 0 && p.userVotes.length > 0 ? ' <span style="color:#80848e;font-size:12px;">(' + pct + '%)</span>' : '') + '</span>'
+      + '<span style="font-size:14px;font-weight:500;position:relative;">' + ans + (showResults ? ' <span style="color:#80848e;font-size:12px;">(' + pct + '%)</span>' : '') + '</span>'
       + '<svg width="20" height="20" viewBox="0 0 20 20" style="flex-shrink:0;position:relative;" fill="none">'
       + '<circle cx="10" cy="10" r="9" stroke="' + radioColor + '" stroke-width="2"/>'
       + radioInner
       + '</svg>'
       + '</div>';
   }).join('');
+
+  const hasVoted = myVotes.length > 0;
+  const btnStyle = hasVoted
+    ? 'background:#00a8fc;color:white;border:none;font-size:13px;font-weight:600;padding:6px 16px;border-radius:4px;cursor:pointer;font-family:inherit;opacity:1;'
+    : 'background:#4f5660;color:#8a9099;border:none;font-size:13px;font-weight:600;padding:6px 16px;border-radius:4px;cursor:not-allowed;font-family:inherit;opacity:0.6;';
+  const btnHover = hasVoted ? "onmouseover=\"this.style.background='#0090d4'\" onmouseout=\"this.style.background='#00a8fc'\"" : '';
 
   return '<div style="background:#2b2d31;border-radius:12px;padding:16px;max-width:420px;margin-top:4px;">'
     + '<div style="font-weight:700;font-size:15px;margin-bottom:4px;">' + p.question + '</div>'
@@ -7861,7 +7869,7 @@ function renderPoll(p, msgIdx) {
     + '<span style="font-size:13px;color:#80848e;">' + total + ' oy &nbsp;•&nbsp; ' + (hours >= 24 ? Math.floor(hours/24) + 'g' : hours + 'sa') + ' kaldı</span>'
     + '<div style="display:flex;gap:8px;align-items:center;">'
     + '<span data-poll-results="' + msgIdx + '" style="font-size:13px;color:#b5bac1;cursor:pointer;text-decoration:underline;text-underline-offset:2px;" onmouseover="this.style.color=\'#f2f3f5\'" onmouseout="this.style.color=\'#b5bac1\'">Sonuçları göster</span>'
-    + '<button data-poll-send="' + msgIdx + '" style="background:#00a8fc;color:white;border:none;font-size:13px;font-weight:600;padding:6px 16px;border-radius:4px;cursor:pointer;font-family:inherit;" onmouseover="this.style.background=\'#0090d4\'" onmouseout="this.style.background=\'#00a8fc\'">Oyla</button>'
+    + '<button data-poll-send="' + msgIdx + '" style="' + btnStyle + '" ' + btnHover + '>Oyla</button>'
     + '</div></div>'
     + '</div>';
 }
@@ -7869,8 +7877,13 @@ function renderPoll(p, msgIdx) {
 function sendPollVote(msgIdx) {
   const msg = getMessages(currentChannel)[msgIdx];
   if (!msg?.poll) return;
-  if (msg.poll.userVotes.length === 0) { showToast('Lütfen bir seçenek seç!'); return; }
-  showToast('✅ Oyunuz kaydedildi!');
+  if (!currentUser) { showToast('Oy vermek için giriş yapmalısın!'); return; }
+  const myUid = currentUser.uid;
+  const p = msg.poll;
+  const myVotes = (p.userVotes && p.userVotes[myUid]) ? p.userVotes[myUid] : [];
+  if (myVotes.length === 0) { showToast('Lütfen bir seçenek seç!'); return; }
+  // votePoll zaten Firestore'a yazdı, sadece toast göster
+  showToast('Oyunuz kaydedildi!');
 }
 
 function renderReactions(reactions, msgIdx) {
@@ -10440,15 +10453,19 @@ function renderGifResults(results) {
 function sendGif(url) {
   document.getElementById('emojiPicker').style.display = 'none';
   emojiPickerOpen = false;
-  // DM modundaysa DM'e gönder
   if (window._activeInputTarget && window._activeInputTarget.id === 'dmChatInput') {
     sendDmGif(url);
     return;
   }
-  const now = new Date();
-  const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
-  getMessages(currentChannel).push({ author: currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : 'AhmetYilmaz', text:'', time:timeStr, gif: url });
-  renderMessages();
+  if (!currentUser) return;
+  const uname = currentUser.displayName || currentUser.email.split('@')[0];
+  db.collection('channels').doc(currentChannel).collection('messages').add({
+    author: uname,
+    text: '',
+    uid: currentUser.uid,
+    gif: url,
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  }).catch(e => { showToast('GIF gönderilemedi: ' + e.message); });
 }
 
 function sendDmGif(url) {
@@ -10582,35 +10599,74 @@ function removePollAnswer(btn) {
 
 function sendPoll() {
   const question = document.getElementById('pollQuestion').value.trim();
-  if (!question) { showToast('L��tfen bir soru yaz!'); return; }
+  if (!question) { showToast('Lütfen bir soru yaz!'); return; }
   const answers = [...document.getElementById('pollAnswers').querySelectorAll('input')]
     .map(i => i.value.trim()).filter(Boolean);
   if (answers.length < 2) { showToast('En az 2 yanıt gerekli!'); return; }
   const duration = parseInt(document.getElementById('pollDuration').value);
   const multiple = document.getElementById('pollMultiple').checked;
 
-  const poll = { question, answers, duration, multiple, votes: answers.map(() => 0), userVotes: [] };
-  const now = new Date();
-  const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
-  getMessages(currentChannel).push({ author: currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : 'AhmetYilmaz', text:'', time:timeStr, poll });
+  const poll = { question, answers, duration, multiple, votes: answers.map(() => 0), userVotes: {} };
+  const uname = currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : 'Kullanici';
+
+  if (currentUser) {
+    db.collection('channels').doc(currentChannel).collection('messages').add({
+      author: uname,
+      text: '',
+      uid: currentUser.uid,
+      poll: poll,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(e => { showToast('Anket gönderilmedi: ' + e.message); });
+  } else {
+    const now = new Date();
+    const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+    getMessages(currentChannel).push({ author: uname, text: '', time: timeStr, poll });
+    renderMessages();
+  }
   closePollModal();
-  renderMessages();
-  showToast('📊 Anket gönderildi!');
+  showToast('Anket gönderildi!');
 }
 
 function votePoll(msgIdx, answerIdx) {
   const msg = getMessages(currentChannel)[msgIdx];
   if (!msg?.poll) return;
+  if (!currentUser) return;
+  if (!msg._firebaseId || !msg._channelId) return;
+
+  const myUid = currentUser.uid;
   const p = msg.poll;
+  if (!p.userVotes || Array.isArray(p.userVotes)) p.userVotes = {};
+
+  const myVotes = p.userVotes[myUid] ? [...p.userVotes[myUid]] : [];
+
   if (p.multiple) {
-    const vi = p.userVotes.indexOf(answerIdx);
-    if (vi >= 0) { p.votes[answerIdx]--; p.userVotes.splice(vi,1); }
-    else { p.votes[answerIdx]++; p.userVotes.push(answerIdx); }
+    const vi = myVotes.indexOf(answerIdx);
+    if (vi >= 0) myVotes.splice(vi, 1);
+    else myVotes.push(answerIdx);
   } else {
-    if (p.userVotes.includes(answerIdx)) { p.votes[answerIdx]--; p.userVotes=[]; }
-    else { p.userVotes.forEach(v => p.votes[v]--); p.userVotes=[answerIdx]; p.votes[answerIdx]++; }
+    if (myVotes.includes(answerIdx)) myVotes.length = 0;
+    else { myVotes.length = 0; myVotes.push(answerIdx); }
   }
+
+  // Local state güncelle (anlık görsel)
+  p.userVotes[myUid] = [...myVotes];
+  p.votes = p.answers.map(() => 0);
+  Object.values(p.userVotes).forEach(uvArr => {
+    if (Array.isArray(uvArr)) uvArr.forEach(vi => { if (p.votes[vi] !== undefined) p.votes[vi]++; });
+  });
   renderMessages();
+
+  // Firestore'a yaz - diğerleri de görsün
+  const newUserVotes = {};
+  Object.entries(p.userVotes).forEach(([k, v]) => { newUserVotes[k] = v; });
+  const newVotesCounts = p.answers.map(() => 0);
+  Object.values(newUserVotes).forEach(uvArr => {
+    if (Array.isArray(uvArr)) uvArr.forEach(vi => { if (newVotesCounts[vi] !== undefined) newVotesCounts[vi]++; });
+  });
+
+  db.collection('channels').doc(msg._channelId).collection('messages').doc(msg._firebaseId)
+    .update({ 'poll.userVotes': newUserVotes, 'poll.votes': newVotesCounts })
+    .catch(e => { console.warn('Oy kaydedilemedi:', e); });
 }
 
 function showPollResults(msgIdx) {
@@ -20097,10 +20153,27 @@ function listenToMessages(channelId) {
           _channelId: channelId
         };
         if (d.replyTo) msgObj.replyTo = d.replyTo;
+        // Anket alanını al
+        if (d.poll) {
+          msgObj.poll = d.poll;
+          // userVotes: her kullanıcı kendi oyunu saklar (uid bazlı object)
+          if (!msgObj.poll.userVotes) msgObj.poll.userVotes = {};
+          // Kendi oyumuzu userVotes'tan al (array formatı için geriye dönük uyumluluk)
+          if (Array.isArray(msgObj.poll.userVotes)) {
+            const arr = msgObj.poll.userVotes;
+            msgObj.poll.userVotes = {};
+            if (currentUser && arr.length > 0) msgObj.poll.userVotes[currentUser.uid] = arr;
+          }
+        }
+        // GIF alanını al
+        if (d.gif) msgObj.gif = d.gif;
         // Dosya alanlarını da al
         if (d.uploadedImage) { msgObj.uploadedImage = d.uploadedImage; msgObj.fileName = d.fileName; msgObj.isSpoiler = d.isSpoiler || false; }
         if (d.uploadedVideo) { msgObj.uploadedVideo = d.uploadedVideo; msgObj.fileName = d.fileName; }
         if (d.uploadedFile)  { msgObj.uploadedFile = true; msgObj.fileName = d.fileName; msgObj.fileSize = d.fileSize; msgObj.fileType = d.fileType; msgObj.fileUrl = d.fileUrl; }
+        // Edited alanı
+        if (d.edited) msgObj.edited = true;
+        if (d.reactions) msgObj.reactions = d.reactions;
         msgs.push(msgObj);
       });
       // Mevcut mesajları Firebase'dekilerle güncelle
