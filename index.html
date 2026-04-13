@@ -6671,6 +6671,7 @@ function _vcSetupSignaling(pc, remoteUid, remoteStream) {
                 at: firebase.firestore.FieldValue.serverTimestamp()
               });
           } catch(e) { console.warn('vc handle offer err', e); }
+          change.doc.ref.delete().catch(() => {});
           continue;
         }
 
@@ -6681,6 +6682,7 @@ function _vcSetupSignaling(pc, remoteUid, remoteStream) {
               await pc.setRemoteDescription(new RTCSessionDescription(d.answer));
             }
           } catch(e) { console.warn('vc handle answer err', e); }
+          change.doc.ref.delete().catch(() => {});
           continue;
         }
       }
@@ -6702,7 +6704,12 @@ async function _vcConnectToPeer(remoteUid) {
   const remoteStream = new MediaStream();
   _vcPeers[remoteUid] = { pc, remoteStream, remoteUid };
 
-  localStream.getAudioTracks().forEach(t => pc.addTrack(t, localStream));
+  // Audio track'leri PC'ye ekle
+  const audioTracks = localStream.getAudioTracks();
+  if (audioTracks.length === 0) {
+    console.warn('_vcConnectToPeer: ses track yok!');
+  }
+  audioTracks.forEach(t => { t.enabled = !voiceMicMuted; pc.addTrack(t, localStream); });
 
   // Kamera veya ekran açıksa video track'ini de ekle
   const activeCamTrack = typeof _voiceCamStream !== 'undefined' && _voiceCamStream?.getVideoTracks().find(t => t.readyState === 'live');
@@ -6710,7 +6717,6 @@ async function _vcConnectToPeer(remoteUid) {
   const activeVideoTrack = activeScreenTrack || activeCamTrack;
   if (activeVideoTrack) pc.addTrack(activeVideoTrack, localStream);
 
-  // DM _handleRemoteTrack mantığı
   pc.ontrack = e => {
     const stream = e.streams && e.streams[0] ? e.streams[0] : remoteStream;
     if (e.streams && e.streams[0]) {
@@ -6718,7 +6724,6 @@ async function _vcConnectToPeer(remoteUid) {
     } else {
       if (!remoteStream.getTracks().find(t => t.id === e.track.id)) remoteStream.addTrack(e.track);
     }
-    // Ses track'i geldiyse audio element ile oynat
     if (e.track.kind === 'audio') {
       let audioEl = document.getElementById('vc-audio-' + remoteUid);
       if (!audioEl) {
@@ -6729,12 +6734,9 @@ async function _vcConnectToPeer(remoteUid) {
         audioEl.style.display = 'none';
         document.body.appendChild(audioEl);
       }
-      // Sadece audio track'lerini içeren temiz bir stream ver
-      const audioStream = new MediaStream([e.track]);
-      audioEl.srcObject = audioStream;
+      audioEl.srcObject = new MediaStream([e.track]);
       audioEl.play().catch(() => {});
     }
-    // Video track güncelleme
     _updatePeerVideoCard(remoteUid, stream);
     if (e.track.kind === 'video') {
       e.track.onmute   = () => _updatePeerVideoCard(remoteUid, stream);
@@ -6763,11 +6765,9 @@ async function _vcConnectToPeer(remoteUid) {
     }
   };
 
-  // Ortak sinyal dinleyiciyi kur (offer, answer, ice hepsini yakalar)
   const unsub = _vcSetupSignaling(pc, remoteUid, remoteStream);
   _vcPeers[remoteUid].unsub = unsub;
 
-  // Offer oluştur ve gönder
   try {
     const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
     await pc.setLocalDescription(offer);
@@ -6792,14 +6792,17 @@ async function _vcListenForOffer(remoteUid) {
   const remoteStream = new MediaStream();
   _vcPeers[remoteUid] = { pc, remoteStream, remoteUid };
 
-  localStream.getAudioTracks().forEach(t => pc.addTrack(t, localStream));
+  const audioTracks2 = localStream.getAudioTracks();
+  if (audioTracks2.length === 0) {
+    console.warn('_vcListenForOffer: ses track yok!');
+  }
+  audioTracks2.forEach(t => { t.enabled = !voiceMicMuted; pc.addTrack(t, localStream); });
 
   const activeCamTrack = typeof _voiceCamStream !== 'undefined' && _voiceCamStream?.getVideoTracks().find(t => t.readyState === 'live');
   const activeScreenTrack = typeof _screenStream !== 'undefined' && _screenStream?.getVideoTracks().find(t => t.readyState === 'live');
   const activeVideoTrack = activeScreenTrack || activeCamTrack;
   if (activeVideoTrack) pc.addTrack(activeVideoTrack, localStream);
 
-  // DM _handleRemoteTrack mantığı
   pc.ontrack = e => {
     const stream = e.streams && e.streams[0] ? e.streams[0] : remoteStream;
     if (e.streams && e.streams[0]) {
@@ -6807,7 +6810,6 @@ async function _vcListenForOffer(remoteUid) {
     } else {
       if (!remoteStream.getTracks().find(t => t.id === e.track.id)) remoteStream.addTrack(e.track);
     }
-    // Ses track'i geldiyse audio element ile oynat
     if (e.track.kind === 'audio') {
       let audioEl = document.getElementById('vc-audio-' + remoteUid);
       if (!audioEl) {
@@ -6818,12 +6820,9 @@ async function _vcListenForOffer(remoteUid) {
         audioEl.style.display = 'none';
         document.body.appendChild(audioEl);
       }
-      // Sadece audio track'lerini içeren temiz bir stream ver
-      const audioStream = new MediaStream([e.track]);
-      audioEl.srcObject = audioStream;
+      audioEl.srcObject = new MediaStream([e.track]);
       audioEl.play().catch(() => {});
     }
-    // Video track güncelleme
     _updatePeerVideoCard(remoteUid, stream);
     if (e.track.kind === 'video') {
       e.track.onmute   = () => _updatePeerVideoCard(remoteUid, stream);
@@ -7304,6 +7303,16 @@ function leaveVoiceChannel() {
     _screenStream = null;
   }
   if (typeof _screenTrackSender !== 'undefined') _screenTrackSender = null;
+  // Kanaldan çıkınca eski signaling dokümanlarını temizle
+  if (currentUser && window._currentVoiceChannelId) {
+    const _cleanChanId = window._currentVoiceChannelId;
+    db.collection('voiceChannels').doc(_cleanChanId)
+      .collection('signaling')
+      .where('from', '==', currentUser.uid)
+      .get().then(snap => {
+        snap.forEach(doc => doc.ref.delete().catch(() => {}));
+      }).catch(() => {});
+  }
   // WebRTC bağlantılarını kapat
   _vcDisconnectAll();
   // Kalan tüm vc-audio elementlerini temizle
@@ -7335,7 +7344,6 @@ function scheduleVoiceJoin() {
   const channelId = currentChannel; // mevcut kanal id
   const channelName = document.getElementById('voiceChannelName').textContent;
   window._currentVoiceChannelId = currentServer + '_' + channelId;
-  // _voiceStartTime artık Firebase'den channelStartTime okununca set ediliyor
 
   // Firestore'a katılım yaz
   const myName = getMyVoiceName();
