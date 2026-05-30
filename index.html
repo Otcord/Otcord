@@ -248,9 +248,139 @@ const TRON_BASIC_LOGO_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAVMAA
   .mod-toggle:not(.mod-on) { background: #4e5058 !important; }
   .mod-toggle:not(.mod-on) > div { right: auto !important; left: 3px !important; }
 
+  /* İZİN TOGGLE STİLLERİ */
+  .izin-satir {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 1px solid #2e3035;
+  }
+  .izin-satir:last-child { border-bottom: none; }
+  .izin-bilgi { flex: 1; }
+  .izin-ad { font-size: 15px; font-weight: 600; color: #f2f3f5; margin-bottom: 4px; }
+  .izin-aciklama { font-size: 13px; color: #80848e; line-height: 1.5; }
+  .izin-toggle {
+    width: 44px; height: 24px; border-radius: 12px; background: #4e5058;
+    position: relative; cursor: pointer; flex-shrink: 0; margin-top: 2px;
+    transition: background .2s;
+  }
+  .izin-toggle.aktif { background: #1790bf; }
+  .izin-knob {
+    position: absolute; top: 3px; left: 3px;
+    width: 18px; height: 18px; border-radius: 50%; background: white;
+    transition: left .2s;
+  }
+  .izin-toggle.aktif .izin-knob { left: 23px; }
+  .izin-satir.gizli { display: none; }
+
   @keyframes boostParticle {
   0% { transform: translateY(0) scale(1); opacity: 1; }
   100% { transform: translateY(-80px) scale(0); opacity: 0; }
+}
+
+/* ── SESLİ MESAJ ── */
+.voice-msg-bar {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: #1e1f22;
+  border-radius: inherit;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  z-index: 10;
+}
+.voice-msg-bar.aktif { display: flex; }
+.voice-msg-waves {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 36px;
+  overflow: hidden;
+}
+.voice-msg-waves span {
+  display: inline-block;
+  width: 3px;
+  border-radius: 3px;
+  background: #0090d4;
+  height: 4px;
+  transition: height .05s;
+  flex-shrink: 0;
+}
+.voice-msg-timer {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f23f43;
+  min-width: 36px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.voice-msg-iptal {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: #f23f4322;
+  border: none;
+  color: #f23f43;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background .15s;
+}
+.voice-msg-iptal:hover { background: #f23f4344; }
+
+/* Sesli mesaj balonu */
+.voice-msg-bubble {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #2b2d31;
+  border-radius: 12px;
+  padding: 8px 14px;
+  max-width: 320px;
+  border: 1px solid #3f4147;
+}
+.voice-msg-play-btn {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: #0090d4;
+  border: none;
+  color: white;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background .15s;
+}
+.voice-msg-play-btn:hover { background: #007ab8; }
+.voice-msg-waveform {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 28px;
+  cursor: pointer;
+}
+.voice-msg-waveform span {
+  display: inline-block;
+  width: 3px;
+  border-radius: 3px;
+  background: #4f5660;
+  flex-shrink: 0;
+  transition: background .1s;
+}
+.voice-msg-waveform span.played { background: #0090d4; }
+.voice-msg-duration {
+  font-size: 12px;
+  color: #80848e;
+  min-width: 32px;
+  text-align: right;
+  flex-shrink: 0;
+}
+@keyframes voice-pulse {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(2.5); }
 }
 
 ::-webkit-scrollbar { width: 8px; }
@@ -1569,7 +1699,20 @@ const TRON_BASIC_LOGO_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAVMAA
         <div style="font-size:11px;font-weight:700;color:#80848e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Yüklenecek Dosyalar</div>
         <div id="filePreviewList" style="display:flex;gap:16px;flex-wrap:wrap;padding-top:4px;"></div>
       </div>
-      <div class="input-box">
+      <div class="input-box" style="position:relative;">
+        <!-- SESLİ MESAJ OVERLAY -->
+        <div class="voice-msg-bar" id="voiceMsgBar">
+          <button class="voice-msg-iptal" onclick="sesliMesajIptal()" title="İptal">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          </button>
+          <div class="voice-msg-waves" id="voiceMsgWaves"></div>
+          <div class="voice-msg-timer" id="voiceMsgTimer">0:00</div>
+          <div id="voiceSendBtn" onclick="sesliMesajGonder('server')"
+            style="width:36px;height:36px;border-radius:50%;background:#0090d4;border:none;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s;"
+            onmouseover="this.style.background='#007ab8'" onmouseout="this.style.background='#0090d4'">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+          </div>
+        </div>
         <div style="position:relative;">
           <div class="input-btn" data-tooltip="Dosya Ekle" id="fileAddBtn" onclick="toggleFileMenu(event)">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
@@ -1595,6 +1738,11 @@ const TRON_BASIC_LOGO_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAVMAA
           oninput="handleInputChange()"
           onpaste="handleInputPaste(event)"
         ></textarea>
+        <div class="input-btn" id="voiceMsgBtn" data-tooltip="Sesli Mesaj" onclick="sesliMesajBaslat('server')"
+          style="flex-shrink:0;color:#b5bac1;transition:color .15s;"
+          onmouseover="this.style.color='#f2f3f5'" onmouseout="this.style.color='#b5bac1'">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+        </div>
         <div class="input-btn" data-tooltip="GIF" onclick="openGifTab(event)">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M11.5 9H13v6h-1.5zM9 9H6c-.6 0-1 .5-1 1v4c0 .5.4 1 1 1h3c.6 0 1-.5 1-1v-2H8.5v1.5h-2v-3H10V10c0-.5-.4-1-1-1zm10 1.5V9h-4.5v6H16v-2h2v-1.5h-2v-1z"/></svg>
         </div>
@@ -1863,7 +2011,20 @@ const TRON_BASIC_LOGO_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAVMAA
               <div style="font-size:11px;font-weight:700;color:#80848e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Yüklenecek Dosyalar</div>
               <div id="dmFilePreviewList" style="display:flex;gap:16px;flex-wrap:wrap;padding-top:4px;"></div>
             </div>
-            <div class="input-box" id="dmInputBox" style="background:#383a40;border-radius:8px;display:flex;align-items:flex-end;padding:0 8px;gap:4px;min-height:44px;">
+            <div class="input-box" id="dmInputBox" style="background:#383a40;border-radius:8px;display:flex;align-items:flex-end;padding:0 8px;gap:4px;min-height:44px;position:relative;">
+              <!-- DM SESLİ MESAJ OVERLAY -->
+              <div class="voice-msg-bar" id="dmVoiceMsgBar">
+                <button class="voice-msg-iptal" onclick="sesliMesajIptal()" title="İptal">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                </button>
+                <div class="voice-msg-waves" id="dmVoiceMsgWaves"></div>
+                <div class="voice-msg-timer" id="dmVoiceMsgTimer">0:00</div>
+                <div onclick="sesliMesajGonder('dm')"
+                  style="width:36px;height:36px;border-radius:50%;background:#0090d4;border:none;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s;"
+                  onmouseover="this.style.background='#007ab8'" onmouseout="this.style.background='#0090d4'">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                </div>
+              </div>
               <!-- Dosya ekle -->
               <div style="position:relative;flex-shrink:0;">
                 <div class="input-btn" data-tooltip="Dosya Ekle" id="dmFileAddBtn" onclick="toggleDmFileMenu(event)" style="margin-bottom:4px;">
@@ -1882,6 +2043,12 @@ const TRON_BASIC_LOGO_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAVMAA
                 onkeydown="handleDmInputKeydown(event)"
                 onpaste="handleInputPaste(event,'dm')"
                 oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';"></textarea>
+              <!-- Sesli Mesaj -->
+              <div class="input-btn" id="dmVoiceMsgBtn" data-tooltip="Sesli Mesaj" onclick="sesliMesajBaslat('dm')"
+                style="flex-shrink:0;margin-bottom:4px;color:#b5bac1;transition:color .15s;"
+                onmouseover="this.style.color='#f2f3f5'" onmouseout="this.style.color='#b5bac1'">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+              </div>
               <!-- GIF -->
               <div class="input-btn" data-tooltip="GIF" onclick="openDmGifTab(event)" style="flex-shrink:0;margin-bottom:4px;">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M11.5 9H13v6h-1.5zM9 9H6c-.6 0-1 .5-1 1v4c0 .5.4 1 1 1h3c.6 0 1-.5 1-1v-2H8.5v1.5h-2v-3H10V10c0-.5-.4-1-1-1zm10 1.5V9h-4.5v6H16v-2h2v-1.5h-2v-1z"/></svg>
@@ -2397,35 +2564,12 @@ const TRON_BASIC_LOGO_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAVMAA
     <div style="height:1px;background:#2e3035;margin-bottom:10px;"></div>
     <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#b5bac1;margin-bottom:4px;">Hakkında</div>
     <div id="pcBio" style="font-size:13px;color:#dbdee1;margin-bottom:10px;line-height:1.5;"></div>
+    <div id="pcRollerSection" style="display:none;margin-bottom:10px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#b5bac1;margin-bottom:6px;">Roller</div>
+      <div id="pcRollerList" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+    </div>
     <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#b5bac1;margin-bottom:4px;">OtCord'a Katılım</div>
     <div id="pcJoined" style="font-size:13px;color:#dbdee1;margin-bottom:10px;"></div>
-    <div style="height:1px;background:#2e3035;margin-bottom:10px;"></div>
-    <!-- SEMİFY ŞU AN DİNLİYOR KARTI -->
-    <div id="pcSemifyCard" style="display:none;margin-bottom:10px;">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#b5bac1;margin-bottom:6px;">🎵 Semify'da Dinliyor</div>
-      <div style="background:#111214;border-radius:8px;padding:10px;display:flex;gap:10px;align-items:center;position:relative;overflow:hidden;">
-        <!-- Albüm Kapağı -->
-        <div style="position:relative;flex-shrink:0;">
-          <img id="pcSemifyThumb" src="" alt="albüm" style="width:52px;height:52px;border-radius:6px;object-fit:cover;display:block;">
-          <div id="pcSemifyPauseIcon" style="position:absolute;inset:0;background:rgba(0,0,0,0.5);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;display:none;">⏸️</div>
-        </div>
-        <!-- Şarkı Bilgisi -->
-        <div style="min-width:0;flex:1;">
-          <div id="pcSemifyTitle" style="font-size:13px;font-weight:700;color:#f2f3f5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
-          <div id="pcSemifyArtist" style="font-size:12px;color:#b5bac1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;"></div>
-          <!-- İlerleme Çubuğu -->
-          <div style="margin-top:7px;">
-            <div style="background:#2e3035;border-radius:2px;height:4px;width:100%;overflow:hidden;">
-              <div id="pcSemifyBar" style="height:100%;background:#1db954;border-radius:2px;width:0%;"></div>
-            </div>
-            <div style="display:flex;justify-content:space-between;margin-top:3px;">
-              <span id="pcSemifyProgress" style="font-size:10px;color:#80848e;">0:00</span>
-              <span id="pcSemifyDuration" style="font-size:10px;color:#80848e;">0:00</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
     <div style="height:1px;background:#2e3035;margin-bottom:10px;"></div>
     <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#b5bac1;margin-bottom:6px;">Not</div>
     <textarea id="pcNote" placeholder="Not eklemek için tıkla" maxlength="256" rows="3"
@@ -2541,11 +2685,29 @@ const TRON_BASIC_LOGO_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAVMAA
     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
     Mesaj Gönder
   </div>
+  <div class="ctx-item" id="memberCtxRollerItem" onmouseenter="showMemberRollerSubMenu(this)" style="display:flex;align-items:center;justify-content:space-between;position:relative;">
+    <span style="display:flex;align-items:center;gap:8px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+      Roller
+    </span>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-left:auto;opacity:.7;"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+  </div>
+  <div style="height:1px;background:#2e3035;margin:4px 0;"></div>
+  <div class="ctx-item" onclick="memberCtxKopyalaUID()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+    Kullanıcı UID Kopyala
+  </div>
   <div style="height:1px;background:#2e3035;margin:4px 0;"></div>
   <div class="ctx-item" onclick="memberCtxKick()" style="color:#f23f43;">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M13 12a4 4 0 100-8 4 4 0 000 8zm-7 8s-1 0-1-1 1-4 8-4 8 3 8 4-1 1-1 1H6zm12.5-8.5l1.5 1.5-4 4-2-2 1.5-1.5.5.5 2.5-2.5z"/></svg>
     Kullanıcıyı At
   </div>
+</div>
+
+<!-- ROL SUB-MENÜSÜ -->
+<div id="memberRollerSubMenu" style="display:none;position:fixed;background:#111214;border-radius:6px;padding:6px;min-width:200px;max-height:300px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,0.8);z-index:10100;border:1px solid #2e3035;">
+  <div style="font-size:11px;font-weight:700;color:#80848e;text-transform:uppercase;padding:4px 8px 6px;letter-spacing:.05em;border-bottom:1px solid #2e3035;margin-bottom:4px;">ROLLER</div>
+  <div id="memberRollerSubMenuList"></div>
 </div>
 
 <!-- KULLANICI AT ONAY MODALİ -->
@@ -3569,6 +3731,13 @@ const TRON_BASIC_LOGO_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAVMAA
           <div style="font-size:32px;margin-bottom:10px;">🤖</div>
           <div style="font-size:16px;font-weight:800;color:#f2f3f5;margin-bottom:4px;">Kullanıcı Simülasyonu</div>
           <div style="font-size:12px;color:#57f287;line-height:1.5;">Sunucuya sahte üye ekle</div>
+        </div>
+
+        <!-- Sunucu Ayarları -->
+        <div onclick="showDevPanel('sunucuayar')" style="background:linear-gradient(135deg,#0d1f3c,#1a2d4a);border:2px solid #0090d4;border-radius:12px;padding:24px 20px;cursor:pointer;transition:opacity .15s;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+          <div style="font-size:32px;margin-bottom:10px;">🛠️</div>
+          <div style="font-size:16px;font-weight:800;color:#f2f3f5;margin-bottom:4px;">Sunucu Ayarları</div>
+          <div style="font-size:12px;color:#0090d4;line-height:1.5;">Sunucu bilgilerini görüntüle ve yönet</div>
         </div>
 
       </div>
@@ -4842,7 +5011,415 @@ const TRON_BASIC_LOGO_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAVMAA
       </div>
 
       <!-- DİĞER SEKMELER — Yakında -->
-      <div id="srvTab_roller" style="display:none;"><h2 style="font-size:20px;font-weight:700;margin-bottom:16px;">Roller</h2><p style="color:#80848e;">Rol yönetimi yakında eklenecek.</p></div>
+      <div id="srvTab_roller" style="display:none;height:100%;display:none;">
+  <!-- ROL YÖNETİMİ ANA KONTEYNER -->
+  <div id="rollerContainer" style="display:flex;height:100%;gap:0;">
+
+    <!-- SOL: Rol Listesi -->
+    <div style="width:220px;flex-shrink:0;display:flex;flex-direction:column;padding-right:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <h2 style="font-size:20px;font-weight:700;color:#f2f3f5;margin:0;">Roller</h2>
+        <button onclick="rolEkle()" title="Rol Ekle"
+          style="width:28px;height:28px;border-radius:50%;background:#248046;border:none;color:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;flex-shrink:0;"
+          onmouseover="this.style.background='#1a6334'" onmouseout="this.style.background='#248046'">+</button>
+      </div>
+      <div id="rolListesi" style="flex:1;overflow-y:auto;"></div>
+    </div>
+
+    <!-- SAĞ: Rol Düzenleme Paneli -->
+    <div id="rolEditPanel" style="flex:1;display:flex;flex-direction:column;border-left:1px solid #3f4147;padding-left:24px;min-width:0;">
+
+      <!-- BOŞ DURUM — rol seçilmediğinde gösterilir -->
+      <div id="rolBosPanel" style="display:flex;flex-direction:column;justify-content:flex-start;padding-top:8px;">
+        <h3 style="font-size:16px;font-weight:700;color:#f2f3f5;margin:0 0 12px 0;">Roller Nedir?</h3>
+        <p style="font-size:14px;color:#b5bac1;line-height:1.6;margin:0 0 16px 0;">
+          Roller, sunucudaki üyeleri gruplamak ve onlara farklı kimlikler kazandırmak için kullanılır.
+          Her üyeye bir veya birden fazla rol atanabilir; bu roller üyenin adının yanında renkli olarak görünür.
+        </p>
+        <div style="background:#1e1f22;border-radius:8px;padding:14px 16px;margin-bottom:12px;border-left:3px solid #5865f2;">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#5865f2;margin-bottom:6px;">🎨 Özelleştirme</div>
+          <div style="font-size:13px;color:#b5bac1;line-height:1.5;">Her role özel bir isim ve renk verebilirsin. Üyenin adı sohbette o rolün rengiyle görünür.</div>
+        </div>
+        <div style="background:#1e1f22;border-radius:8px;padding:14px 16px;margin-bottom:12px;border-left:3px solid #248046;">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#248046;margin-bottom:6px;">👥 @everyone</div>
+          <div style="font-size:13px;color:#b5bac1;line-height:1.5;">@everyone rolü sunucudaki tüm üyeleri kapsar ve her zaman en altta yer alır. Bu rol silinemez.</div>
+        </div>
+        <div style="background:#1e1f22;border-radius:8px;padding:14px 16px;border-left:3px solid #f0b232;">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#f0b232;margin-bottom:6px;">💡 İpucu</div>
+          <div style="font-size:13px;color:#b5bac1;line-height:1.5;">Soldan bir role tıklayarak düzenlemeye başlayabilir, <span style="color:#f2f3f5;font-weight:600;">+</span> butonuyla yeni rol ekleyebilirsin.</div>
+        </div>
+      </div>
+
+      <!-- Üst: Geri + Rol Adı -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+        <button onclick="rolPanelKapat()" style="background:none;border:none;color:#b5bac1;cursor:pointer;font-size:20px;padding:0;" onmouseover="this.style.color='#f2f3f5'" onmouseout="this.style.color='#b5bac1'">←</button>
+        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#b5bac1;">ROL DÜZENLE —</span>
+        <span id="rolEditBaslik" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#f2f3f5;"></span>
+      </div>
+
+      <!-- Tablar -->
+      <div style="display:flex;gap:0;border-bottom:1px solid #3f4147;margin-bottom:20px;" id="rolTabBar">
+        <button class="rol-tab aktif" onclick="rolTabSec('gorunum')" id="rolTab_gorunum"
+          style="padding:8px 16px;background:none;border:none;border-bottom:2px solid #fff;color:#f2f3f5;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:-1px;">Görünüm</button>
+        <button class="rol-tab" onclick="rolTabSec('izinler')" id="rolTab_izinler"
+          style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:#b5bac1;font-size:14px;font-weight:500;cursor:pointer;margin-bottom:-1px;">İzinler</button>
+        <button class="rol-tab" onclick="rolTabSec('linkler')" id="rolTab_linkler"
+          style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:#b5bac1;font-size:14px;font-weight:500;cursor:pointer;margin-bottom:-1px;">Linkler</button>
+        <button class="rol-tab" onclick="rolTabSec('uyeler')" id="rolTab_uyeler"
+          style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:#b5bac1;font-size:14px;font-weight:500;cursor:pointer;margin-bottom:-1px;">Üyeleri Yönet</button>
+      </div>
+
+      <!-- Tab İçerikleri -->
+      <div id="rolTabIcerik" style="flex:1;overflow-y:auto;">
+
+        <!-- GÖRÜNÜM TAB -->
+        <div id="rolTabContent_gorunum">
+          <div style="margin-bottom:24px;">
+            <label style="display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#b5bac1;margin-bottom:8px;">Rol Adı</label>
+            <input id="rolAdiInput" type="text" maxlength="100"
+              oninput="rolAdiAnlikGuncelle(this.value)"
+              style="width:100%;max-width:400px;background:#1e1f22;border:1.5px solid #3f4147;border-radius:8px;color:#f2f3f5;font-size:15px;padding:10px 14px;outline:none;box-sizing:border-box;font-family:inherit;"
+              onfocus="this.style.borderColor='#1790bf'" onblur="this.style.borderColor='#3f4147'"/>
+          </div>
+
+          <div style="margin-bottom:24px;">
+            <label style="display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#b5bac1;margin-bottom:4px;">Rol Rengi</label>
+            <div style="font-size:12px;color:#80848e;margin-bottom:12px;">Üyeler, sahip oldukları en yüksek rolün rengini kullanır.</div>
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+              <!-- Varsayılan (renksiz) -->
+              <div id="rolRenkVarsayilan" onclick="rolRenkSec(null)" title="Varsayılan"
+                style="width:36px;height:36px;border-radius:6px;background:#2e3035;border:2px solid #fff;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="#b5bac1"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+              </div>
+              <!-- Renk paleti -->
+              <div style="display:flex;flex-wrap:wrap;gap:4px;max-width:280px;">
+                <div onclick="rolRenkSec('#1abc9c')" style="width:28px;height:28px;border-radius:4px;background:#1abc9c;cursor:pointer;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform=''"></div>
+                <div onclick="rolRenkSec('#2ecc71')" style="width:28px;height:28px;border-radius:4px;background:#2ecc71;cursor:pointer;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform=''"></div>
+                <div onclick="rolRenkSec('#3498db')" style="width:28px;height:28px;border-radius:4px;background:#3498db;cursor:pointer;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform=''"></div>
+                <div onclick="rolRenkSec('#9b59b6')" style="width:28px;height:28px;border-radius:4px;background:#9b59b6;cursor:pointer;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform=''"></div>
+                <div onclick="rolRenkSec('#e91e63')" style="width:28px;height:28px;border-radius:4px;background:#e91e63;cursor:pointer;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform=''"></div>
+                <div onclick="rolRenkSec('#f1c40f')" style="width:28px;height:28px;border-radius:4px;background:#f1c40f;cursor:pointer;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform=''"></div>
+                <div onclick="rolRenkSec('#e67e22')" style="width:28px;height:28px;border-radius:4px;background:#e67e22;cursor:pointer;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform=''"></div>
+                <div onclick="rolRenkSec('#e74c3c')" style="width:28px;height:28px;border-radius:4px;background:#e74c3c;cursor:pointer;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform=''"></div>
+                <div onclick="rolRenkSec('#95a5a6')" style="width:28px;height:28px;border-radius:4px;background:#95a5a6;cursor:pointer;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform=''"></div>
+                <div onclick="rolRenkSec('#607d8b')" style="width:28px;height:28px;border-radius:4px;background:#607d8b;cursor:pointer;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform=''"></div>
+                <div onclick="rolRenkSec('#11806a')" style="width:28px;height:28px;border-radius:4px;background:#11806a;cursor:pointer;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform=''"></div>
+                <div onclick="rolRenkSec('#1f8b4c')" style="width:28px;height:28px;border-radius:4px;background:#1f8b4c;cursor:pointer;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform=''"></div>
+                <div onclick="rolRenkSec('#206694')" style="width:28px;height:28px;border-radius:4px;background:#206694;cursor:pointer;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform=''"></div>
+                <div onclick="rolRenkSec('#71368a')" style="width:28px;height:28px;border-radius:4px;background:#71368a;cursor:pointer;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform=''"></div>
+                <div onclick="rolRenkSec('#ad1457')" style="width:28px;height:28px;border-radius:4px;background:#ad1457;cursor:pointer;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform=''"></div>
+                <div onclick="rolRenkSec('#c27c0e')" style="width:28px;height:28px;border-radius:4px;background:#c27c0e;cursor:pointer;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform=''"></div>
+                <div onclick="rolRenkSec('#a84300')" style="width:28px;height:28px;border-radius:4px;background:#a84300;cursor:pointer;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform=''"></div>
+                <div onclick="rolRenkSec('#992d22')" style="width:28px;height:28px;border-radius:4px;background:#992d22;cursor:pointer;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform=''"></div>
+              </div>
+              <!-- Custom renk -->
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div id="rolRenkOnizleme" style="width:36px;height:36px;border-radius:6px;background:#2e3035;border:2px solid #3f4147;cursor:pointer;position:relative;overflow:hidden;" onclick="document.getElementById('rolRenkPicker').click()">
+                  <input type="color" id="rolRenkPicker" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;" oninput="rolRenkPickerDegisti(this.value)" onchange="rolRenkPickerDegisti(this.value)">
+                </div>
+                <input id="rolRenkHexInput" type="text" maxlength="7" placeholder="#RRGGBB"
+                  oninput="rolRenkHexDegisti(this.value)"
+                  style="width:90px;background:#1e1f22;border:1.5px solid #3f4147;border-radius:6px;color:#f2f3f5;font-size:13px;padding:6px 10px;outline:none;font-family:monospace;"
+                  onfocus="this.style.borderColor='#00a8fc'" onblur="this.style.borderColor='#3f4147'"/>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- İZİNLER TAB -->
+        <div id="rolTabContent_izinler" style="display:none;">
+
+          <!-- @everyone kilit bildirimi -->
+          <div id="everyoneKilitBilgi" style="display:none;background:#1e1f22;border-radius:8px;padding:12px 16px;margin-bottom:16px;border-left:3px solid #1790bf;font-size:13px;color:#b5bac1;line-height:1.5;">
+            🔒 <strong style="color:#f2f3f5;">@everyone</strong> rolünün izinleri değiştirilemez. Bu rol sunucuya katılan herkese otomatik olarak atanır.
+          </div>
+
+          <!-- Arama -->
+          <div style="position:relative;margin-bottom:20px;">
+            <input type="text" placeholder="İzin ara" style="width:100%;background:#1e1f22;border:1.5px solid #3f4147;border-radius:6px;color:#f2f3f5;font-size:14px;padding:10px 40px 10px 14px;outline:none;box-sizing:border-box;font-family:inherit;" onfocus="this.style.borderColor='#1790bf'" onblur="this.style.borderColor='#3f4147'" oninput="izinAra(this.value)">
+            <svg style="position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;" width="16" height="16" viewBox="0 0 24 24" fill="#80848e"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+          </div>
+
+          <!-- GENEL SUNUCU İZİNLERİ -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#80848e;">Genel Sunucu İzinleri</div>
+            <div style="font-size:12px;color:#1790bf;cursor:pointer;" onclick="izinleriTemizle()">İzinleri temizle</div>
+          </div>
+
+          <!-- İzin satırı şablonu: her izin için tekrar edilir -->
+          <div class="izin-satir" data-izin="kanallari-goruntule">
+            <div class="izin-bilgi">
+              <div class="izin-ad">Kanalları Görüntüle</div>
+              <div class="izin-aciklama">Üyelerin kanalları varsayılan olarak görüntülemesine izin verir (özel kanallar hariç).</div>
+            </div>
+            <div class="izin-toggle" onclick="izinToggle(this)">
+              <div class="izin-knob"></div>
+            </div>
+          </div>
+
+          <div class="izin-satir" data-izin="kanallari-yonet">
+            <div class="izin-bilgi">
+              <div class="izin-ad">Kanalları Yönet</div>
+              <div class="izin-aciklama">Üyelerin kanal oluşturmasına, düzenlemesine veya silmesine izin verir.</div>
+            </div>
+            <div class="izin-toggle" onclick="izinToggle(this)">
+              <div class="izin-knob"></div>
+            </div>
+          </div>
+
+          <div class="izin-satir" data-izin="rolleri-yonet">
+            <div class="izin-bilgi">
+              <div class="izin-ad">Rolleri Yönet</div>
+              <div class="izin-aciklama">Üyelerin kendi rollerinden daha düşük rolleri oluşturmasına, düzenlemesine veya silmesine izin verir. Ayrıca eriştikleri kanalların izinlerini değiştirmelerine olanak tanır.</div>
+            </div>
+            <div class="izin-toggle" onclick="izinToggle(this)">
+              <div class="izin-knob"></div>
+            </div>
+          </div>
+
+          <div class="izin-satir" data-izin="emoji-cikartma-yonet">
+            <div class="izin-bilgi">
+              <div class="izin-ad">Emoji ve Çıkartmaları Yönet</div>
+              <div class="izin-aciklama">Üyelerin bu sunucuya özel emoji ve çıkartma eklemesine veya kaldırmasına izin verir.</div>
+            </div>
+            <div class="izin-toggle" onclick="izinToggle(this)">
+              <div class="izin-knob"></div>
+            </div>
+          </div>
+
+          <div class="izin-satir" data-izin="denetim-gunlugu-goster">
+            <div class="izin-bilgi">
+              <div class="izin-ad">Denetim Günlüğünü Görüntüle</div>
+              <div class="izin-aciklama">Üyelerin bu sunucuda kimin hangi değişiklikleri yaptığına dair kayıtları görüntülemesine izin verir.</div>
+            </div>
+            <div class="izin-toggle" onclick="izinToggle(this)">
+              <div class="izin-knob"></div>
+            </div>
+          </div>
+
+          <div class="izin-satir" data-izin="sunucu-bilgileri-goster">
+            <div class="izin-bilgi">
+              <div class="izin-ad">Sunucu İstatistiklerini Görüntüle</div>
+              <div class="izin-aciklama">Üyelerin topluluk büyümesi, etkileşimi ve daha fazlasına ilişkin verileri gösteren Sunucu İstatistiklerini görüntülemesine izin verir.</div>
+            </div>
+            <div class="izin-toggle" onclick="izinToggle(this)">
+              <div class="izin-knob"></div>
+            </div>
+          </div>
+
+          <div class="izin-satir" data-izin="webhook-yonet">
+            <div class="izin-bilgi">
+              <div class="izin-ad">Webhook'ları Yönet</div>
+              <div class="izin-aciklama">Üyelerin diğer uygulama veya sitelerden bu sunucuya mesaj gönderebilen webhook'lar oluşturmasına, düzenlemesine veya silmesine izin verir.</div>
+            </div>
+            <div class="izin-toggle" onclick="izinToggle(this)">
+              <div class="izin-knob"></div>
+            </div>
+          </div>
+
+          <div class="izin-satir" data-izin="sunucu-yonet">
+            <div class="izin-bilgi">
+              <div class="izin-ad">Sunucuyu Yönet</div>
+              <div class="izin-aciklama">Üyelerin sunucu adını değiştirmesine, bölge seçmesine ve bu sunucuya bot eklemesine izin verir.</div>
+            </div>
+            <div class="izin-toggle" onclick="izinToggle(this)">
+              <div class="izin-knob"></div>
+            </div>
+          </div>
+
+          <!-- ÜYELİK İZİNLERİ -->
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#80848e;margin-top:28px;margin-bottom:16px;">Üyelik İzinleri</div>
+
+          <div class="izin-satir" data-izin="davet-olustur">
+            <div class="izin-bilgi">
+              <div class="izin-ad">Davet Oluştur</div>
+              <div class="izin-aciklama">Üyelerin bu sunucuya yeni kişiler davet etmesine izin verir.</div>
+            </div>
+            <div class="izin-toggle" onclick="izinToggle(this)">
+              <div class="izin-knob"></div>
+            </div>
+          </div>
+
+          <div class="izin-satir" data-izin="lakap-degistir">
+            <div class="izin-bilgi">
+              <div class="izin-ad">Lakabı Değiştir</div>
+              <div class="izin-aciklama">Üyelerin yalnızca bu sunucuda kullanılan özel bir ad olan kendi lakaplarını değiştirmesine izin verir.</div>
+            </div>
+            <div class="izin-toggle" onclick="izinToggle(this)">
+              <div class="izin-knob"></div>
+            </div>
+          </div>
+
+          <div class="izin-satir" data-izin="lakaplarilari-yonet">
+            <div class="izin-bilgi">
+              <div class="izin-ad">Lakapları Yönet</div>
+              <div class="izin-aciklama">Üyelerin diğer üyelerin lakaplarını değiştirmesine izin verir.</div>
+            </div>
+            <div class="izin-toggle" onclick="izinToggle(this)">
+              <div class="izin-knob"></div>
+            </div>
+          </div>
+
+          <div class="izin-satir" data-izin="uyeleri-at">
+            <div class="izin-bilgi">
+              <div class="izin-ad">Üyeleri At</div>
+              <div class="izin-aciklama">Üyelerin diğer üyeleri bu sunucudan atmasına izin verir. Atılan üyeler, başka bir davet bağlantıları olursa yeniden katılabilir.</div>
+            </div>
+            <div class="izin-toggle" onclick="izinToggle(this)">
+              <div class="izin-knob"></div>
+            </div>
+          </div>
+
+          <div class="izin-satir" data-izin="uyeleri-yasakla">
+            <div class="izin-bilgi">
+              <div class="izin-ad">Üyeleri Yasakla</div>
+              <div class="izin-aciklama">Üyelerin diğer üyeleri bu sunucudan kalıcı olarak yasaklamasına izin verir.</div>
+            </div>
+            <div class="izin-toggle" onclick="izinToggle(this)">
+              <div class="izin-knob"></div>
+            </div>
+          </div>
+
+          <!-- METİN KANALI İZİNLERİ -->
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#80848e;margin-top:28px;margin-bottom:16px;">Metin Kanalı İzinleri</div>
+
+          <div class="izin-satir" data-izin="link-ekle">
+            <div class="izin-bilgi">
+              <div class="izin-ad">Bağlantı Ekle</div>
+              <div class="izin-aciklama">Üyelerin paylaştığı bağlantıların metin kanallarında gömülü içerik olarak görünmesine izin verir.</div>
+            </div>
+            <div class="izin-toggle" onclick="izinToggle(this)">
+              <div class="izin-knob"></div>
+            </div>
+          </div>
+
+          <div class="izin-satir" data-izin="dosya-ekle">
+            <div class="izin-bilgi">
+              <div class="izin-ad">Dosya Ekle</div>
+              <div class="izin-aciklama">Üyelerin metin kanallarına dosya veya medya yüklemesine izin verir.</div>
+            </div>
+            <div class="izin-toggle" onclick="izinToggle(this)">
+              <div class="izin-knob"></div>
+            </div>
+          </div>
+
+          <div class="izin-satir" data-izin="tepki-ekle">
+            <div class="izin-bilgi">
+              <div class="izin-ad">Tepki Ekle</div>
+              <div class="izin-aciklama">Üyelerin bir mesaja yeni emoji tepkisi eklemesine izin verir. Bu izin kapalıysa üyeler yalnızca var olan tepkileri kullanabilir.</div>
+            </div>
+            <div class="izin-toggle" onclick="izinToggle(this)">
+              <div class="izin-knob"></div>
+            </div>
+          </div>
+
+          <div class="izin-satir" data-izin="dis-emoji-kullan">
+            <div class="izin-bilgi">
+              <div class="izin-ad">Harici Emoji Kullan</div>
+              <div class="izin-aciklama">Üyelerin Tron abonesi olmaları halinde diğer sunuculardaki emojileri kullanmasına izin verir.</div>
+            </div>
+            <div class="izin-toggle" onclick="izinToggle(this)">
+              <div class="izin-knob"></div>
+            </div>
+          </div>
+
+          <div class="izin-satir" data-izin="dis-cikartma-kullan">
+            <div class="izin-bilgi">
+              <div class="izin-ad">Harici Çıkartma Kullan</div>
+              <div class="izin-aciklama">Üyelerin Tron abonesi olmaları halinde diğer sunuculardaki çıkartmaları kullanmasına izin verir.</div>
+            </div>
+            <div class="izin-toggle" onclick="izinToggle(this)">
+              <div class="izin-knob"></div>
+            </div>
+          </div>
+
+          <div class="izin-satir" data-izin="herkese-bahset">
+            <div class="izin-bilgi">
+              <div class="izin-ad">@everyone, @here ve Tüm Rolleri Etiketle</div>
+              <div class="izin-aciklama">Üyelerin @everyone (sunucudaki herkes) veya @here (yalnızca o kanalda çevrimiçi olanlar) kullanmasına izin verir. Ayrıca rolün "Herkes bu rolü etiketleyebilir" izni kapalı olsa bile tüm rolleri etiketleyebilirler.</div>
+            </div>
+            <div class="izin-toggle" onclick="izinToggle(this)">
+              <div class="izin-knob"></div>
+            </div>
+          </div>
+
+          <div class="izin-satir" data-izin="mesajlari-yonet">
+            <div class="izin-bilgi">
+              <div class="izin-ad">Mesajları Yönet</div>
+              <div class="izin-aciklama">Üyelerin diğer üyelerin mesajlarını silmesine veya herhangi bir mesajı sabitlemesine izin verir.</div>
+            </div>
+            <div class="izin-toggle" onclick="izinToggle(this)">
+              <div class="izin-knob"></div>
+            </div>
+          </div>
+
+          <div class="izin-satir" data-izin="mesaj-gecmisi-oku">
+            <div class="izin-bilgi">
+              <div class="izin-ad">Mesaj Geçmişini Oku</div>
+              <div class="izin-aciklama">Üyelerin kanallardaki önceki mesajları okumasına izin verir. Bu izin kapalıysa üyeler yalnızca çevrimiçi ve o kanalı açıkken gönderilen mesajları görebilir.</div>
+            </div>
+            <div class="izin-toggle" onclick="izinToggle(this)">
+              <div class="izin-knob"></div>
+            </div>
+          </div>
+
+          <div class="izin-satir" data-izin="uygulama-komutu-kullan">
+            <div class="izin-bilgi">
+              <div class="izin-ad">Uygulama Komutlarını Kullan</div>
+              <div class="izin-aciklama">Üyelerin slash komutları ve bağlam menüsü komutları dahil olmak üzere uygulamalardan gelen komutları kullanmasına izin verir.</div>
+            </div>
+            <div class="izin-toggle" onclick="izinToggle(this)">
+              <div class="izin-knob"></div>
+            </div>
+          </div>
+
+          <!-- GELİŞMİŞ İZİNLER -->
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#80848e;margin-top:28px;margin-bottom:16px;">Gelişmiş İzinler</div>
+
+          <div class="izin-satir" data-izin="yonetici">
+            <div class="izin-bilgi">
+              <div class="izin-ad">Yönetici</div>
+              <div class="izin-aciklama">Bu izne sahip üyeler her izne sahip olacak ve kanal bazlı tüm kısıtlamaları atlayacaktır (örneğin tüm özel kanallara erişebilirler). <strong>Bu iznin verilmesi tehlikelidir.</strong></div>
+            </div>
+            <div class="izin-toggle" onclick="izinToggle(this)">
+              <div class="izin-knob"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- LİNKLER TAB -->
+        <div id="rolTabContent_linkler" style="display:none;">
+          <p style="color:#80848e;font-size:14px;">Link yönetimi yakında eklenecek.</p>
+        </div>
+
+        <!-- ÜYELERİ YÖNET TAB -->
+        <div id="rolTabContent_uyeler" style="display:none;">
+          <p style="color:#80848e;font-size:14px;">Üye yönetimi yakında eklenecek.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEĞİŞİKLİKLERİ KAYDET BARI -->
+  <div id="rolKaydetBar" style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#111214;border-radius:8px;padding:12px 20px;align-items:center;gap:16px;box-shadow:0 4px 16px rgba(0,0,0,0.6);white-space:nowrap;border:1px solid #f0b232;min-width:480px;z-index:100000;">
+    <span style="color:#f0b232;font-size:18px;">⚠️</span>
+    <span style="color:#f2f3f5;font-size:14px;font-weight:500;">Dikkat — Kaydedilmemiş değişiklikleriniz var!</span>
+    <div style="margin-left:auto;display:flex;gap:8px;">
+      <button onclick="rolDegisiklikSifirla()" style="background:#4e5058;border:none;color:#f2f3f5;font-size:14px;font-weight:600;cursor:pointer;padding:8px 20px;border-radius:4px;font-family:inherit;" onmouseover="this.style.background='#6d6f78'" onmouseout="this.style.background='#4e5058'">Sıfırla</button>
+      <button onclick="rolKaydet()" style="background:#23a55a;color:white;border:none;border-radius:4px;padding:8px 20px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#1a8a4a'" onmouseout="this.style.background='#23a55a'">Değişiklikleri Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- ROL SAĞ CLICK MENÜ -->
+<div id="rolContextMenu" style="display:none;position:fixed;background:#111214;border:1px solid #3f4147;border-radius:8px;padding:4px;z-index:9999;min-width:180px;box-shadow:0 8px 32px rgba(0,0,0,.6);">
+  <div style="padding:6px 12px;font-size:12px;color:#80848e;font-weight:700;text-transform:uppercase;letter-spacing:.05em;" id="rolContextAd"></div>
+  <div onclick="rolContextSil()" style="padding:8px 12px;color:#f23f43;font-size:14px;cursor:pointer;border-radius:4px;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='rgba(242,63,67,0.1)'" onmouseout="this.style.background=''">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="#f23f43"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+    Rolü Sil
+  </div>
+</div>
       <div id="srvTab_emoji" style="display:none;">
   <h2 style="font-size:20px;font-weight:700;margin-bottom:4px;">Emoji</h2>
   <p style="color:#80848e;font-size:14px;margin-bottom:20px;">Bu sunucuya özel emojiler ekle. Herkes kullanabilir.</p>
@@ -7655,6 +8232,16 @@ function _doSwitchServer(el, serverId) {
   currentServer = serverId;
   updateMembersForCurrentServer();
 
+  // Önceki sunucunun kanal listener'larını temizle
+  Object.keys(channelListeners).forEach(chId => {
+    if (channelListeners[chId]) { channelListeners[chId](); delete channelListeners[chId]; }
+  });
+
+  // Kullanıcı profil listener'larını temizle (yeni sunucuda yeniden kurulur)
+  Object.keys(_usersListeners).forEach(uid => {
+    if (_usersListeners[uid]) { _usersListeners[uid](); delete _usersListeners[uid]; }
+  });
+
   // Sunucu afişini güncelle
   const bannerEl = document.getElementById('srvHeaderBanner');
   if (bannerEl) {
@@ -7699,21 +8286,34 @@ function _doSwitchServer(el, serverId) {
         if (channels.length === 0) {
           channels.push({ id: 'genel-' + serverId, name: 'genel', category: 'METİN KANALLARI', type: 'text' });
         }
-        servers[serverId] = { name: srvName, channels };
+        servers[serverId] = { name: srvName, channels, roles: srvData.roles || [] };
         loadServerNicknames(serverId);
+        loadMemberRolesForServer(serverId);
         listenToChannels(serverId, true);
       });
     }).catch(function() {
       servers[serverId] = { name: serverId, channels: [
         { id: 'genel-' + serverId, name: 'genel', category: 'METİN KANALLARI', type: 'text' }
-      ]};
+      ], roles: [] };
       loadServerNicknames(serverId);
+      loadMemberRolesForServer(serverId);
       listenToChannels(serverId, true);
     });
     return;
   }
   loadServerNicknames(serverId);
+  loadMemberRolesForServer(serverId);
   listenToChannels(serverId, true);
+}
+
+function getMsgAuthorColor(uid) {
+  if (!uid || !currentServer || ['coding','gaming','dm'].includes(currentServer)) return '#f2f3f5';
+  const srvRoles = servers[currentServer]?.roles?.filter(r => r.id !== 'everyone') || [];
+  const memberRoleIds = (window._memberRolesCache?.[currentServer]?.[uid]) || [];
+  for (const r of srvRoles) {
+    if (memberRoleIds.includes(r.id) && r.color && r.color !== '#99aab5') return r.color;
+  }
+  return '#f2f3f5';
 }
 
 function renderMessages() {
@@ -7756,7 +8356,9 @@ function renderMessages() {
     
     const msgBody = msg.poll
       ? renderPoll(msg.poll, i)
-      : msg.gif
+      : msg.audioUrl
+        ? renderVoiceMsg(msg, i)
+        : msg.gif
         ? '<div class="msg-text"><img src="' + encodeURI(msg.gif) + '" style="max-width:280px;max-height:200px;border-radius:8px;display:block;margin-top:4px;" loading="lazy"></div>'
         : msg.uploadedImage
           ? '<div class="msg-text"><div style="font-size:12px;color:#80848e;margin-bottom:4px;">📎 ' + escapeHtml(msg.fileName) + '</div>'
@@ -7805,7 +8407,7 @@ function renderMessages() {
         <div class="msg-avatar" style="background:${avatarBg};cursor:pointer;" data-profile="${safeAuthor}">${avatarText}</div>
         <div class="msg-content">
           <div class="msg-header">
-            <span class="msg-author" style="color:#f2f3f5;cursor:pointer;" data-profile="${safeAuthor}">${safeDisplayName}</span>
+            <span class="msg-author" style="color:${getMsgAuthorColor(msg.uid)};cursor:pointer;" data-profile="${safeAuthor}" data-uid="${msg.uid||''}">${safeDisplayName}</span>
             <span class="msg-time">${msg.time}</span>
           </div>
           ${msgBody}
@@ -7844,7 +8446,11 @@ function renderMessages() {
     });
   });
   area.querySelectorAll('[data-profile]').forEach(el => {
-    
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      const name = el.dataset.profile;
+      openPCard(name, el);
+    });
   });
   area.querySelectorAll('[data-ctx]').forEach(el => {
     el.addEventListener('contextmenu', e => showCtxMenu(e, parseInt(el.dataset.msgidx)));
@@ -8055,12 +8661,55 @@ function updateHeaderMemberCounts() {
 }
 
 function renderMembers() {
-  const online = members.filter(m => m.status !== 'offline');
-  const offline = members.filter(m => m.status === 'offline');
-  let html = `<div class="members-category">Çevrimiçi — ${online.length}</div>`;
-  online.forEach(m => html += renderMember(m));
-  html += `<div class="members-category" style="margin-top:16px">Çevrimdışı — ${offline.length}</div>`;
-  offline.forEach(m => html += renderMember(m));
+  // Sunucu rollerini al (everyone hariç, sadece rengi olan roller)
+  const srvRoles = (currentServer && !['coding','gaming','dm'].includes(currentServer))
+    ? (servers[currentServer]?.roles || []).filter(r => r.id !== 'everyone')
+    : [];
+  const rolesCache = (window._memberRolesCache?.[currentServer]) || {};
+
+  // Rol atanmış üyeleri gruplandır
+  // Her üye için en üst öncelikli rolünü bul
+  function getTopRole(m) {
+    if (!m.uid) return null;
+    const mRoleIds = rolesCache[m.uid] || [];
+    if (mRoleIds.length === 0) return null;
+    for (const r of srvRoles) {
+      if (mRoleIds.includes(r.id)) return r;
+    }
+    return null;
+  }
+
+  let html = '';
+
+  if (srvRoles.length > 0) {
+    // Her üyeyi sadece EN ÜST rolüne göre gruplandır (bir üye yalnızca 1 grupta gözükür)
+    srvRoles.forEach(role => {
+      // Sadece bu rolü en üst rolü olan üyeleri al
+      const roleMembers = members.filter(m => getTopRole(m)?.id === role.id);
+      if (roleMembers.length === 0) return;
+      html += `<div class="members-category" style="margin-top:16px;color:${role.color||'#b5bac1'};">${escapeHtml(role.name)} — ${roleMembers.length}</div>`;
+      roleMembers.forEach(m => html += renderMember(m));
+    });
+    // Hiç rolü olmayan üyeler
+    const noRoleOnline = members.filter(m => m.status !== 'offline' && !getTopRole(m));
+    const noRoleOffline = members.filter(m => m.status === 'offline' && !getTopRole(m));
+    if (noRoleOnline.length > 0) {
+      html += `<div class="members-category" style="margin-top:16px;">Çevrimiçi — ${noRoleOnline.length}</div>`;
+      noRoleOnline.forEach(m => html += renderMember(m));
+    }
+    if (noRoleOffline.length > 0) {
+      html += `<div class="members-category" style="margin-top:16px;">Çevrimdışı — ${noRoleOffline.length}</div>`;
+      noRoleOffline.forEach(m => html += renderMember(m));
+    }
+  } else {
+    const online = members.filter(m => m.status !== 'offline');
+    const offline = members.filter(m => m.status === 'offline');
+    html = `<div class="members-category">Çevrimiçi — ${online.length}</div>`;
+    online.forEach(m => html += renderMember(m));
+    html += `<div class="members-category" style="margin-top:16px">Çevrimdışı — ${offline.length}</div>`;
+    offline.forEach(m => html += renderMember(m));
+  }
+
   const list = document.getElementById('membersList');
   list.innerHTML = html;
   
@@ -8070,6 +8719,7 @@ function renderMembers() {
   // Güvenli event delegation — inline onclick ile kullanıcı verisi inject etme
   list.querySelectorAll('.member-item').forEach(el => {
     const mname = el.dataset.mname;
+    const muid = el.dataset.muid || '';
     const isMe = el.dataset.misMe === '1';
     el.addEventListener('click', e => {
       e.stopPropagation();
@@ -8077,7 +8727,7 @@ function renderMembers() {
     });
     el.addEventListener('contextmenu', e => {
       e.preventDefault();
-      if (!isMe) showMemberCtxMenu(e, mname);
+      if (!isMe) showMemberCtxMenu(e, mname, muid);
     });
   });
   list.querySelectorAll('[data-memberdot]').forEach(el => {
@@ -8105,6 +8755,20 @@ function getServerNickname(uid) {
   return (serverNicknameCache[currentServer] || {})[uid] || null;
 }
 
+function getMemberRoleColor(uid) {
+  if (!uid || !currentServer) return null;
+  const memberRoleIds = (window._memberRolesCache?.[currentServer]?.[uid]) || [];
+  if (memberRoleIds.length === 0) return null;
+  const srvRoles = servers[currentServer]?.roles || [];
+  // Rol listesindeki sıraya göre en üstteki rengi döndür
+  for (const role of srvRoles) {
+    if (role.id !== 'everyone' && memberRoleIds.includes(role.id) && role.color && role.color !== '#99aab5') {
+      return role.color;
+    }
+  }
+  return null;
+}
+
 function renderMember(m) {
   const color = getColor(m.uid || m.name);
   // Avatar URL güvenlik kontrolü
@@ -8116,15 +8780,17 @@ function renderMember(m) {
   const myUname = currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : '';
   const isMe = m.name === myUname;
   const nicknameTag = nickname ? ` <span style="font-size:11px;color:#80848e;font-weight:400;">(${escapeHtml(m.name)})</span>` : '';
+  // Rol rengi: en yüksek öncelikli rol rengini isme uygula
+  const roleColor = getMemberRoleColor(m.uid);
   // Güvenli: inline onclick yerine data-* attribute — XSS koruması
   const kickBtn = isMe ? '' : `<div data-memberdot="1" data-mname="${escapeHtml(m.name)}" data-muid="${escapeHtml(m.uid||'')}" data-mavatar="${escapeHtml(safeAvatarUrl)}" style="margin-left:auto;width:28px;height:28px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#b5bac1;cursor:pointer;opacity:0;transition:opacity .1s;letter-spacing:1px;" class="member-kick-btn">⋯</div>`;
-  return `<div class="member-item" data-mname="${escapeHtml(m.name)}" data-misMe="${isMe?'1':'0'}" onmouseenter="this.querySelector && this.querySelector('.member-kick-btn') && (this.querySelector('.member-kick-btn').style.opacity='1')" onmouseleave="this.querySelector && this.querySelector('.member-kick-btn') && (this.querySelector('.member-kick-btn').style.opacity='0')">
+  return `<div class="member-item" data-mname="${escapeHtml(m.name)}" data-muid="${escapeHtml(m.uid||'')}" data-misMe="${isMe?'1':'0'}" onmouseenter="this.querySelector && this.querySelector('.member-kick-btn') && (this.querySelector('.member-kick-btn').style.opacity='1')" onmouseleave="this.querySelector && this.querySelector('.member-kick-btn') && (this.querySelector('.member-kick-btn').style.opacity='0')">
     <div class="member-avatar" style="background:${avatarBg}">
       ${escapeHtml(avatarText)}
       <div class="member-status status-${m.status}"></div>
     </div>
     <div class="member-info">
-      <div class="member-name">${escapeHtml(displayName)}${nicknameTag}</div>
+      <div class="member-name" style="${roleColor ? 'color:'+roleColor+'' : ''}">${escapeHtml(displayName)}${nicknameTag}</div>
       ${m.activity ? `<div class="member-activity">${escapeHtml(m.activity)}</div>` : ''}
     </div>
     ${kickBtn}
@@ -8135,6 +8801,42 @@ function renderMember(m) {
 const statusColors = { online:'#23a55a', idle:'#f0b232', dnd:'#f23f43', offline:'#80848e' };
 
 let pcTarget = null;
+let pcTargetUid = null; // Profil kartı açık olan kişinin uid'si
+
+function renderPcRoller(tuid) {
+  const pcRollerSection = document.getElementById('pcRollerSection');
+  const pcRollerList = document.getElementById('pcRollerList');
+  if (!pcRollerSection || !pcRollerList) return;
+  pcRollerSection.style.display = 'none';
+  pcRollerList.innerHTML = '';
+  if (!tuid || !currentServer || ['coding','gaming','dm'].includes(currentServer)) return;
+  const srvRoles = servers[currentServer]?.roles?.filter(r => r.id !== 'everyone') || [];
+  const cachedRoles = (window._memberRolesCache?.[currentServer]?.[tuid]) || [];
+  const memberRoles = srvRoles.filter(r => cachedRoles.includes(r.id));
+  if (memberRoles.length > 0) {
+    pcRollerSection.style.display = 'block';
+    pcRollerList.innerHTML = memberRoles.map(r => {
+      const c = r.color || '#99aab5';
+      return `<div style="display:flex;align-items:center;gap:5px;background:#2b2d31;border:1px solid ${c}44;border-radius:4px;padding:3px 8px;font-size:12px;font-weight:500;color:#dbdee1;"><span style="width:8px;height:8px;border-radius:50%;background:${c};flex-shrink:0;"></span>${escapeHtml(r.name)}</div>`;
+    }).join('');
+  } else if (db) {
+    // Cache yoksa Firestore'dan çek
+    db.collection('servers').doc(currentServer).collection('memberRoles').doc(tuid).get().then(doc => {
+      const roleIds = doc.exists ? (doc.data().roles || []) : [];
+      if (!window._memberRolesCache) window._memberRolesCache = {};
+      if (!window._memberRolesCache[currentServer]) window._memberRolesCache[currentServer] = {};
+      window._memberRolesCache[currentServer][tuid] = roleIds;
+      const freshRoles = srvRoles.filter(r => roleIds.includes(r.id));
+      if (freshRoles.length > 0) {
+        pcRollerSection.style.display = 'block';
+        pcRollerList.innerHTML = freshRoles.map(r => {
+          const c = r.color || '#99aab5';
+          return `<div style="display:flex;align-items:center;gap:5px;background:#2b2d31;border:1px solid ${c}44;border-radius:4px;padding:3px 8px;font-size:12px;font-weight:500;color:#dbdee1;"><span style="width:8px;height:8px;border-radius:50%;background:${c};flex-shrink:0;"></span>${escapeHtml(r.name)}</div>`;
+        }).join('');
+      }
+    }).catch(() => {});
+  }
+}
 
 function openPCard(memberName, el) {
   let m = members.find(x => x.name === memberName);
@@ -8177,6 +8879,7 @@ function openPCard(memberName, el) {
   document.getElementById('pcJoined').textContent = '...';
   renderProfileBadges({}, 'pcBadges');
   const tuid = m.uid || (isMe ? currentUser?.uid : null);
+  pcTargetUid = tuid;
 
   // Önceki listener'ı temizle
   if (window._pcProfileListener) { window._pcProfileListener(); window._pcProfileListener = null; }
@@ -8217,6 +8920,9 @@ function openPCard(memberName, el) {
     document.getElementById('pcJoined').textContent = '—';
   }
 
+  // Roller bölümü
+  renderPcRoller(tuid);
+
   // Not
   document.getElementById('pcNote').value = localStorage.getItem('pcNote_' + (m.uid || m.name)) || '';
 
@@ -8226,28 +8932,40 @@ function openPCard(memberName, el) {
   document.getElementById('pcFriendBtn').innerHTML = '';
   if (!isMe && tuid) updatePcFriendBtn(tuid, m.name);
 
-  // Semify — şu an dinliyor
-  semifyLoadNowPlaying(tuid);
-
-  // Konumlandır — tıklanan elemanın soluna
+  // Konumlandır — rect'i hemen al, sonra boyut ölçüldükten sonra yerleştir
   const card = document.getElementById('profileCard');
+  const isChatAuthor = el.classList && el.classList.contains('msg-author');
+  const rect = el.getBoundingClientRect(); // display:block öncesi al
+  card.style.visibility = 'hidden';
   card.style.display = 'block';
-  const rect = el.getBoundingClientRect();
-  const cw = 300, ch = 480;
-  let left = rect.left - cw - 8;
-  let top = rect.top;
-  if (left < 8) left = rect.right + 8;
-  if (top + ch > window.innerHeight - 8) top = window.innerHeight - ch - 8;
-  if (top < 8) top = 8;
-  card.style.left = left + 'px';
-  card.style.top = top + 'px';
+  // 2 frame bekle — kart tam render olsun
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const cw = card.offsetWidth || 300;
+    const ch = card.offsetHeight || 500;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    let left, top;
+    if (isChatAuthor) {
+      left = rect.right + 8;
+      if (left + cw > vw - 8) left = rect.left - cw - 8;
+    } else {
+      left = rect.left - cw - 8;
+      if (left < 8) left = rect.right + 8;
+    }
+    left = Math.max(8, Math.min(left, vw - cw - 8));
+    top = rect.top;
+    top = Math.max(8, Math.min(top, vh - ch - 8));
+    card.style.left = left + 'px';
+    card.style.top = top + 'px';
+    card.style.visibility = 'visible';
+  }));
 }
 
 function closePCard() {
   document.getElementById('profileCard').style.display = 'none';
   pcTarget = null;
+  pcTargetUid = null;
   if (window._pcProfileListener) { window._pcProfileListener(); window._pcProfileListener = null; }
-  semifyStopPolling();
 }
 
 function savePcNote(el) {
@@ -8550,6 +9268,94 @@ function showDevPanel(type) {
       + '<p style="font-size:13px;color:#b5bac1;margin-bottom:16px;">Hangi sunucuya boost yapmak istersiniz?</p>'
       + '<div id="devBoostServerList" style="display:flex;flex-direction:column;gap:10px;max-width:580px;"></div>';
     setTimeout(loadDevBoostServers, 50);
+
+  } else if (type === 'sunucuayar') {
+    label.textContent = 'SUNUCU AYARLARI';
+    contentEl.innerHTML = `
+      <h2 style="font-size:20px;font-weight:700;margin-bottom:6px;">Sunucu Ayarları</h2>
+      <p style="font-size:13px;color:#b5bac1;margin-bottom:20px;">Firestore'dan sunucu bilgilerini çek ve yönetim işlemleri yap.</p>
+
+      <!-- UID Giriş -->
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:24px;">
+        <input id="devSunucuUIDInput" type="text" placeholder="Sunucu UID gir..."
+          style="flex:1;background:#1e1f22;border:1.5px solid #0090d4;border-radius:8px;padding:10px 14px;
+                 color:#f2f3f5;font-size:14px;outline:none;font-family:inherit;"
+          onkeydown="if(event.key==='Enter') devSunucuBilgiGetir()"
+        />
+        <button onclick="devSunucuBilgiGetir()"
+          style="background:#0090d4;color:white;border:none;border-radius:8px;padding:10px 20px;
+                 font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;"
+          onmouseover="this.style.background='#007ab8'" onmouseout="this.style.background='#0090d4'">
+          Getir
+        </button>
+      </div>
+
+      <!-- Yükleniyor / Hata -->
+      <div id="devSunucuStatus" style="font-size:13px;color:#b5bac1;margin-bottom:12px;display:none;"></div>
+
+      <!-- Ana içerik: sol (onaylar + bilgiler) + sağ (önizleme) -->
+      <div style="display:flex;gap:24px;align-items:flex-start;">
+
+        <!-- SOL KOLON -->
+        <div style="flex:1;min-width:0;">
+
+          <!-- Onay Kutuları -->
+          <div id="devSunucuOnaylar" style="display:none;margin-bottom:20px;">
+            <div style="display:flex;flex-direction:column;gap:10px;">
+
+              <label style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:12px 16px;
+                            background:#1e1f22;border-radius:8px;border:1.5px solid #2e3035;transition:border-color .15s;"
+                     onmouseover="this.style.borderColor='#0090d4'" onmouseout="this.style.borderColor='#2e3035'">
+                <input type="checkbox" id="devChkPartner" onchange="devSunucuOnayToggle('partner', this.checked)"
+                  style="width:18px;height:18px;accent-color:#0090d4;cursor:pointer;flex-shrink:0;">
+                <div>
+                  <div style="font-size:14px;font-weight:700;color:#f2f3f5;">Partnerliği Onayla</div>
+                  <div style="font-size:12px;color:#b5bac1;margin-top:2px;">Sunucuya partner rozeti ve ayrıcalıkları ver</div>
+                </div>
+              </label>
+
+              <label style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:12px 16px;
+                            background:#1e1f22;border-radius:8px;border:1.5px solid #2e3035;transition:border-color .15s;"
+                     onmouseover="this.style.borderColor='#0090d4'" onmouseout="this.style.borderColor='#2e3035'">
+                <input type="checkbox" id="devChkVerified" onchange="devSunucuOnayToggle('verified', this.checked)"
+                  style="width:18px;height:18px;accent-color:#0090d4;cursor:pointer;flex-shrink:0;">
+                <div>
+                  <div style="font-size:14px;font-weight:700;color:#f2f3f5;">Onaylanmış Sunucu Olarak Onayla</div>
+                  <div style="font-size:12px;color:#b5bac1;margin-top:2px;">Sunucuyu resmi onaylı sunucu olarak işaretle</div>
+                </div>
+              </label>
+
+              <label style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:12px 16px;
+                            background:#1e1f22;border-radius:8px;border:1.5px solid #2e3035;transition:border-color .15s;"
+                     onmouseover="this.style.borderColor='#0090d4'" onmouseout="this.style.borderColor='#2e3035'">
+                <input type="checkbox" id="devChkGizli" onchange="devSunucuOnayToggle('gizli', this.checked)"
+                  style="width:18px;height:18px;accent-color:#0090d4;cursor:pointer;flex-shrink:0;">
+                <div>
+                  <div style="font-size:14px;font-weight:700;color:#f2f3f5;">Gizli Sunucu Olarak Onayla</div>
+                  <div style="font-size:12px;color:#b5bac1;margin-top:2px;">Sunucuyu keşfet listesinden gizle</div>
+                </div>
+              </label>
+
+            </div>
+          </div>
+
+          <!-- Sunucu Bilgileri -->
+          <div id="devSunucuBilgiler" style="display:none;background:#1e1f22;border-radius:10px;
+               border:1px solid #2e3035;overflow:hidden;">
+            <div style="padding:12px 16px;background:#0090d420;border-bottom:1px solid #0090d440;
+                        font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#0090d4;">
+              Sunucu Hakkında Bilgiler
+            </div>
+            <div id="devSunucuBilgiRows" style="padding:12px 0;"></div>
+          </div>
+
+        </div>
+
+        <!-- SAĞ KOLON: Önizleme -->
+        <div id="devSunucuOnizleme" style="display:none;flex-shrink:0;width:240px;"></div>
+
+      </div>
+    `;
   }
 
   const cardsGrid = document.querySelector('.developer-cards-grid');
@@ -8557,12 +9363,424 @@ function showDevPanel(type) {
   panel.style.display = 'block';
 }
 
+// ═══════════════════════════════════════════════════════════
+// SESLİ MESAJ SİSTEMİ
+// ═══════════════════════════════════════════════════════════
+
+let _sesliStream = null;
+let _sesliRecorder = null;
+let _sesliChunks = [];
+let _sesliTimerInterval = null;
+let _sesliSaniye = 0;
+let _sesliMod = null; // 'server' | 'dm'
+let _sesliAnimFrame = null;
+let _sesliAnalyser = null;
+let _sesliAudioCtx = null;
+const WAVE_BAR_COUNT = 40;
+
+function sesliMesajBaslat(mod) {
+  if (_sesliStream) return; // zaten kayıt var
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    _sesliStream = stream;
+    _sesliMod = mod;
+    _sesliChunks = [];
+    _sesliSaniye = 0;
+
+    // Recorder
+    _sesliRecorder = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm' });
+    _sesliRecorder.ondataavailable = e => { if (e.data.size > 0) _sesliChunks.push(e.data); };
+    _sesliRecorder.start(100);
+
+    // Overlay aç
+    const barId = mod === 'dm' ? 'dmVoiceMsgBar' : 'voiceMsgBar';
+    const wavesId = mod === 'dm' ? 'dmVoiceMsgWaves' : 'voiceMsgWaves';
+    const bar = document.getElementById(barId);
+    const wavesEl = document.getElementById(wavesId);
+    if (bar) bar.classList.add('aktif');
+
+    // Dalga barlarını oluştur
+    if (wavesEl) {
+      wavesEl.innerHTML = '';
+      for (let i = 0; i < WAVE_BAR_COUNT; i++) {
+        const s = document.createElement('span');
+        wavesEl.appendChild(s);
+      }
+    }
+
+    // Analyser
+    _sesliAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    _sesliAnalyser = _sesliAudioCtx.createAnalyser();
+    _sesliAnalyser.fftSize = 128;
+    const src = _sesliAudioCtx.createMediaStreamSource(stream);
+    src.connect(_sesliAnalyser);
+    _sesliAnimFrame = requestAnimationFrame(function drawWave() {
+      const data = new Uint8Array(_sesliAnalyser.frequencyBinCount);
+      _sesliAnalyser.getByteFrequencyData(data);
+      const bars = wavesEl ? wavesEl.querySelectorAll('span') : [];
+      bars.forEach((s, idx) => {
+        const v = data[Math.floor(idx * data.length / WAVE_BAR_COUNT)] || 0;
+        const h = Math.max(4, Math.round((v / 255) * 34));
+        s.style.height = h + 'px';
+      });
+      _sesliAnimFrame = requestAnimationFrame(drawWave);
+    });
+
+    // Timer
+    const timerId = mod === 'dm' ? 'dmVoiceMsgTimer' : 'voiceMsgTimer';
+    _sesliTimerInterval = setInterval(() => {
+      _sesliSaniye++;
+      const d = document.getElementById(timerId);
+      if (d) d.textContent = Math.floor(_sesliSaniye / 60) + ':' + String(_sesliSaniye % 60).padStart(2, '0');
+      if (_sesliSaniye >= 300) sesliMesajGonder(mod); // max 5 dk
+    }, 1000);
+
+  }).catch(() => {
+    showToast('❌ Mikrofon erişimi reddedildi.');
+  });
+}
+
+function sesliMesajIptal() {
+  _sesliTemizle();
+  showToast('🗑️ Sesli mesaj iptal edildi.');
+}
+
+function _sesliTemizle() {
+  if (_sesliTimerInterval) { clearInterval(_sesliTimerInterval); _sesliTimerInterval = null; }
+  if (_sesliAnimFrame) { cancelAnimationFrame(_sesliAnimFrame); _sesliAnimFrame = null; }
+  if (_sesliRecorder && _sesliRecorder.state !== 'inactive') _sesliRecorder.stop();
+  if (_sesliStream) { _sesliStream.getTracks().forEach(t => t.stop()); _sesliStream = null; }
+  if (_sesliAudioCtx) { _sesliAudioCtx.close(); _sesliAudioCtx = null; }
+  ['voiceMsgBar','dmVoiceMsgBar'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('aktif');
+  });
+  ['voiceMsgTimer','dmVoiceMsgTimer'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = '0:00';
+  });
+  _sesliChunks = [];
+  _sesliSaniye = 0;
+  _sesliMod = null;
+}
+
+function sesliMesajGonder(mod) {
+  if (!_sesliRecorder || _sesliRecorder.state === 'inactive') return;
+  _sesliRecorder.onstop = async () => {
+    const blob = new Blob(_sesliChunks, { type: 'audio/webm' });
+    const dur = _sesliSaniye;
+    _sesliTemizle();
+
+    // Ses dosyasını Backblaze'e yükle (diğer dosyalarla aynı sistem)
+    showToast('⏳ Sesli mesaj yükleniyor...');
+    try {
+      const fileName = 'voice_' + Date.now() + '.webm';
+      const file = new File([blob], fileName, { type: 'audio/webm' });
+      const { url, publicId } = await uploadToBackblaze(file);
+
+      // Waveform verisi — rastgele görsel
+      const waveData = Array.from({ length: 30 }, () => Math.floor(Math.random() * 26) + 4);
+
+      if (mod === 'server' && currentChannel) {
+        await db.collection('channels').doc(currentChannel).collection('messages').add({
+          author: currentUser.displayName || currentUser.email.split('@')[0],
+          uid: currentUser.uid,
+          audioUrl: url,
+          _cloudinaryId: publicId || '',
+          audioDuration: dur,
+          audioWave: waveData,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
+        });
+      } else if (mod === 'dm' && currentDmUserId) {
+        const dmKey = [currentUser.uid, currentDmUserId].sort().join('_');
+        await db.collection('dms').doc(dmKey).collection('messages').add({
+          sender: currentUser.uid,
+          senderName: currentUser.displayName || currentUser.email.split('@')[0],
+          author: currentUser.displayName || currentUser.email.split('@')[0],
+          uid: currentUser.uid,
+          audioUrl: url,
+          _cloudinaryId: publicId || '',
+          audioDuration: dur,
+          audioWave: waveData,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
+        });
+      }
+      showToast('✅ Sesli mesaj gönderildi!');
+    } catch (e) {
+      showToast('❌ Gönderme hatası: ' + e.message);
+    }
+  };
+  _sesliRecorder.stop();
+}
+
+function renderVoiceMsg(msg, idx) {
+  const dur = msg.audioDuration || 0;
+  const durStr = Math.floor(dur / 60) + ':' + String(dur % 60).padStart(2, '0');
+  const wave = msg.audioWave || Array.from({ length: 30 }, () => 12);
+  const bars = wave.map((h, i) =>
+    `<span data-i="${i}" style="height:${h}px;"></span>`
+  ).join('');
+  const uid = 'vm_' + (msg._firebaseId || idx);
+  return `<div class="voice-msg-bubble" id="${uid}">
+    <button class="voice-msg-play-btn" onclick="sesliOynat('${uid}','${encodeURIComponent(msg.audioUrl)}',${dur})" title="Oynat">
+      <svg id="${uid}_icon" width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+    </button>
+    <div class="voice-msg-waveform" id="${uid}_wave" onclick="sesliWaveClick(event,'${uid}','${encodeURIComponent(msg.audioUrl)}',${dur})">
+      ${bars}
+    </div>
+    <div class="voice-msg-duration" id="${uid}_dur">${durStr}</div>
+  </div>`;
+}
+
+const _sesliAudioEls = {}; // uid → Audio
+
+function sesliOynat(uid, encodedUrl, totalDur) {
+  const url = decodeURIComponent(encodedUrl);
+  const iconEl = document.getElementById(uid + '_icon');
+  const waveEl = document.getElementById(uid + '_wave');
+  const durEl = document.getElementById(uid + '_dur');
+
+  // Diğer oynatıcıları durdur
+  Object.entries(_sesliAudioEls).forEach(([k, a]) => {
+    if (k !== uid && !a.paused) {
+      a.pause(); a.currentTime = 0;
+      const ik = document.getElementById(k + '_icon');
+      if (ik) ik.innerHTML = '<path d="M8 5v14l11-7z"/>';
+      const wk = document.getElementById(k + '_wave');
+      if (wk) wk.querySelectorAll('span').forEach(s => s.classList.remove('played'));
+    }
+  });
+
+  if (!_sesliAudioEls[uid]) _sesliAudioEls[uid] = new Audio(url);
+  const audio = _sesliAudioEls[uid];
+
+  if (audio.paused) {
+    audio.play();
+    if (iconEl) iconEl.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'; // pause icon
+    // Progress güncelle
+    audio.ontimeupdate = () => {
+      const pct = audio.duration ? audio.currentTime / audio.duration : 0;
+      const bars = waveEl ? waveEl.querySelectorAll('span') : [];
+      const playedCount = Math.round(pct * bars.length);
+      bars.forEach((s, i) => { i < playedCount ? s.classList.add('played') : s.classList.remove('played'); });
+      if (durEl) {
+        const rem = Math.round(audio.duration - audio.currentTime) || totalDur;
+        durEl.textContent = Math.floor(rem / 60) + ':' + String(rem % 60).padStart(2, '0');
+      }
+    };
+    audio.onended = () => {
+      if (iconEl) iconEl.innerHTML = '<path d="M8 5v14l11-7z"/>';
+      if (waveEl) waveEl.querySelectorAll('span').forEach(s => s.classList.remove('played'));
+      if (durEl) durEl.textContent = Math.floor(totalDur / 60) + ':' + String(totalDur % 60).padStart(2, '0');
+    };
+  } else {
+    audio.pause();
+    if (iconEl) iconEl.innerHTML = '<path d="M8 5v14l11-7z"/>';
+  }
+}
+
+function sesliWaveClick(e, uid, encodedUrl, totalDur) {
+  const url = decodeURIComponent(encodedUrl);
+  if (!_sesliAudioEls[uid]) _sesliAudioEls[uid] = new Audio(url);
+  const audio = _sesliAudioEls[uid];
+  const waveEl = document.getElementById(uid + '_wave');
+  if (!waveEl || !audio.duration) { sesliOynat(uid, encodedUrl, totalDur); return; }
+  const rect = waveEl.getBoundingClientRect();
+  const pct = (e.clientX - rect.left) / rect.width;
+  audio.currentTime = pct * audio.duration;
+  if (audio.paused) sesliOynat(uid, encodedUrl, totalDur);
+}
+
+// ═══════════════════════════════════════════════════════════
+
 function hideDevPanel() {
   const panel = document.getElementById('devSubPanel');
   if (panel) panel.style.display = 'none';
   const cardsGrid = document.querySelector('#usTab_developer .developer-cards-grid');
   if (cardsGrid) cardsGrid.style.display = 'grid';
 }
+
+// ─── SUNUCU AYARLARI PANELİ ───────────────────────────────────────────
+
+let _devSunucuAyarUID = null;
+
+async function devSunucuBilgiGetir() {
+  const uid = (document.getElementById('devSunucuUIDInput')?.value || '').trim();
+  const statusEl = document.getElementById('devSunucuStatus');
+  const bilgilerEl = document.getElementById('devSunucuBilgiler');
+  const onaylarEl = document.getElementById('devSunucuOnaylar');
+  const rowsEl = document.getElementById('devSunucuBilgiRows');
+  const prevEl = document.getElementById('devSunucuOnizleme');
+
+  if (!uid) {
+    if (statusEl) { statusEl.style.display='block'; statusEl.style.color='#f23f43'; statusEl.textContent='❌ Lütfen bir sunucu UID gir.'; }
+    return;
+  }
+  if (!db) {
+    if (statusEl) { statusEl.style.display='block'; statusEl.style.color='#f23f43'; statusEl.textContent='❌ Firebase bağlantısı yok.'; }
+    return;
+  }
+
+  if (statusEl) { statusEl.style.display='block'; statusEl.style.color='#b5bac1'; statusEl.textContent='⏳ Yükleniyor...'; }
+  if (bilgilerEl) bilgilerEl.style.display='none';
+  if (onaylarEl) onaylarEl.style.display='none';
+  if (prevEl) prevEl.style.display='none';
+
+  try {
+    const doc = await db.collection('servers').doc(uid).get();
+    if (!doc.exists) {
+      statusEl.style.color='#f23f43';
+      statusEl.textContent='❌ Bu UID\'ye ait sunucu bulunamadı.';
+      return;
+    }
+
+    _devSunucuAyarUID = uid;
+    const d = doc.data();
+
+    // Kanal sayısı — serverChannels koleksiyonundan oku
+    let kanalSayisi = '—';
+    const srvInMemory = servers[uid];
+    if (srvInMemory && Array.isArray(srvInMemory.channels) && srvInMemory.channels.length > 1) {
+      kanalSayisi = srvInMemory.channels.filter(c => c.type !== 'category').length;
+    } else {
+      try {
+        const chDocSnap = await db.collection('serverChannels').doc(uid).get();
+        if (chDocSnap.exists && Array.isArray(chDocSnap.data().channels)) {
+          kanalSayisi = chDocSnap.data().channels.filter(c => c.type !== 'category').length;
+        } else {
+          kanalSayisi = 0;
+        }
+      } catch(e) { kanalSayisi = '—'; }
+    }
+
+    // Boost sayısı — boostCount alanından
+    const boostCount = d.boostCount !== undefined ? d.boostCount : 0;
+    const boostSeviye = boostCount >= 14 ? 3 : boostCount >= 7 ? 2 : boostCount >= 2 ? 1 : 0;
+
+    // Üye sayısı
+    const uyeSayisi = Array.isArray(d.members) ? d.members.length : '—';
+
+    // Onay kutularını Firestore değerlerine göre set et
+    const chkPartner = document.getElementById('devChkPartner');
+    const chkVerified = document.getElementById('devChkVerified');
+    const chkGizli = document.getElementById('devChkGizli');
+    if (chkPartner) chkPartner.checked = !!d.partner;
+    if (chkVerified) chkVerified.checked = !!d.verified;
+    if (chkGizli) chkGizli.checked = !!d.gizli;
+    if (onaylarEl) onaylarEl.style.display = 'block';
+
+    // Önizleme güncelle
+    _devSunucuOnizlemeGuncelle(d, uid, uyeSayisi);
+    if (prevEl) prevEl.style.display = 'block';
+
+    // Satır listesi
+    const alanlar = [
+      ['Sunucu Adı', d.name || '—'],
+      ['Sunucu UID', uid],
+      ['Sahip UID', d.ownerId || '—'],
+      ['Açıklama', d.description || '—'],
+      ['Kanal Sayısı', kanalSayisi],
+      ['Üye Sayısı', uyeSayisi],
+      ['Rol Sayısı', Array.isArray(d.roles) ? d.roles.length : '—'],
+      ['Partner', d.partner ? '✅ Evet' : '❌ Hayır'],
+      ['Onaylı Sunucu', d.verified ? '✅ Evet' : '❌ Hayır'],
+      ['Gizli', d.gizli ? '✅ Evet' : '❌ Hayır'],
+      ['Topluluk', d.topluluk ? '✅ Evet' : '❌ Hayır'],
+      ['NSFW', d.nsfw ? '✅ Evet' : '❌ Hayır'],
+      ['Boost Sayısı', boostCount],
+      ['Boost Seviyesi', 'Seviye ' + boostSeviye + ' (' + boostCount + ' takviye)'],
+      ['Oluşturulma', d.createdAt ? (d.createdAt.toDate ? d.createdAt.toDate().toLocaleString('tr-TR') : String(d.createdAt)) : '—'],
+    ];
+
+    if (rowsEl) {
+      rowsEl.innerHTML = alanlar.map(([k, v], i) => `
+        <div style="display:flex;align-items:flex-start;padding:8px 16px;
+                    background:${i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)'};">
+          <span style="font-size:12px;font-weight:700;color:#80848e;width:150px;flex-shrink:0;padding-top:1px;">${k}</span>
+          <span style="font-size:13px;color:#f2f3f5;word-break:break-all;">${String(v)}</span>
+        </div>
+      `).join('');
+    }
+
+    if (bilgilerEl) bilgilerEl.style.display='block';
+    statusEl.style.display='none';
+
+  } catch (err) {
+    if (statusEl) { statusEl.style.color='#f23f43'; statusEl.textContent='❌ Hata: ' + err.message; }
+  }
+}
+
+function _devSunucuOnizlemeGuncelle(d, uid, uyeSayisi) {
+  const prevEl = document.getElementById('devSunucuOnizleme');
+  if (!prevEl) return;
+
+  const ad = d.name || uid;
+  const aciklama = d.description || '—';
+  const uyeSayi = uyeSayisi !== undefined ? uyeSayisi : '—';
+
+  // İkon arka planı
+  let ikonHTML = '';
+  if (d.iconUrl) {
+    ikonHTML = `<div style="width:52px;height:52px;border-radius:50%;border:3px solid #232428;
+      background:url('${d.iconUrl}') center/cover no-repeat;flex-shrink:0;margin-top:-26px;margin-bottom:8px;"></div>`;
+  } else {
+    const harf = ad.charAt(0).toUpperCase();
+    ikonHTML = `<div style="width:52px;height:52px;border-radius:50%;border:3px solid #232428;
+      background:#5865f2;display:flex;align-items:center;justify-content:center;
+      font-size:18px;font-weight:700;color:white;flex-shrink:0;margin-top:-26px;margin-bottom:8px;">${harf}</div>`;
+  }
+
+  // Banner
+  let bannerHTML = '';
+  if (d.bannerUrl) {
+    bannerHTML = `<div style="width:100%;height:60px;background:url('${d.bannerUrl}') center/cover no-repeat;flex-shrink:0;border-radius:8px 8px 0 0;"></div>`;
+  } else {
+    bannerHTML = `<div style="width:100%;height:60px;background:#1e1f22;flex-shrink:0;border-radius:8px 8px 0 0;"></div>`;
+  }
+
+  prevEl.innerHTML = `
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#80848e;margin-bottom:10px;">Önizleme</div>
+    <div style="background:#313338;border-radius:8px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.4);width:220px;">
+      ${bannerHTML}
+      <div style="padding:0 14px 14px 14px;position:relative;">
+        ${ikonHTML}
+        <div style="font-size:15px;font-weight:800;color:#f2f3f5;margin-bottom:4px;word-break:break-word;">${ad}</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+          <span style="width:8px;height:8px;border-radius:50%;background:#23a55a;display:inline-block;flex-shrink:0;"></span>
+          <span style="font-size:12px;color:#b5bac1;">Çevrim içi</span>
+          <span style="font-size:12px;color:#b5bac1;">•</span>
+          <span style="font-size:12px;color:#b5bac1;">${uyeSayi} Üye</span>
+        </div>
+        <div style="height:1px;background:#3f4147;margin-bottom:8px;"></div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#80848e;margin-bottom:4px;">Sunucu Açıklaması</div>
+        <div style="font-size:12px;color:#b5bac1;line-height:1.5;word-break:break-word;">${aciklama}</div>
+      </div>
+    </div>
+  `;
+}
+
+async function devSunucuOnayToggle(alan, deger) {
+  if (!_devSunucuAyarUID || !db) {
+    showToast('❌ Önce bir sunucu getir.');
+    const el = document.getElementById('devChk' + alan.charAt(0).toUpperCase() + alan.slice(1));
+    if (el) el.checked = !deger;
+    return;
+  }
+  try {
+    const guncelleme = {};
+    guncelleme[alan] = deger;
+    await db.collection('servers').doc(_devSunucuAyarUID).update(guncelleme);
+    showToast(`✅ "${alan}" → ${deger ? 'Onaylandı' : 'Kaldırıldı'}`);
+    devSunucuBilgiGetir();
+  } catch (err) {
+    showToast('❌ Güncelleme hatası: ' + err.message);
+    const el = document.getElementById('devChk' + alan.charAt(0).toUpperCase() + alan.slice(1));
+    if (el) el.checked = !deger;
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────
 
 // Sahte kullanıcı simülasyonu — Firestore'a sahte üye dökümanları ekler, gerçek auth yok
 async function spawnFakeUsers() {
@@ -9421,31 +10639,36 @@ document.addEventListener('click', e => {
   const modal = document.getElementById('kickModal');
   if (modal && modal.style.display === 'flex' && e.target === modal) closeKickModal();
   // Üye context menüsünü kapat
-  if (!e.target.closest('#memberCtxMenu')) closeMemberCtxMenu();
+  if (!e.target.closest("#memberCtxMenu") && !e.target.closest("#memberRollerSubMenu")) closeMemberCtxMenu();
 });
 
 // ---- ÜYE CONTEXT MENÜSÜ ----
 let memberCtxTarget = null;
+let memberCtxTargetUid = null;
 let memberCtxCoords = { x: 0, y: 0 };
 
-function showMemberCtxMenu(e, name) {
+function showMemberCtxMenu(e, name, uid) {
   e.stopPropagation();
   memberCtxTarget = name;
+  memberCtxTargetUid = uid || null;
   memberCtxCoords = { x: e.clientX, y: e.clientY };
   const menu = document.getElementById('memberCtxMenu');
   document.getElementById('memberCtxName').textContent = name;
   menu.style.display = 'block';
-  const mw = 200, mh = 130;
+  const mw = 200, mh = 160;
   let x = e.clientX, y = e.clientY;
   if (x + mw > window.innerWidth) x = e.clientX - mw;
   if (y + mh > window.innerHeight) y = window.innerHeight - mh - 8;
   menu.style.left = x + 'px';
   menu.style.top = y + 'px';
+  hideMemberRollerSubMenu();
 }
 
 function closeMemberCtxMenu() {
   document.getElementById('memberCtxMenu').style.display = 'none';
+  hideMemberRollerSubMenu();
   memberCtxTarget = null;
+  memberCtxTargetUid = null;
 }
 
 function memberCtxProfile() {
@@ -9457,6 +10680,157 @@ function memberCtxKick() {
   closeMemberCtxMenu();
   if (!name) return;
   showKickModal(name);
+}
+
+function memberCtxKopyalaUID() {
+  const uid = memberCtxTargetUid;
+  closeMemberCtxMenu();
+  if (!uid) {
+    showToast('⚠️ UID bulunamadı.');
+    return;
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(uid).then(() => {
+      showToast('✅ UID kopyalandı: ' + uid);
+    }).catch(() => {
+      _fallbackKopyala(uid);
+    });
+  } else {
+    _fallbackKopyala(uid);
+  }
+}
+
+function _fallbackKopyala(text) {
+  const el = document.createElement('textarea');
+  el.value = text;
+  el.style.cssText = 'position:fixed;opacity:0;pointer-events:none;';
+  document.body.appendChild(el);
+  el.select();
+  try {
+    document.execCommand('copy');
+    showToast('✅ UID kopyalandı: ' + text);
+  } catch {
+    showToast('❌ Kopyalama başarısız.');
+  }
+  document.body.removeChild(el);
+}
+
+// ---- ROLLER SUB-MENÜSÜ ----
+let _rollerSubMenuTimeout = null;
+
+function showMemberRollerSubMenu(itemEl) {
+  if (!currentServer || ['coding','gaming','dm'].includes(currentServer)) return;
+  const subMenu = document.getElementById('memberRollerSubMenu');
+  const list = document.getElementById('memberRollerSubMenuList');
+  list.innerHTML = '<div style="padding:6px 8px;font-size:13px;color:#80848e;">Yükleniyor...</div>';
+  const rect = itemEl.getBoundingClientRect();
+  const menuEl = document.getElementById('memberCtxMenu');
+  let x = rect.right + 4;
+  let y = rect.top;
+  if (x + 210 > window.innerWidth) x = rect.left - 214;
+  if (y + 300 > window.innerHeight) y = window.innerHeight - 308;
+  subMenu.style.left = x + 'px';
+  subMenu.style.top = y + 'px';
+  subMenu.style.display = 'block';
+
+  // Firestore'dan rolleri ve üyenin sahip olduğu rolleri al
+  const uid = memberCtxTargetUid;
+  db.collection('servers').doc(currentServer).get().then(srvDoc => {
+    const allRoles = (srvDoc.exists ? srvDoc.data().roles || [] : []).filter(r => r.id !== 'everyone');
+    if (allRoles.length === 0) {
+      list.innerHTML = '<div style="padding:6px 8px;font-size:13px;color:#80848e;">Rol yok</div>';
+      return;
+    }
+    // Üyenin mevcut rollerini al
+    const getMemberRoles = uid
+      ? db.collection('servers').doc(currentServer).collection('memberRoles').doc(uid).get()
+      : Promise.resolve({ exists: false, data: () => ({}) });
+
+    getMemberRoles.then(memberRoleDoc => {
+      const memberRoleIds = memberRoleDoc.exists ? (memberRoleDoc.data().roles || []) : [];
+      list.innerHTML = allRoles.map(role => {
+        const hasRole = memberRoleIds.includes(role.id);
+        const color = role.color || '#99aab5';
+        return `<div class="ctx-item" onclick="toggleMemberRole('${role.id}',${hasRole})" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <span style="display:flex;align-items:center;gap:7px;overflow:hidden;">
+            <span style="width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0;"></span>
+            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(role.name)}</span>
+          </span>
+          <span style="width:16px;height:16px;border-radius:3px;border:2px solid ${hasRole?color:'#80848e'};background:${hasRole?color:'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .1s;">
+            ${hasRole ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="white"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>' : ''}
+          </span>
+        </div>`;
+      }).join('');
+    });
+  }).catch(() => {
+    list.innerHTML = '<div style="padding:6px 8px;font-size:13px;color:#80848e;">Hata oluştu</div>';
+  });
+}
+
+function hideMemberRollerSubMenu() {
+  document.getElementById('memberRollerSubMenu').style.display = 'none';
+}
+
+function toggleMemberRole(roleId, currentlyHas) {
+  const uid = memberCtxTargetUid;
+  if (!uid || !currentServer) { showToast('Üye UID bulunamadı!'); return; }
+  const ref = db.collection('servers').doc(currentServer).collection('memberRoles').doc(uid);
+  const op = currentlyHas
+    ? firebase.firestore.FieldValue.arrayRemove(roleId)
+    : firebase.firestore.FieldValue.arrayUnion(roleId);
+  ref.set({ roles: op }, { merge: true }).then(() => {
+    showToast(currentlyHas ? 'Rol kaldırıldı.' : 'Rol eklendi!');
+    // Sub-menüyü yenile
+    const itemEl = document.getElementById('memberCtxRollerItem');
+    if (itemEl) showMemberRollerSubMenu(itemEl);
+    // Üye listesini güncelle (renk değişimi için)
+    if (typeof renderMembers === 'function') {
+      // memberRoles cache'ini güncelle
+      if (!window._memberRolesCache) window._memberRolesCache = {};
+      if (!window._memberRolesCache[currentServer]) window._memberRolesCache[currentServer] = {};
+      const cached = window._memberRolesCache[currentServer][uid] || [];
+      if (currentlyHas) {
+        window._memberRolesCache[currentServer][uid] = cached.filter(r => r !== roleId);
+      } else {
+        window._memberRolesCache[currentServer][uid] = [...cached, roleId];
+      }
+      renderMembers();
+    }
+  }).catch(() => showToast('Rol güncellenemedi.'));
+}
+
+// memberRoles cache — sunucu değiştiğinde yeniden yükle
+window._memberRolesCache = {};
+// memberRoles realtime listener unsubscribe map
+const _memberRolesListeners = {};
+
+function loadMemberRolesForServer(serverId) {
+  if (!serverId || ['coding','gaming','dm'].includes(serverId) || !db) return;
+
+  // Sunucunun rol tanımlarını da güncelle (servers obj zaten yüklü olabilir ama roles eksik olabilir)
+  db.collection('servers').doc(serverId).get().then(srvDoc => {
+    if (srvDoc.exists) {
+      if (!servers[serverId]) servers[serverId] = { name: serverId, channels: [], roles: [] };
+      servers[serverId].roles = srvDoc.data().roles || [];
+    }
+  }).catch(() => {});
+
+  // Önceki listener varsa iptal et
+  if (_memberRolesListeners[serverId]) {
+    _memberRolesListeners[serverId]();
+    delete _memberRolesListeners[serverId];
+  }
+
+  // Realtime listener kur — her değişiklikte cache güncelle ve üye listesini yenile
+  _memberRolesListeners[serverId] = db.collection('servers').doc(serverId).collection('memberRoles')
+    .onSnapshot(snap => {
+      if (!window._memberRolesCache) window._memberRolesCache = {};
+      window._memberRolesCache[serverId] = {};
+      snap.forEach(doc => {
+        window._memberRolesCache[serverId][doc.id] = doc.data().roles || [];
+      });
+      if (currentServer === serverId) renderMembers();
+    }, () => {});
 }
 
 document.addEventListener('click', (e) => {
@@ -11104,6 +12478,47 @@ function sendMessage() {
   // Rate limit kontrolü
   if (isRateLimited()) return;
   const text = input.value.trim();
+
+  // ═══════════════════════════════════════════
+  // SLASH KOMUT İNTERCEPTOR
+  // ═══════════════════════════════════════════
+  if (text.startsWith('/')) {
+    const slashKomutMatch = text.match(/^\/(\S+)\s*(.*)/);
+    if (slashKomutMatch) {
+      const komut = slashKomutMatch[1].toLowerCase();
+      const arguman = slashKomutMatch[2].trim();
+      const izinVar = kullaniciSlashIzniVarMi();
+
+      if (!izinVar) {
+        input.value = '';
+        input.style.height = 'auto';
+        showEfemerMesaj('❌ Bu komutu kullanmak için gerekli izne sahip değilsiniz.', 0);
+        return;
+      }
+
+      if (komut === 'sil') {
+        const sayi = parseInt(arguman);
+        if (isNaN(sayi) || sayi < 1 || sayi > 1000) {
+          input.value = '';
+          input.style.height = 'auto';
+          showEfemerMesaj('❌ Geçersiz sayı. Kullanım: `/sil <sayı>` (1-1000)', 0);
+          return;
+        }
+        input.value = '';
+        input.style.height = 'auto';
+        slashSilKomutCalistir(sayi);
+        return;
+      }
+
+      // Bilinmeyen komut
+      input.value = '';
+      input.style.height = 'auto';
+      showEfemerMesaj(`❌ Bilinmeyen komut: /${komut}`, 0);
+      return;
+    }
+  }
+  // ═══════════════════════════════════════════
+
   // Mesaj uzunluk kontrolü
   if (text.length > MSG_MAX_LENGTH) {
     showToast(`⚠️ Mesaj çok uzun! Maksimum ${MSG_MAX_LENGTH} karakter.`);
@@ -11171,6 +12586,126 @@ function sendMessage() {
   if (msgArea) setTimeout(() => { msgArea.scrollTop = msgArea.scrollHeight; }, 200);
 }
 
+
+// ═══════════════════════════════════════════════════════════
+// SLASH KOMUT SİSTEMİ
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * Mevcut kullanıcının "uygulama-komutu-kullan" iznine sahip olup olmadığını kontrol eder.
+ * Yönetici veya sunucu sahibiyse her zaman true döner.
+ */
+function kullaniciSlashIzniVarMi() {
+  if (!currentUser || !currentServer) return false;
+  const srv = servers[currentServer];
+  if (!srv) return false;
+  // Sunucu sahibi her zaman yetkili
+  if (srv.ownerId === currentUser.uid) return true;
+  // Kullanıcının rollerini al
+  const kullaniciRolleri = (window._memberRolesCache &&
+    window._memberRolesCache[currentServer] &&
+    window._memberRolesCache[currentServer][currentUser.uid]) || [];
+  if (!kullaniciRolleri.length) return false;
+  // Rollerin izinlerini kontrol et — hem servers[].roles hem _rollerData'ya bak
+  const tumRoller = (srv.roles && srv.roles.length) ? srv.roles : (_rollerData || []);
+  for (const rolId of kullaniciRolleri) {
+    const rol = tumRoller.find(r => r.id === rolId);
+    if (!rol) continue;
+    const izinler = rol.permissions || [];
+    if (izinler.includes('yonetici') || izinler.includes('uygulama-komutu-kullan')) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Sadece o kullanıcıda görünen geçici (efemer) mesaj gösterir.
+ * Turkuaz çerçeveli OtCord Api mesajı. autoDeleteMs=0 ise 10 sn sonra otomatik silinir.
+ */
+function showEfemerMesaj(icerik, autoDeleteMs) {
+  const msgArea = document.getElementById('messagesArea');
+  if (!msgArea) return;
+
+  const uid = 'efemer_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+  const now = new Date();
+  const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+
+  const div = document.createElement('div');
+  div.id = uid;
+  div.style.cssText = `
+    margin: 8px 16px;
+    padding: 10px 14px;
+    background: #1a3340;
+    border: 1.5px solid #0090d4;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: relative;
+    max-width: 520px;
+  `;
+
+  div.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;">
+      <div style="width:32px;height:32px;border-radius:50%;background:#0090d4;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:white;flex-shrink:0;">Ot</div>
+      <span style="font-weight:700;font-size:14px;color:#0090d4;">OtCord Api</span>
+      <span style="font-size:11px;color:#5c6b72;margin-left:2px;">${timeStr}</span>
+      <span style="font-size:10px;color:#5c6b72;background:#0c2030;padding:1px 6px;border-radius:10px;border:1px solid #0090d4;letter-spacing:.03em;">Yalnızca siz görebilirsiniz</span>
+    </div>
+    <div style="font-size:15px;color:#cce9f5;line-height:1.45;padding-left:40px;">${icerik}</div>
+    <div style="padding-left:40px;margin-top:2px;">
+      <span onclick="document.getElementById('${uid}') && document.getElementById('${uid}').remove()"
+        style="font-size:12px;color:#5c9ab5;cursor:pointer;text-decoration:underline;"
+        onmouseover="this.style.color='#0090d4'" onmouseout="this.style.color='#5c9ab5'">
+        Bu mesajı sil
+      </span>
+    </div>
+  `;
+
+  msgArea.appendChild(div);
+  msgArea.scrollTop = msgArea.scrollHeight;
+
+  const delay = (autoDeleteMs && autoDeleteMs > 0) ? autoDeleteMs : 10000;
+  setTimeout(() => {
+    const el = document.getElementById(uid);
+    if (el) el.remove();
+  }, delay);
+}
+
+/**
+ * /sil <sayi> komutu: Firebase'den son <sayi> mesajı siler (sadece sunucu kanallarında).
+ */
+async function slashSilKomutCalistir(sayi) {
+  if (!currentChannel || !db || !currentUser) {
+    showEfemerMesaj('❌ Komut çalıştırılamadı.', 0);
+    return;
+  }
+
+  try {
+    const snap = await db.collection('channels').doc(currentChannel)
+      .collection('messages')
+      .orderBy('timestamp', 'desc')
+      .limit(sayi)
+      .get();
+
+    if (snap.empty) {
+      showEfemerMesaj('⚠️ Silinecek mesaj bulunamadı.', 0);
+      return;
+    }
+
+    const batch = db.batch();
+    snap.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+
+    showEfemerMesaj(`✅ İstediğiniz Sayıda Mesaj Silindi **${sayi}**`, 0);
+  } catch (err) {
+    console.error('/sil hatası:', err);
+    showEfemerMesaj('❌ Mesajlar silinirken bir hata oluştu: ' + err.message, 0);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
 
 // =============================================
 // DOSYA YÜKLEME — Firebase Storage
@@ -11278,7 +12813,8 @@ function openSearchPanel() {
 }
 
 function closeSearchPanel() {
-  document.getElementById('searchPanel').style.display = 'none';
+  const p = document.getElementById('searchPanel');
+  if (p) p.style.display = 'none';
   document.getElementById('headerSearchBox').classList.remove('search-bar-active');
   document.getElementById('searchPanelInput').value = '';
   document.getElementById('searchFiltersView').style.display = 'block';
@@ -11318,6 +12854,15 @@ document.addEventListener('click', e => {
   if (!e.target.closest('#sortBtn') && !e.target.closest('#sortMenu')) {
     const m = document.getElementById('sortMenu');
     if (m) m.style.display = 'none';
+  }
+});
+
+document.addEventListener('click', e => {
+  const panel = document.getElementById('searchPanel');
+  if (!panel || panel.style.display === 'none') return;
+  // searchPanel dışına tıklanınca kapat (arama butonuna tıklama hariç)
+  if (!e.target.closest('#searchPanel') && !e.target.closest('#searchInput')) {
+    closeSearchPanel();
   }
 });
 
@@ -13173,6 +14718,7 @@ function saveChannelsToFirebase(serverId) {
 const channelListenerUnsubs = {};
 
 function listenToChannels(serverId, autoSelect) {
+  closeSearchPanel();
   // Varsa önceki listener iptal et
   if (channelListenerUnsubs[serverId]) {
     channelListenerUnsubs[serverId]();
@@ -15401,13 +16947,20 @@ function markDmAsRead(uid) {
 // Kullanıcı bilgileri cache: { uid: { displayName, avatarUrl } }
 const _dmUserCache = {};
 const _dmUserListeners = {};
-let _dmActiveMsgs = [];      // Son snapshot'tan gelen mesajlar
-let _dmActiveUid = null;     // Hangi uid için
+const _DM_LISTENER_MAX = 50;
+let _dmActiveMsgs = [];
+let _dmActiveUid = null;
 let _dmActiveLastSeen = 0;
-let _dmDividerScrolled = false; // Unread divider'a sadece bir kez scroll
+let _dmDividerScrolled = false;
 
 function _watchDmUser(uid) {
   if (_dmUserListeners[uid]) return;
+  // Limit aşıldıysa en eski listener'ı temizle
+  const keys = Object.keys(_dmUserListeners);
+  if (keys.length >= _DM_LISTENER_MAX) {
+    const oldest = keys[0];
+    if (_dmUserListeners[oldest]) { _dmUserListeners[oldest](); delete _dmUserListeners[oldest]; }
+  }
   _dmUserListeners[uid] = db.collection('users').doc(uid).onSnapshot(doc => {
     if (!doc.exists) return;
     const d = doc.data();
@@ -15562,8 +17115,10 @@ function renderDmMessages(msgs, uid, lastSeen) {
     const avatarBg    = safeAvatarUrl ? `url(${safeAvatarUrl}) center/cover no-repeat` : color;
     const avatarText  = safeAvatarUrl ? '' : getInitials(displayName);
 
-    // İçerik: gif / resim / video / dosya / metin
-    const dmContent = msg.gif
+    // İçerik: sesli / gif / resim / video / dosya / metin
+    const dmContent = msg.audioUrl
+      ? renderVoiceMsg({ ...msg, _firebaseId: msg._firebaseId || ('dm_' + i) }, i)
+      : msg.gif
       ? `<img src="${encodeURI(msg.gif)}" style="max-width:280px;max-height:200px;border-radius:8px;display:block;margin-top:4px;" loading="lazy">`
       : msg.uploadedImage
         ? `<div style="font-size:12px;color:#80848e;margin-bottom:4px;">📎 ${escapeHtml(msg.fileName||'')}</div>`
@@ -18472,6 +20027,7 @@ function _showVerificationWarning(required, remaining, level, input, bar) {
 }
 
 function closeServerSettings() {
+  if (_rolDegisti) { shakeRolKaydetBar(); return; }
   if (_srvSettingsChanged) {
     const bar = document.getElementById('srvConfirmBar');
     if (bar) { bar.style.animation = 'none'; requestAnimationFrame(() => { bar.style.animation = 'savebar-shake 0.4s ease'; }); }
@@ -18486,7 +20042,16 @@ function closeServerSettings() {
   if (window._srvPrevOnlineUnsub) { window._srvPrevOnlineUnsub(); window._srvPrevOnlineUnsub = null; }
 }
 
+function shakeRolKaydetBar() {
+  const bar = document.getElementById('rolKaydetBar');
+  if (!bar) return;
+  bar.style.animation = 'none';
+  requestAnimationFrame(() => { bar.style.animation = 'savebar-shake 0.4s ease'; });
+}
+
 function switchSrvTab(tab) {
+  // Roller sekmesinde kaydedilmemiş değişiklik varsa başka sekmeye geçişi engelle
+  if (_rolDegisti && tab !== 'roller') { shakeRolKaydetBar(); return; }
   // Kaydedilmemiş değişiklik varsa sekme geçişini engelle
   if (_srvSettingsChanged && tab !== 'genel') {
     const bar = document.getElementById('srvConfirmBar');
@@ -18495,6 +20060,11 @@ function switchSrvTab(tab) {
   }
   if (_modUnsaved && tab !== 'icerik') { shakeModSaveBar(); return; }
   if (_toplulukUnsaved && tab !== 'topluluk') { shakeToplulukSaveBar(); return; }
+
+  // Zaten "roller" sekmesindeyken tekrar "roller"e tıklanırsa hiçbir şeyi sıfırlama
+  const zatenRollerSekmesi = tab === 'roller' && document.getElementById('srvTab_roller') && document.getElementById('srvTab_roller').style.display !== 'none';
+  if (zatenRollerSekmesi) return;
+
   ['genel','roller','emoji','sticker','ses','icerik','topluluk','erisim','uye','kesfet','boost','partner','uyeler','davetler','banlar','entegrasyon','app','gunluk'].forEach(t => {
     const panel = document.getElementById('srvTab_' + t);
     const menu = document.getElementById('srvMenu_' + t);
@@ -18511,6 +20081,19 @@ function switchSrvTab(tab) {
   if (tab === 'erisim') loadErisimTab();
   if (tab === 'kesfet') loadKesfetTab();
   if (tab === 'gunluk') loadAuditLog();
+  if (tab === 'roller') {
+    _rolSeciliId = null;
+    rollerYukle();
+    const ep = document.getElementById('rolEditPanel');
+    if (ep) ep.style.display = 'flex';
+    const bp = document.getElementById('rolBosPanel');
+    if (bp) bp.style.display = 'flex';
+    const tb = document.getElementById('rolTabBar');
+    if (tb) tb.style.display = 'none';
+    const ti = document.getElementById('rolTabIcerik');
+    if (ti) ti.style.display = 'none';
+    const geri = document.querySelector('#rolEditPanel > div:first-child');
+  }
 }
 
 function confirmExternalLink(e, url) {
@@ -20086,8 +21669,15 @@ let allOnlineUsers = [];
 
 // users koleksiyonu için realtime listener — isim/avatar değişince anında güncelle
 const _usersListeners = {};
+const _USERS_LISTENER_MAX = 100;
 function _watchUserProfile(uid) {
   if (_usersListeners[uid]) return;
+  // Limit aşıldıysa en eski listener'ı temizle
+  const keys = Object.keys(_usersListeners);
+  if (keys.length >= _USERS_LISTENER_MAX) {
+    const oldest = keys[0];
+    if (_usersListeners[oldest]) { _usersListeners[oldest](); delete _usersListeners[oldest]; }
+  }
   _usersListeners[uid] = db.collection('users').doc(uid).onSnapshot(doc => {
     if (!doc.exists) return;
     const d = doc.data();
@@ -22015,11 +23605,637 @@ function semifyGeriFokus() {
   }, 800);
 }
 
+// ══════════════════════════════════════════════════════════
+// ROL YÖNETİMİ
+// ══════════════════════════════════════════════════════════
+var _rollerData = [];
+var _rollerDataOrijinal = []; // sıfırla için yedek
+var _rolSeciliId = null;
+var _rolDegisti = false;
+var _rolOrijinal = {};
+
+function rollerYukle() {
+  const srvId = _srvSettingsServerId || currentServer;
+  if (!srvId || !db) return;
+  db.collection('servers').doc(srvId).get().then(doc => {
+    const data = doc.exists ? doc.data() : {};
+    _rollerData = data.roles || [];
+    _rollerDataOrijinal = JSON.parse(JSON.stringify(_rollerData));
+    rolListesiRender();
+  });
+}
+
+// ---- ROL SÜRÜKLE-BIRAK ----
+let _rolDragSrcId = null;
+
+function rolListesiRender() {
+  const liste = document.getElementById('rolListesi');
+  if (!liste) return;
+  liste.innerHTML = '';
+
+  const normalRoller = _rollerData.filter(r => r.id !== 'everyone');
+  normalRoller.forEach(rol => {
+    const renk = rol.color || '#99aab5';
+    const aktif = _rolSeciliId === rol.id;
+
+    const el = document.createElement('div');
+    el.className = 'rol-item';
+    el.dataset.rolid = rol.id;
+    el.draggable = true;
+    el.style.cssText = `display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:6px;cursor:pointer;margin-bottom:2px;background:${aktif?'#3c3f45':'transparent'};user-select:none;`;
+
+    el.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:3px;padding:2px 4px;cursor:grab;opacity:0.5;flex-shrink:0;" class="rol-drag-handle">
+        <div style="width:14px;height:2px;background:#b5bac1;border-radius:1px;"></div>
+        <div style="width:14px;height:2px;background:#b5bac1;border-radius:1px;"></div>
+        <div style="width:14px;height:2px;background:#b5bac1;border-radius:1px;"></div>
+      </div>
+      <div class="rol-renk-dot" style="width:14px;height:14px;border-radius:50%;background:${renk};flex-shrink:0;"></div>
+      <span style="font-size:14px;color:#f2f3f5;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(rol.name)}</span>
+      <span class="rol-ctx-btn" style="color:#80848e;font-size:18px;line-height:1;padding:2px 6px;border-radius:4px;cursor:pointer;">···</span>
+    `;
+
+    // Tıklama
+    el.addEventListener('click', (e) => { if (!e.target.closest('.rol-ctx-btn')) rolSec(rol.id); });
+    el.querySelector('.rol-ctx-btn').addEventListener('click', (e) => { e.stopPropagation(); rolContextAc(e, rol.id); });
+    el.addEventListener('contextmenu', (e) => rolContextAc(e, rol.id));
+
+    // Hover
+    el.addEventListener('mouseenter', () => { if (_rolSeciliId !== rol.id) el.style.background = '#2e3035'; });
+    el.addEventListener('mouseleave', () => { if (_rolSeciliId !== rol.id) el.style.background = 'transparent'; });
+    el.querySelector('.rol-ctx-btn').addEventListener('mouseenter', (e) => { e.target.style.color='#f2f3f5'; e.target.style.background='#3c3f45'; });
+    el.querySelector('.rol-ctx-btn').addEventListener('mouseleave', (e) => { e.target.style.color='#80848e'; e.target.style.background=''; });
+
+    // Drag events
+    el.addEventListener('dragstart', (e) => {
+      _rolDragSrcId = rol.id;
+      e.dataTransfer.effectAllowed = 'move';
+      setTimeout(() => { el.style.opacity = '0.4'; }, 0);
+    });
+    el.addEventListener('dragend', () => {
+      _rolDragSrcId = null;
+      el.style.opacity = '';
+      // Tüm drop göstergelerini temizle
+      liste.querySelectorAll('.rol-item').forEach(x => {
+        x.style.borderTop = '';
+        x.style.borderBottom = '';
+      });
+    });
+    el.addEventListener('dragover', (e) => {
+      if (!_rolDragSrcId || _rolDragSrcId === rol.id) return;
+      e.preventDefault();
+      // Tüm göstergeleri temizle
+      liste.querySelectorAll('.rol-item').forEach(x => { x.style.borderTop=''; x.style.borderBottom=''; });
+      const rect = el.getBoundingClientRect();
+      if (e.clientY < rect.top + rect.height / 2) {
+        el.style.borderTop = '2px solid #23a55a';
+      } else {
+        el.style.borderBottom = '2px solid #23a55a';
+      }
+    });
+    el.addEventListener('dragleave', (e) => {
+      if (!el.contains(e.relatedTarget)) {
+        el.style.borderTop = '';
+        el.style.borderBottom = '';
+      }
+    });
+    el.addEventListener('drop', (e) => {
+      e.preventDefault();
+      if (!_rolDragSrcId || _rolDragSrcId === rol.id) return;
+      el.style.borderTop = '';
+      el.style.borderBottom = '';
+      const srcIdx = _rollerData.findIndex(r => r.id === _rolDragSrcId);
+      const tgtIdx = _rollerData.findIndex(r => r.id === rol.id);
+      if (srcIdx === -1 || tgtIdx === -1) return;
+      // Sürüklenen rolü diziden çıkar
+      const [moved] = _rollerData.splice(srcIdx, 1);
+      // Yeni konuma ekle
+      const rect = el.getBoundingClientRect();
+      const insertBefore = e.clientY < rect.top + rect.height / 2;
+      const newTgtIdx = _rollerData.findIndex(r => r.id === rol.id);
+      _rollerData.splice(insertBefore ? newTgtIdx : newTgtIdx + 1, 0, moved);
+      _rolDragSrcId = null;
+      // Sıralama değişti — kaydet barını göster (kullanıcı Kaydet'e basınca Firestore'a yazılır)
+      _rolDegisti = true;
+      const bar = document.getElementById('rolKaydetBar');
+      if (bar) bar.style.display = 'flex';
+      rolListesiRender();
+    });
+
+    liste.appendChild(el);
+  });
+
+  // @everyone — her zaman en altta, sürüklenemez
+  const evEl = document.createElement('div');
+  evEl.style.cssText = `display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:6px;cursor:pointer;margin-top:4px;background:${_rolSeciliId==='everyone'?'#3c3f45':'transparent'};`;
+  evEl.innerHTML = `
+    <div style="width:22px;flex-shrink:0;"></div>
+    <div style="width:14px;height:14px;border-radius:50%;background:#99aab5;flex-shrink:0;"></div>
+    <span style="font-size:14px;color:#f2f3f5;">@everyone</span>
+  `;
+  evEl.addEventListener('click', () => rolSec('everyone'));
+  evEl.addEventListener('mouseenter', () => { if (_rolSeciliId !== 'everyone') evEl.style.background = '#2e3035'; });
+  evEl.addEventListener('mouseleave', () => { if (_rolSeciliId !== 'everyone') evEl.style.background = 'transparent'; });
+  liste.appendChild(evEl);
+}
+
+function rolSec(rolId) {
+  // Başka role geçerken mevcut değişiklikleri kaybet — bar açık kalsın
+  // _rolDegisti temizleme, sadece inputları yeni role göre doldur
+  _rolSeciliId = rolId;
+  rolListesiRender();
+  const rol = rolId === 'everyone'
+    ? { id:'everyone', name:'@everyone', color:null }
+    : _rollerData.find(r => r.id === rolId);
+  if (!rol) return;
+  // Orijinali her zaman güncel veriden al
+  _rolOrijinal = { name: rol.name, color: rol.color || null };
+  // NOT: _rolDegisti ve bara dokunma — kullanıcı başka role geçse de bar açık kalsın
+  document.getElementById('rolEditBaslik').textContent = rol.name.toUpperCase();
+  document.getElementById('rolAdiInput').value = rol.name;
+  rolRenkGuncelle(rol.color || null);
+  window._rolSeciliRenk = rol.color || null;
+  const panel = document.getElementById('rolEditPanel');
+  panel.style.display = 'flex';
+  panel.style.flexDirection = 'column';
+  document.getElementById('rolBosPanel').style.display = 'none';
+  document.getElementById('rolTabBar').style.display = 'flex';
+  document.getElementById('rolTabIcerik').style.display = 'block';
+  rolTabSec('gorunum');
+  // İzinleri role göre yükle
+  izinleriYukle(rolId);
+
+  // @everyone kilitli — ad ve renk değiştirilemez
+  const isEveryone = rolId === 'everyone';
+  const adiInput = document.getElementById('rolAdiInput');
+  const gorunumTab = document.getElementById('rolTabContent_gorunum');
+  if (adiInput) {
+    adiInput.readOnly = isEveryone;
+    adiInput.style.opacity = isEveryone ? '0.5' : '1';
+    adiInput.style.cursor = isEveryone ? 'not-allowed' : '';
+    adiInput.style.pointerEvents = isEveryone ? 'none' : '';
+    // input'un parent div'ine de cursor ver
+    if (adiInput.parentElement) {
+      adiInput.parentElement.style.cursor = isEveryone ? 'not-allowed' : '';
+    }
+  }
+  if (gorunumTab) {
+    // Tüm renk tıklama elementlerini kilitle/aç
+    gorunumTab.querySelectorAll('[onclick*="rolRenkSec"], [onclick*="rolRenkPicker"], #rolRenkOnizleme, #rolRenkVarsayilan').forEach(el => {
+      el.style.pointerEvents = isEveryone ? 'none' : '';
+      el.style.opacity = isEveryone ? '0.4' : '';
+      el.style.cursor = isEveryone ? 'not-allowed' : '';
+    });
+    // Renk paletinin wrapper'ına cursor ver (pointerEvents:none olan elementlerin üstü)
+    const renkDiv = gorunumTab.querySelector('div[style*="flex-wrap:wrap;gap:4px"]') || gorunumTab.querySelector('div[style*="flex-wrap: wrap"]');
+    if (renkDiv && renkDiv.parentElement) {
+      renkDiv.parentElement.style.cursor = isEveryone ? 'not-allowed' : '';
+    }
+    // Tüm renk bölümü wrapper'ına cursor ver
+    gorunumTab.querySelectorAll('div').forEach(el => {
+      if (el.querySelector('[onclick*="rolRenkSec"]') || el.querySelector('#rolRenkOnizleme')) {
+        el.style.cursor = isEveryone ? 'not-allowed' : '';
+      }
+    });
+    const picker = document.getElementById('rolRenkPicker');
+    if (picker) picker.disabled = isEveryone;
+    const hexInput = document.getElementById('rolRenkHexInput');
+    if (hexInput) {
+      hexInput.readOnly = isEveryone;
+      hexInput.style.opacity = isEveryone ? '0.5' : '1';
+      hexInput.style.pointerEvents = isEveryone ? 'none' : '';
+      hexInput.style.cursor = isEveryone ? 'not-allowed' : '';
+      if (hexInput.parentElement) hexInput.parentElement.style.cursor = isEveryone ? 'not-allowed' : '';
+    }
+  }
+}
+
+function rolPanelKapat() {
+  if (_rolDegisti) rolDegisiklikTemizle();
+  _rolSeciliId = null;
+  document.getElementById('rolEditPanel').style.display = 'flex';
+  document.getElementById('rolBosPanel').style.display = 'flex';
+  document.getElementById('rolTabBar').style.display = 'none';
+  document.getElementById('rolTabIcerik').style.display = 'none';
+  document.getElementById('rolEditBaslik').textContent = '';
+  document.querySelector('#rolEditPanel > div:nth-child(2)') && (document.querySelector('#rolEditPanel > div:nth-child(2)').style.display = 'none');
+  rolListesiRender();
+}
+
+function rolTabSec(tab) {
+  ['gorunum','izinler','linkler','uyeler'].forEach(t => {
+    const btn = document.getElementById('rolTab_' + t);
+    const content = document.getElementById('rolTabContent_' + t);
+    if (btn) {
+      btn.style.borderBottomColor = t === tab ? '#fff' : 'transparent';
+      btn.style.color = t === tab ? '#f2f3f5' : '#b5bac1';
+      btn.style.fontWeight = t === tab ? '600' : '500';
+    }
+    if (content) content.style.display = t === tab ? 'block' : 'none';
+  });
+}
+
+// @everyone için varsayılan açık izinler
+const EVERYONE_VARSAYILAN_IZINLER = [
+  'kanallari-goruntule',
+  'davet-olustur',
+  'link-ekle',
+  'dosya-ekle',
+  'tepki-ekle',
+  'dis-emoji-kullan',
+  'dis-cikartma-kullan',
+  'herkese-bahset',
+  'mesaj-gecmisi-oku'
+];
+
+function izinToggle(toggleEl) {
+  // @everyone ise değiştirme
+  if (_rolSeciliId === 'everyone') return;
+  toggleEl.classList.toggle('aktif');
+  // İzin değiştiğinde _rollerData'yı anında güncelle ve kaydet barını göster
+  _izinleriRolDataYaz();
+  _rolDegisti = true;
+  const bar = document.getElementById('rolKaydetBar');
+  if (bar) bar.style.display = 'flex';
+}
+
+function izinleriTemizle() {
+  if (_rolSeciliId === 'everyone') return;
+  document.querySelectorAll('#rolTabContent_izinler .izin-toggle').forEach(el => {
+    el.classList.remove('aktif');
+  });
+  // Temizleme sonrası da güncelle
+  _izinleriRolDataYaz();
+  _rolDegisti = true;
+  const bar = document.getElementById('rolKaydetBar');
+  if (bar) bar.style.display = 'flex';
+}
+
+// Mevcut toggle durumunu _rollerData'ya yazar (kaydetmeden önce ve toggle değiştiğinde)
+function _izinleriRolDataYaz() {
+  if (!_rolSeciliId || _rolSeciliId === 'everyone') return;
+  const idx = _rollerData.findIndex(r => r.id === _rolSeciliId);
+  if (idx === -1) return;
+  const aktifIzinler = [];
+  document.querySelectorAll('#rolTabContent_izinler .izin-satir').forEach(satir => {
+    const toggle = satir.querySelector('.izin-toggle');
+    if (toggle && toggle.classList.contains('aktif')) {
+      aktifIzinler.push(satir.dataset.izin);
+    }
+  });
+  _rollerData[idx].permissions = aktifIzinler;
+}
+
+function izinleriYukle(rolId) {
+  const toggleler = document.querySelectorAll('#rolTabContent_izinler .izin-satir');
+  const kilitBilgi = document.getElementById('everyoneKilitBilgi');
+  if (rolId === 'everyone') {
+    if (kilitBilgi) kilitBilgi.style.display = 'block';
+    // @everyone için varsayılan izinleri uygula
+    toggleler.forEach(satir => {
+      const toggle = satir.querySelector('.izin-toggle');
+      if (!toggle) return;
+      const izinKey = satir.dataset.izin;
+      if (EVERYONE_VARSAYILAN_IZINLER.includes(izinKey)) {
+        toggle.classList.add('aktif');
+      } else {
+        toggle.classList.remove('aktif');
+      }
+    });
+    // Tüm toggle'ları kilitle
+    toggleler.forEach(satir => {
+      const toggle = satir.querySelector('.izin-toggle');
+      if (toggle) {
+        toggle.style.cursor = 'not-allowed';
+        toggle.style.opacity = '0.7';
+      }
+    });
+    // Arama ve temizle butonunu kilitle
+    const izinAraInput = document.querySelector('#rolTabContent_izinler input[type="text"]');
+    if (izinAraInput) { izinAraInput.disabled = true; izinAraInput.style.opacity = '0.5'; }
+    const temizleBtn = document.querySelector('#rolTabContent_izinler [onclick="izinleriTemizle()"]');
+    if (temizleBtn) { temizleBtn.style.opacity = '0.4'; temizleBtn.style.cursor = 'not-allowed'; temizleBtn.style.pointerEvents = 'none'; }
+  } else {
+    if (kilitBilgi) kilitBilgi.style.display = 'none';
+    // Normal rol için — Firestore'dan kaydedilmiş izinleri yükle
+    const rol = _rollerData.find(r => r.id === rolId);
+    const kayitliIzinler = (rol && rol.permissions) ? rol.permissions : [];
+    toggleler.forEach(satir => {
+      const toggle = satir.querySelector('.izin-toggle');
+      if (toggle) {
+        const izinKey = satir.dataset.izin;
+        if (kayitliIzinler.includes(izinKey)) {
+          toggle.classList.add('aktif');
+        } else {
+          toggle.classList.remove('aktif');
+        }
+        toggle.style.cursor = 'pointer';
+        toggle.style.opacity = '1';
+      }
+    });
+    const izinAraInput = document.querySelector('#rolTabContent_izinler input[type="text"]');
+    if (izinAraInput) { izinAraInput.disabled = false; izinAraInput.style.opacity = '1'; }
+    const temizleBtn = document.querySelector('#rolTabContent_izinler [onclick="izinleriTemizle()"]');
+    if (temizleBtn) { temizleBtn.style.opacity = '1'; temizleBtn.style.cursor = 'pointer'; temizleBtn.style.pointerEvents = ''; }
+  }
+}
+
+function izinAra(deger) {
+  const q = deger.trim().toLowerCase();
+  document.querySelectorAll('#rolTabContent_izinler .izin-satir').forEach(satir => {
+    const ad = satir.querySelector('.izin-ad');
+    const aciklama = satir.querySelector('.izin-aciklama');
+    const eslesme = !q || (ad && ad.textContent.toLowerCase().includes(q)) || (aciklama && aciklama.textContent.toLowerCase().includes(q));
+    satir.classList.toggle('gizli', !eslesme);
+  });
+}
+
+function rolRenkSec(renk) {
+  rolRenkGuncelle(renk);
+  // _rollerData'ya anında yaz
+  if (_rolSeciliId && _rolSeciliId !== 'everyone') {
+    const idx = _rollerData.findIndex(r => r.id === _rolSeciliId);
+    if (idx !== -1) _rollerData[idx].color = renk;
+    // Listedeki dot'u anında güncelle
+    const liste = document.getElementById('rolListesi');
+    const rolEl = liste && liste.querySelector('[data-rolid="' + _rolSeciliId + '"]');
+    if (rolEl) {
+      const dot = rolEl.querySelector('.rol-renk-dot');
+      if (dot) dot.style.background = renk || '#99aab5';
+    }
+  }
+  _rolDegisti = true;
+  const bar = document.getElementById('rolKaydetBar');
+  if (bar) bar.style.display = 'flex';
+}
+
+function rolRenkGuncelle(renk) {
+  const onizleme = document.getElementById('rolRenkOnizleme');
+  const hexInput = document.getElementById('rolRenkHexInput');
+  const picker = document.getElementById('rolRenkPicker');
+  const varsayilan = document.getElementById('rolRenkVarsayilan');
+  if (!onizleme) return;
+  if (renk) {
+    onizleme.style.background = renk;
+    hexInput.value = renk;
+    if (picker) picker.value = renk;
+    varsayilan.style.border = '2px solid transparent';
+  } else {
+    onizleme.style.background = '#2e3035';
+    hexInput.value = '';
+    varsayilan.style.border = '2px solid #fff';
+  }
+  window._rolSeciliRenk = renk;
+}
+
+function rolRenkPickerDegisti(val) { rolRenkSec(val); }
+function rolRenkHexDegisti(val) {
+  if (/^#[0-9A-Fa-f]{6}$/.test(val)) { rolRenkSec(val); }
+}
+
+function rolAdiAnlikGuncelle(val) {
+  if (!_rolSeciliId || _rolSeciliId === 'everyone') return;
+  // _rollerData'ya anında yaz
+  const idx = _rollerData.findIndex(r => r.id === _rolSeciliId);
+  if (idx !== -1) _rollerData[idx].name = val;
+  // Başlık ve listedeki ismi anında güncelle
+  const baslik = document.getElementById('rolEditBaslik');
+  if (baslik) baslik.textContent = (val || '').toUpperCase();
+  const liste = document.getElementById('rolListesi');
+  const rolEl = liste && liste.querySelector('[data-rolid="' + _rolSeciliId + '"]');
+  if (rolEl) {
+    const span = rolEl.querySelector('span[style*="font-size:14px"]');
+    if (span) span.textContent = val || '';
+  }
+  _rolDegisti = true;
+  const bar = document.getElementById('rolKaydetBar');
+  if (bar) bar.style.display = 'flex';
+}
+
+function rolDegisiklikIsaretle() {
+  _rolDegisti = true;
+  const bar = document.getElementById('rolKaydetBar');
+  if (bar) bar.style.display = 'flex';
+  // Anlık güncelleme: editör başlığı + listenin renk noktası + ismi
+  if (!_rolSeciliId || _rolSeciliId === 'everyone') return;
+  const yeniAd = (document.getElementById('rolAdiInput')?.value || '').trim() || _rolOrijinal.name;
+  const yeniRenk = (window._rolSeciliRenk !== undefined) ? window._rolSeciliRenk : (_rolOrijinal ? _rolOrijinal.color : null);
+  // Başlık
+  const baslik = document.getElementById('rolEditBaslik');
+  if (baslik) baslik.textContent = yeniAd.toUpperCase();
+  // Listedeki ilgili rol elemanını bul
+  const liste = document.getElementById('rolListesi');
+  if (!liste) return;
+  const rolEl = liste.querySelector('[data-rolid="' + _rolSeciliId + '"]');
+  if (!rolEl) return;
+  // Renk noktasını güncelle
+  const dot = rolEl.querySelector('.rol-renk-dot');
+  if (dot) dot.style.background = yeniRenk || '#99aab5';
+  // İsmi güncelle
+  const span = rolEl.querySelector('span[style*="font-size:14px"]');
+  if (span) span.textContent = yeniAd;
+}
+
+function rolDegisiklikTemizle() {
+  _rolDegisti = false;
+  const bar = document.getElementById('rolKaydetBar');
+  if (bar) bar.style.display = 'none';
+}
+
+function rolDegisiklikSifirla() {
+  const srvId = _srvSettingsServerId || currentServer;
+  // Her zaman _rollerDataOrijinal'e dön — yeni eklenen tüm roller silinir, değişiklikler iptal olur
+  _rollerData = JSON.parse(JSON.stringify(_rollerDataOrijinal));
+  // Firestore'a da orijinali geri yaz (yeni eklenmiş rolleri sil)
+  db.collection('servers').doc(srvId).update({ roles: _rollerData }).catch(() => {});
+  if (servers[srvId]) servers[srvId].roles = JSON.parse(JSON.stringify(_rollerData));
+  // Seçili rol orijinalde yoksa seçimi kaldır
+  const orijinalRol = _rolSeciliId ? _rollerData.find(r => r.id === _rolSeciliId) : null;
+  if (orijinalRol) {
+    document.getElementById('rolAdiInput').value = orijinalRol.name || '';
+    rolRenkGuncelle(orijinalRol.color || null);
+    window._rolSeciliRenk = orijinalRol.color || null;
+    _rolOrijinal = { name: orijinalRol.name, color: orijinalRol.color || null };
+  } else {
+    _rolSeciliId = null;
+    rolBilgiKartiGoster();
+  }
+  rolDegisiklikTemizle();
+  rolListesiRender();
+  if (currentServer === srvId) renderMembers();
+}
+
+function rolKaydet() {
+  const srvId = _srvSettingsServerId || currentServer;
+  if (!_rolSeciliId) {
+    // Sadece sıralama değişmişse (seçili rol yok)
+    db.collection('servers').doc(srvId).update({ roles: _rollerData }).then(() => {
+      if (servers[srvId]) servers[srvId].roles = JSON.parse(JSON.stringify(_rollerData));
+      if (currentServer === srvId) { renderMembers(); const card = document.getElementById('profileCard'); if (card && card.style.display !== 'none' && pcTargetUid) renderPcRoller(pcTargetUid); }
+      showToast('✅ Değişiklikler kaydedildi!');
+      rolDegisiklikTemizle();
+      _rollerDataOrijinal = JSON.parse(JSON.stringify(_rollerData));
+      rolListesiRender();
+    }).catch(() => showToast('❌ Kaydetme hatası!'));
+    return;
+  }
+  // _rollerData zaten anlık güncelleniyor, sadece doğrulama yap
+  const seciliRol = _rollerData.find(r => r.id === _rolSeciliId);
+  if (!seciliRol) return;
+  const yeniAd = seciliRol.name || '';
+  const yeniRenk = seciliRol.color || null;
+  if (!yeniAd.trim()) { showToast('Rol adı boş olamaz!'); return; }
+  if (_rolSeciliId === 'everyone') {
+    // everyone için de Firestore'a yaz (sıralama değişmiş olabilir)
+    db.collection('servers').doc(srvId).update({ roles: _rollerData }).then(() => {
+      if (servers[srvId]) servers[srvId].roles = JSON.parse(JSON.stringify(_rollerData));
+      if (currentServer === srvId) { renderMembers(); }
+      showToast('✅ Değişiklikler kaydedildi!');
+      rolDegisiklikTemizle();
+      _rollerDataOrijinal = JSON.parse(JSON.stringify(_rollerData));
+      rolListesiRender();
+    }).catch(() => showToast('❌ Kaydetme hatası!'));
+    return;
+  }
+  const idx = _rollerData.findIndex(r => r.id === _rolSeciliId);
+  if (idx === -1) return;
+  _rollerData[idx].name = yeniAd;
+  _rollerData[idx].color = yeniRenk;
+  // İzinleri de kaydet
+  const aktifIzinler = [];
+  document.querySelectorAll('#rolTabContent_izinler .izin-satir').forEach(satir => {
+    const toggle = satir.querySelector('.izin-toggle');
+    if (toggle && toggle.classList.contains('aktif')) {
+      aktifIzinler.push(satir.dataset.izin);
+    }
+  });
+  _rollerData[idx].permissions = aktifIzinler;
+  _rolOrijinal = { name: yeniAd, color: yeniRenk }; // _yeni bayrağı artık yok
+  document.getElementById('rolEditBaslik').textContent = yeniAd.toUpperCase();
+  db.collection('servers').doc(srvId).update({ roles: _rollerData }).then(() => {
+    showToast('✅ Değişiklikler kaydedildi!');
+    rolDegisiklikTemizle();
+    _rollerDataOrijinal = JSON.parse(JSON.stringify(_rollerData));
+    rolListesiRender();
+    // Üye listesi, chat ve profil kartını güncelle
+    if (servers[srvId]) servers[srvId].roles = JSON.parse(JSON.stringify(_rollerData));
+    if (currentServer === srvId) {
+      renderMembers();
+      renderMessages();
+      const card = document.getElementById('profileCard');
+      if (card && card.style.display !== 'none' && pcTargetUid) renderPcRoller(pcTargetUid);
+    }
+  }).catch(() => showToast('❌ Kaydetme hatası!'));
+}
+
+function rolEkle() {
+  const srvId = _srvSettingsServerId || currentServer;
+  if (!srvId || !db) return;
+  const yeniRol = { id: 'rol_' + Date.now(), name: 'yeni rol', color: null };
+  _rollerData.unshift(yeniRol);
+  rolListesiRender();
+  rolSec(yeniRol.id);
+  // Bar göster — Kaydet'e basınca Firestore'a yazılacak
+  _rolDegisti = true;
+  const bar = document.getElementById('rolKaydetBar');
+  if (bar) bar.style.display = 'flex';
+}
+
+// Bilgi kartlarını göster (hiç rol seçili değilken)
+function rolBilgiKartiGoster() {
+  const ep = document.getElementById('rolEditPanel');
+  const bp = document.getElementById('rolBosPanel');
+  const tb = document.getElementById('rolTabBar');
+  const ti = document.getElementById('rolTabIcerik');
+  if (ep) ep.style.display = 'flex';
+  if (bp) bp.style.display = 'flex';
+  if (tb) tb.style.display = 'none';
+  if (ti) ti.style.display = 'none';
+}
+
+var _rolContextHedefId = null;
+function rolContextAc(e, rolId) {
+  e.preventDefault(); e.stopPropagation();
+  if (rolId === 'everyone') return;
+  _rolContextHedefId = rolId;
+  const rol = _rollerData.find(r => r.id === rolId);
+  const menu = document.getElementById('rolContextMenu');
+  document.getElementById('rolContextAd').textContent = rol ? rol.name : '';
+  menu.style.display = 'block';
+  menu.style.left = e.clientX + 'px';
+  menu.style.top = e.clientY + 'px';
+  setTimeout(() => {
+    const rect = menu.getBoundingClientRect();
+    if (rect.right > window.innerWidth) menu.style.left = (e.clientX - rect.width) + 'px';
+    if (rect.bottom > window.innerHeight) menu.style.top = (e.clientY - rect.height) + 'px';
+  }, 0);
+}
+
+function rolContextKapat() {
+  const m = document.getElementById('rolContextMenu');
+  if (m) m.style.display = 'none';
+  _rolContextHedefId = null;
+}
+
+function rolContextSil() {
+  const hedefId = _rolContextHedefId;
+  rolContextKapat();
+  if (!hedefId) return;
+  const srvId = _srvSettingsServerId || currentServer;
+  const rol = _rollerData.find(r => r.id === hedefId);
+  if (!rol) return;
+  _rollerData = _rollerData.filter(r => r.id !== hedefId);
+  if (_rolSeciliId === hedefId) {
+    _rolSeciliId = null;
+  }
+  db.collection('servers').doc(srvId).update({ roles: _rollerData }).then(() => {
+    showToast('🗑️ "' + rol.name + '" rolü silindi!');
+    rolListesiRender();
+    // Normal roller kalmadıysa bilgi kartlarını göster
+    const normalRoller = _rollerData.filter(r => r.id !== 'everyone');
+    if (normalRoller.length === 0 || !_rolSeciliId) {
+      rolBilgiKartiGoster();
+    }
+    // Kaydet barı çıkmasın — silme zaten kaydedildi
+    rolDegisiklikTemizle();
+    // servers objsini güncelle
+    if (servers[srvId]) servers[srvId].roles = _rollerData.slice();
+    // Silinen rolü tüm üyelerin memberRoles cache'inden ve Firestore'dan temizle
+    if (!window._memberRolesCache) window._memberRolesCache = {};
+    const memberRolesCache = window._memberRolesCache[srvId] || {};
+    const batch = db.batch();
+    let batchHasOps = false;
+    Object.entries(memberRolesCache).forEach(([uid, roleIds]) => {
+      if (roleIds.includes(hedefId)) {
+        const newRoles = roleIds.filter(r => r !== hedefId);
+        window._memberRolesCache[srvId][uid] = newRoles;
+        const ref = db.collection('servers').doc(srvId).collection('memberRoles').doc(uid);
+        batch.set(ref, { roles: newRoles }, { merge: true });
+        batchHasOps = true;
+      }
+    });
+    if (batchHasOps) batch.commit().catch(() => {});
+    if (currentServer === srvId) {
+      renderMembers();
+      // Açık profil kartını güncelle
+      const card = document.getElementById('profileCard');
+      if (card && card.style.display !== 'none' && pcTargetUid) renderPcRoller(pcTargetUid);
+    }
+  }).catch(() => {
+    showToast('❌ Silinemedi!');
+    rollerYukle();
+  });
+}
+
+document.addEventListener('click', function(e) {
+  const menu = document.getElementById('rolContextMenu');
+  if (menu && menu.style.display !== 'none' && !menu.contains(e.target)) rolContextKapat();
+});
+
 function semifyBilgiAl() {
   document.getElementById('semifyBilgiModal').style.display = 'flex';
   document.getElementById('semifyGirisKullanici').value = '';
   document.getElementById('semifyGirisEposta').value = '';
-  if (document.getElementById('semifyGirisUid')) document.getElementById('semifyGirisUid').value = '';
   document.getElementById('semifyGirisHata').textContent = '';
   setTimeout(function(){ document.getElementById('semifyGirisKullanici').focus(); }, 100);
 }
@@ -22031,16 +24247,11 @@ function semifyBilgiIptal() {
 function semifyBilgiDevam() {
   var isim = document.getElementById('semifyGirisKullanici').value.trim();
   var eposta = document.getElementById('semifyGirisEposta').value.trim();
-  var semifyUid = document.getElementById('semifyGirisUid') ? document.getElementById('semifyGirisUid').value.trim() : '';
   var hata = document.getElementById('semifyGirisHata');
   if (!isim) { hata.textContent = 'Kullanıcı adı boş bırakılamaz.'; return; }
   if (!eposta) { hata.textContent = 'E-posta boş bırakılamaz.'; return; }
-  if (!semifyUid) { hata.textContent = 'Semify Kullanıcı ID boş bırakılamaz.'; return; }
   window._semifyKullanici = isim;
   window._semifyEposta = eposta;
-  window._semifyUserId = semifyUid;
-  window._semifyUrl = SEMIFY_SUPABASE_URL;
-  window._semifyKey = SEMIFY_SUPABASE_KEY;
   document.getElementById('semifyBilgiModal').style.display = 'none';
   document.getElementById('semifyOnayModal').style.display = 'flex';
 }
@@ -22055,22 +24266,16 @@ function semifyEminim() {
   document.getElementById('semifyOnayModal').style.display = 'none';
   semifyYetkili = true;
 
+  // Semify'a giriş yapılan bilgileri göster (prompt'tan gelen)
   var kullaniciAdi = (window._semifyKullanici) ? window._semifyKullanici : '—';
   var eposta = (window._semifyEposta) ? window._semifyEposta : '—';
-  var semifyUserId = (window._semifyUserId) ? window._semifyUserId : null;
 
   document.getElementById('semifyKartKullanici').textContent = kullaniciAdi;
   document.getElementById('semifyKartEposta').textContent = eposta;
 
+  // Logo alanını gizle, kart bölümünü göster
   document.getElementById('semifyLogoAlani').style.display = 'none';
   document.getElementById('semifyYetkiliBolum').style.display = 'block';
-
-  // Firebase'e sadece kullanıcı ID'sini kaydet
-  if (currentUser && db && semifyUserId) {
-    db.collection('users').doc(currentUser.uid).update({
-      semifyUserId: semifyUserId
-    }).catch(function() {});
-  }
 }
 
 function semifyYetkiKaldir() {
@@ -22078,122 +24283,6 @@ function semifyYetkiKaldir() {
   document.getElementById('semifyYetkiliBolum').style.display = 'none';
   document.getElementById('semifyLogoAlani').style.display = 'block';
 }
-
-// ── SEMİFY SUPABASE SABİTLERİ ──────────────────────────────────────
-var SEMIFY_SUPABASE_URL = 'https://slcvyyycvikrvhgwylxk.supabase.co';
-var SEMIFY_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsY3Z5eXljdmlrcnZoZ3d5bHhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MzE0ODksImV4cCI6MjA4OTUwNzQ4OX0.QcCwuQqcDAz1Lj5pyNieFMGfeGWLU_G0IgyzvNo_YUo';
-// ───────────────────────────────────────────────────────────────────
-var _semifyNowPlayingUnsub = null;
-
-function semifyFmt(s) {
-  s = Math.floor(s || 0);
-  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
-}
-
-function semifyLoadNowPlaying(uid) {
-  if (_semifyNowPlayingUnsub) { _semifyNowPlayingUnsub(); _semifyNowPlayingUnsub = null; }
-
-  var card = document.getElementById('pcSemifyCard');
-  if (!card) return;
-  if (!uid || !db) { card.style.display = 'none'; return; }
-
-  db.collection('users').doc(uid).get().then(function(doc) {
-    var d = doc.exists ? doc.data() : {};
-    var semifyUserId = d.semifyUserId || null;
-
-    if (!semifyUserId) {
-      card.style.display = 'none';
-      return;
-    }
-
-    semifyPollNowPlaying(semifyUserId, SEMIFY_SUPABASE_URL, SEMIFY_SUPABASE_KEY);
-  }).catch(function() { card.style.display = 'none'; });
-}
-
-var _semifyPollInterval = null;
-var _semifyTickInterval = null;
-var _semifyLocalProgress = 0;
-var _semifyLocalDuration = 0;
-var _semifyIsPlaying = false;
-var _semifyLastFetch = 0;
-
-function semifyPollNowPlaying(userId, supabaseUrl, supabaseKey) {
-  if (_semifyPollInterval) clearInterval(_semifyPollInterval);
-  if (_semifyTickInterval) clearInterval(_semifyTickInterval);
-
-  // Her saniye local progress'i ilerlet (anlık görünüm için)
-  _semifyTickInterval = setInterval(function() {
-    if (!_semifyIsPlaying) return;
-    _semifyLocalProgress = Math.min(_semifyLocalProgress + 1, _semifyLocalDuration);
-    var progressEl = document.getElementById('pcSemifyProgress');
-    var barEl = document.getElementById('pcSemifyBar');
-    if (progressEl) progressEl.textContent = semifyFmt(_semifyLocalProgress);
-    if (barEl && _semifyLocalDuration > 0) {
-      barEl.style.width = Math.min((_semifyLocalProgress / _semifyLocalDuration) * 100, 100) + '%';
-    }
-  }, 1000);
-
-  function fetchNow() {
-    fetch(supabaseUrl + '/rest/v1/now_playing?user_id=eq.' + userId + '&select=*', {
-      headers: {
-        'apikey': supabaseKey,
-        'Authorization': 'Bearer ' + supabaseKey
-      }
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(rows) {
-      var card = document.getElementById('pcSemifyCard');
-      if (!card) return;
-      if (!rows || rows.length === 0) { card.style.display = 'none'; return; }
-      var row = rows[0];
-
-      // updated_at 30 saniyeden eskiyse Semify kapalıdır — kartı gizle
-      if (row.updated_at) {
-        var lastUpdate = new Date(row.updated_at).getTime();
-        var now = Date.now();
-        if (now - lastUpdate > 30000) { card.style.display = 'none'; _semifyIsPlaying = false; return; }
-      }
-
-      var track = row.track_data;
-      var progress = row.progress || 0;
-      var duration = row.duration || 0;
-      var isPlaying = row.is_playing;
-
-      // Local state güncelle
-      _semifyLocalProgress = progress;
-      _semifyLocalDuration = duration;
-      _semifyIsPlaying = isPlaying;
-
-      card.style.display = 'block';
-      document.getElementById('pcSemifyTitle').textContent = track.title || '—';
-      document.getElementById('pcSemifyArtist').textContent = track.artist || '—';
-      document.getElementById('pcSemifyThumb').src = track.thumbnail || '';
-      document.getElementById('pcSemifyProgress').textContent = semifyFmt(progress);
-      document.getElementById('pcSemifyDuration').textContent = semifyFmt(duration);
-      var pct = duration > 0 ? Math.min((progress / duration) * 100, 100) : 0;
-      document.getElementById('pcSemifyBar').style.width = pct + '%';
-      document.getElementById('pcSemifyBar').style.background = isPlaying ? '#1db954' : '#4e5058';
-      var pauseIcon = document.getElementById('pcSemifyPauseIcon');
-      if (pauseIcon) pauseIcon.style.display = isPlaying ? 'none' : 'flex';
-    })
-    .catch(function() {
-      var card = document.getElementById('pcSemifyCard');
-      if (card) card.style.display = 'none';
-    });
-  }
-
-  fetchNow();
-  _semifyPollInterval = setInterval(fetchNow, 5000);
-}
-
-function semifyStopPolling() {
-  if (_semifyPollInterval) { clearInterval(_semifyPollInterval); _semifyPollInterval = null; }
-  if (_semifyTickInterval) { clearInterval(_semifyTickInterval); _semifyTickInterval = null; }
-  _semifyIsPlaying = false;
-  var card = document.getElementById('pcSemifyCard');
-  if (card) card.style.display = 'none';
-}
-// ────────────────────────────────────────────────────────────────────
 
 // Modal dışına tıklayınca kapat — DOM yüklendikten sonra çalıştır
 document.addEventListener('DOMContentLoaded', function() {
@@ -22251,15 +24340,8 @@ document.addEventListener('DOMContentLoaded', function() {
         <div style="text-align:left;margin-bottom:6px;">
           <label style="display:block;font-size:11px;font-weight:700;color:#b5bac1;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">E-Posta</label>
           <input id="semifyGirisEposta" type="email" placeholder="Semify e-posta adresin"
-            onkeydown="if(event.key==='Enter')document.getElementById('semifyGirisUid').focus()"
-            style="width:100%;background:#1e1f22;border:1.5px solid #3f4147;border-radius:8px;color:#f2f3f5;font-size:15px;padding:11px 14px;outline:none;box-sizing:border-box;font-family:inherit;transition:border-color .2s;"
-            onfocus="this.style.borderColor='#1da8e0'" onblur="this.style.borderColor='#3f4147'"/>
-        </div>
-        <div style="text-align:left;margin-bottom:6px;">
-          <label style="display:block;font-size:11px;font-weight:700;color:#b5bac1;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Semify Kullanıcı ID <span style="color:#80848e;font-weight:400;text-transform:none;">(Semify → Profil sayfasından kopyala)</span></label>
-          <input id="semifyGirisUid" type="text" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
             onkeydown="if(event.key==='Enter')semifyBilgiDevam()"
-            style="width:100%;background:#1e1f22;border:1.5px solid #3f4147;border-radius:8px;color:#f2f3f5;font-size:13px;padding:10px 14px;outline:none;box-sizing:border-box;font-family:monospace;transition:border-color .2s;"
+            style="width:100%;background:#1e1f22;border:1.5px solid #3f4147;border-radius:8px;color:#f2f3f5;font-size:15px;padding:11px 14px;outline:none;box-sizing:border-box;font-family:inherit;transition:border-color .2s;"
             onfocus="this.style.borderColor='#1da8e0'" onblur="this.style.borderColor='#3f4147'"/>
         </div>
         <div id="semifyGirisHata" style="color:#f23f43;font-size:13px;min-height:20px;margin-bottom:18px;text-align:left;"></div>
