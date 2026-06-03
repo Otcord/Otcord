@@ -21928,6 +21928,8 @@ function listenToMessages(channelId) {
         }
         // GIF alanını al
         if (d.gif) msgObj.gif = d.gif;
+        // Sesli mesaj alanlarını al
+        if (d.audioUrl) { msgObj.audioUrl = d.audioUrl; msgObj.audioDuration = d.audioDuration || 0; msgObj.audioWave = d.audioWave || []; }
         // Dosya alanlarını da al
         if (d.uploadedImage) { msgObj.uploadedImage = d.uploadedImage; msgObj.fileName = d.fileName; msgObj.isSpoiler = d.isSpoiler || false; }
         if (d.uploadedVideo) { msgObj.uploadedVideo = d.uploadedVideo; msgObj.fileName = d.fileName; }
