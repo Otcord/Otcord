@@ -9473,9 +9473,17 @@ function sesliMesajGonder(mod) {
     // Ses dosyasını Backblaze'e yükle (diğer dosyalarla aynı sistem)
     showToast('⏳ Sesli mesaj yükleniyor...');
     try {
-      const fileName = 'voice_' + Date.now() + '.webm';
-      const file = new File([blob], fileName, { type: 'audio/webm' });
-      const { url, publicId } = await uploadToBackblaze(file);
+      // Ses dosyasını Firebase Storage SDK ile yükle (CORS sorunu yok)
+      let url, publicId;
+      if (typeof storage !== 'undefined' && storage) {
+        const fileName = 'voice_messages/' + currentUser.uid + '/' + Date.now() + '.webm';
+        const ref = storage.ref(fileName);
+        const snap = await ref.put(blob, { contentType: 'audio/webm' });
+        url = await snap.ref.getDownloadURL();
+        publicId = fileName; // silme için
+      } else {
+        throw new Error('Firebase Storage bulunamadı.');
+      }
 
       // Waveform verisi — rastgele görsel
       const waveData = Array.from({ length: 30 }, () => Math.floor(Math.random() * 26) + 4);
@@ -14059,8 +14067,12 @@ function showDeleteMsgModal(msgIdx) {
   document.getElementById('deleteMsgConfirmBtn').onclick = () => {
     closeDeleteConfirmModal();
     const msg = getMessages(currentChannel)[msgIdx];
-    // Cloudinary'den de sil — varsa
-    if (msg && msg._cloudinaryId) deleteFromCloudinary(msg._cloudinaryId);
+    // Sesli mesaj — Firebase Storage'dan sil
+    if (msg && msg.audioUrl && msg._cloudinaryId && storage) {
+      try { storage.ref(msg._cloudinaryId).delete().catch(() => {}); } catch(e) {}
+    }
+    // Cloudinary'den de sil — varsa (resim)
+    else if (msg && msg._cloudinaryId) deleteFromCloudinary(msg._cloudinaryId);
     // Backblaze'den de sil — varsa (video/dosya)
     if (msg && msg._backblazeData) deleteFromBackblaze(msg._backblazeData);
     // Firebase'den sil (firebaseId varsa)
