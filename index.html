@@ -9529,19 +9529,24 @@ function sesliMesajGonder(mod) {
   _sesliRecorder.stop();
 }
 
+const _voiceMsgUrls = {}; // uid → url
+
 function renderVoiceMsg(msg, idx) {
   const dur = msg.audioDuration || 0;
   const durStr = Math.floor(dur / 60) + ':' + String(dur % 60).padStart(2, '0');
-  const wave = msg.audioWave || Array.from({ length: 30 }, () => 12);
-  const bars = wave.map((h, i) =>
-    `<span data-i="${i}" style="height:${h}px;"></span>`
-  ).join('');
-  const uid = 'vm_' + (msg._firebaseId || idx);
+  const wave = msg.audioWave || Array.from({ length: 30 }, () => Math.floor(Math.random() * 20) + 6);
+  const uid = 'vm_' + (msg._firebaseId || ('idx_' + idx + '_' + Date.now()));
+
+  // URL'yi JS map'e kaydet — HTML attribute encode sorununu önler
+  _voiceMsgUrls[uid] = msg.audioUrl;
+
+  const bars = wave.map(h => `<span style="height:${h}px;"></span>`).join('');
+
   return `<div class="voice-msg-bubble" id="${uid}">
-    <button class="voice-msg-play-btn" onclick="sesliOynat('${uid}','${encodeURIComponent(msg.audioUrl)}',${dur})" title="Oynat">
+    <button class="voice-msg-play-btn" onclick="sesliOynat('${uid}',${dur})" title="Oynat/Duraklat">
       <svg id="${uid}_icon" width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
     </button>
-    <div class="voice-msg-waveform" id="${uid}_wave" onclick="sesliWaveClick(event,'${uid}','${encodeURIComponent(msg.audioUrl)}',${dur})">
+    <div class="voice-msg-waveform" id="${uid}_wave" onclick="sesliWaveClick(event,'${uid}',${dur})">
       ${bars}
     </div>
     <div class="voice-msg-duration" id="${uid}_dur">${durStr}</div>
@@ -9550,8 +9555,10 @@ function renderVoiceMsg(msg, idx) {
 
 const _sesliAudioEls = {}; // uid → Audio
 
-function sesliOynat(uid, encodedUrl, totalDur) {
-  const url = decodeURIComponent(encodedUrl);
+function sesliOynat(uid, totalDur) {
+  const url = _voiceMsgUrls[uid];
+  if (!url) { showToast('❌ Ses yüklenemedi.'); return; }
+
   const iconEl = document.getElementById(uid + '_icon');
   const waveEl = document.getElementById(uid + '_wave');
   const durEl = document.getElementById(uid + '_dur');
@@ -9572,15 +9579,14 @@ function sesliOynat(uid, encodedUrl, totalDur) {
 
   if (audio.paused) {
     audio.play();
-    if (iconEl) iconEl.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'; // pause icon
-    // Progress güncelle
+    if (iconEl) iconEl.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
     audio.ontimeupdate = () => {
       const pct = audio.duration ? audio.currentTime / audio.duration : 0;
       const bars = waveEl ? waveEl.querySelectorAll('span') : [];
       const playedCount = Math.round(pct * bars.length);
       bars.forEach((s, i) => { i < playedCount ? s.classList.add('played') : s.classList.remove('played'); });
       if (durEl) {
-        const rem = Math.round(audio.duration - audio.currentTime) || totalDur;
+        const rem = Math.max(0, Math.round((audio.duration || totalDur) - audio.currentTime));
         durEl.textContent = Math.floor(rem / 60) + ':' + String(rem % 60).padStart(2, '0');
       }
     };
@@ -9595,16 +9601,15 @@ function sesliOynat(uid, encodedUrl, totalDur) {
   }
 }
 
-function sesliWaveClick(e, uid, encodedUrl, totalDur) {
-  const url = decodeURIComponent(encodedUrl);
-  if (!_sesliAudioEls[uid]) _sesliAudioEls[uid] = new Audio(url);
-  const audio = _sesliAudioEls[uid];
+function sesliWaveClick(e, uid, totalDur) {
   const waveEl = document.getElementById(uid + '_wave');
-  if (!waveEl || !audio.duration) { sesliOynat(uid, encodedUrl, totalDur); return; }
+  if (!_sesliAudioEls[uid]) { sesliOynat(uid, totalDur); return; }
+  const audio = _sesliAudioEls[uid];
+  if (!waveEl || !audio.duration) { sesliOynat(uid, totalDur); return; }
   const rect = waveEl.getBoundingClientRect();
-  const pct = (e.clientX - rect.left) / rect.width;
+  const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
   audio.currentTime = pct * audio.duration;
-  if (audio.paused) sesliOynat(uid, encodedUrl, totalDur);
+  if (audio.paused) sesliOynat(uid, totalDur);
 }
 
 // ═══════════════════════════════════════════════════════════
