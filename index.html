@@ -8172,7 +8172,7 @@ function _returnToVoiceChannel() {
 
 function switchServer(el, serverId) {
   // Keşfet açıksa kapat
-  if (document.getElementById('discoverPageOverlay').classList.contains('open')) {
+  if (document.getElementById('discoverPageOverlay')?.classList.contains('open')) {
     closeDiscoverPage();
   }
   document.querySelectorAll('.server-icon').forEach(s => s.classList.remove('active'));
