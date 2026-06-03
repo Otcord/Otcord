@@ -9473,17 +9473,24 @@ function sesliMesajGonder(mod) {
     // Ses dosyasını Backblaze'e yükle (diğer dosyalarla aynı sistem)
     showToast('⏳ Sesli mesaj yükleniyor...');
     try {
-      // Ses dosyasını Firebase Storage SDK ile yükle (CORS sorunu yok)
-      let url, publicId;
-      if (typeof storage !== 'undefined' && storage) {
-        const fileName = 'voice_messages/' + currentUser.uid + '/' + Date.now() + '.webm';
-        const ref = storage.ref(fileName);
-        const snap = await ref.put(blob, { contentType: 'audio/webm' });
-        url = await snap.ref.getDownloadURL();
-        publicId = fileName; // silme için
-      } else {
-        throw new Error('Firebase Storage bulunamadı.');
-      }
+      // Ses dosyasını Cloudinary'e yükle (ücretsiz, CORS yok, 10dk+ destekler)
+      showToast('⏳ Sesli mesaj yükleniyor...');
+      const cloudName = 'dtmxwjf6m';
+      const uploadPreset = 'Otcord';
+      const fd = new FormData();
+      fd.append('file', blob, 'voice_' + Date.now() + '.webm');
+      fd.append('upload_preset', uploadPreset);
+      fd.append('resource_type', 'video'); // Cloudinary'de ses = video resource_type
+
+      const cdnRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, {
+        method: 'POST',
+        body: fd
+      });
+      const cdnData = await cdnRes.json();
+      if (!cdnData.secure_url) throw new Error(cdnData.error?.message || 'Cloudinary yükleme hatası');
+
+      const url = cdnData.secure_url;
+      const publicId = cdnData.public_id;
 
       // Waveform verisi — rastgele görsel
       const waveData = Array.from({ length: 30 }, () => Math.floor(Math.random() * 26) + 4);
@@ -14067,11 +14074,11 @@ function showDeleteMsgModal(msgIdx) {
   document.getElementById('deleteMsgConfirmBtn').onclick = () => {
     closeDeleteConfirmModal();
     const msg = getMessages(currentChannel)[msgIdx];
-    // Sesli mesaj — Firebase Storage'dan sil
-    if (msg && msg.audioUrl && msg._cloudinaryId && storage) {
-      try { storage.ref(msg._cloudinaryId).delete().catch(() => {}); } catch(e) {}
+    // Sesli mesaj — Cloudinary'den sil
+    if (msg && msg.audioUrl && msg._cloudinaryId) {
+      deleteFromCloudinary(msg._cloudinaryId);
     }
-    // Cloudinary'den de sil — varsa (resim)
+    // Diğer Cloudinary dosyaları (resim)
     else if (msg && msg._cloudinaryId) deleteFromCloudinary(msg._cloudinaryId);
     // Backblaze'den de sil — varsa (video/dosya)
     if (msg && msg._backblazeData) deleteFromBackblaze(msg._backblazeData);
